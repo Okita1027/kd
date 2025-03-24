@@ -15,19 +15,24 @@ SELECT column,... FROM table2
 - Union
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/select01.png)
+
 UNION 操作符返回两个查询的结果集的并集，去除重复记录。
 
 - Union All
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/select02.png)
+
 UNION ALL操作符返回两个查询的结果集的并集。对于两个结果集的重复部分，不去重。
 
 > 注意：执行UNION ALL语句时所需要的资源比UNION语句少。如果明确知道合并数据后的结果数据不存在重复数据，或者不需要去除重复的数据，则尽量使用UNION ALL语句，以提高数据查询的效率。
 
 ### 7种外连接
 #### 概览
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/select03.png)
+
 #### 实现
+
 ```sql
 #中图：内连接 A∩B
 SELECT employee_id,last_name,department_name
@@ -165,16 +170,19 @@ WHERE e.department_id = d.department_id;
 - **脏读**：一个事务读到另外一个事务还没有提交的数据。
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/transaction01.png)
+
 例如：B读取到了A未提交的数据。
 
 - **不可重复读**：一个事务先后读取同一条记录，但两次读取的数据不同，称之为不可重复读。
 
 ![img02.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/transaction02.png)
+
 事务A两次读取同一条记录，但是读取到的数据却是不一样的。
 
 - **幻读**：一个事务按照条件查询数据时，没有对应的数据行，但是在插入数据时，又发现这行数据已经存在，好像出现了 "幻影"。
 
 ![img03.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/transaction03.png)
+
 事务A查询数据不存在，事务B插入数据并提交，事务A尝试插入数据缺无法插入，查询数据又查不到。
 
 ### 事务隔离级别
@@ -229,6 +237,7 @@ WHERE e.department_id = d.department_id;
 -  行 : InnoDB 存储引擎是面向行的，也就是说数据是按行进行存放的，在每一行中除了定义表时所指定的字段以外，还包含两个隐藏字段(后面会详细介绍)。 
    - Trx_id：每次对某条记录进行改动时，都会把对应的事务id赋值给trx_id隐藏列。 
    - Roll_pointer：每次对某条引记录进行改动时，都会把旧的版本写入到undo日志中，然后这个隐藏列就相当于一个指针，可以通过它来找到该记录修改前的信息。
+
 ### MyISAM
 
 - 介绍 
@@ -252,6 +261,7 @@ WHERE e.department_id = d.department_id;
    - xxx.sdi：存储表结构信息
 #### 区别及特点
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/engine02.png)
+
 **面试题:**
 InnoDB引擎与MyISAM引擎的区别 ?
 
@@ -367,15 +377,20 @@ EXPLAIN 各字段含义：
 
 #### 二叉树
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index01.png)
+
 二叉树的缺点可以用红黑树来解决：
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index02.png)
+
 由于红黑树也是一颗二叉树，所以也会存在一个缺点：
 
 - 大数据量情况下，层级较深，检索速度慢。
 #### B-树
 B-Tree，B树是一种多叉路衡查找树，相对于二叉树，B树每个节点可以有多个分支，即多叉。
 以一颗最大度数（max-degree）为5(5阶)的b-tree为例，那这个B树每个节点最多存储4个key，5个指针：
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index03.png)
+
 树的度数指的是一个节点的子节点个数。
 
 特点：
@@ -394,16 +409,17 @@ B+树是B树的变种，结构图：
 -  红色框框起来的部分，是数据存储部分，在其叶子节点中要存储具体的数据 
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index04.png)
+
 特点：
 
 - 所有的数据都会出现在叶子节点。
 - 叶子节点形成一个单向链表。
 - 非叶子节点仅仅起到索引数据作用，具体的数据都是在叶子节点存放的。
 #### MySQL优化的B+树
-MySQL 索引数据结构对经典的 B+Tree 进行了优化。在原 B+Tree 的基础上，增加一个指向相邻叶子节点的链表指针，就形成了带有顺序指针的 B+Tree，提高区间访问的性能。
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index05.png)
+MySQL 索引数据结构对经典的 B+Tree 进行了优化。在原 B+Tree 的基础上，增加一个指向相邻叶子节点的链表指针，就形成了带有顺序指针的 B+Tree，提高区间访问的性能。![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index05.png)
 
 #### Hash
+
 哈希索引就是采用一定的hash算法，将键值换算成新的hash值，映射到对应的槽位上，然后存储在hash表中。
 如果两个（或多个）键值，映射到一个相同的槽位上，他们就产生了hash冲突（也称为hash碰撞），可以通过链表来解决。
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index06.png)
@@ -864,6 +880,7 @@ Roll_pointer：每次对某条引记录进行改动时，都会把旧的版本�
 MySQL5.5 版本开始，默认使用InnoDB存储引擎，它擅长事务处理，具有崩溃恢复特性，在日常开发 中使用非常广泛。下面是InnoDB架构图，左侧为内存结构，右侧为磁盘结构。![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB02.png)
 #### 内存结构	
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB03.png)
+
 在左侧的内存结构中，主要分为四大块儿： Buffer Pool、Change Buffer、Adaptive Hash Index、Log Buffer。
 
 1. Buffer Pool 
@@ -909,14 +926,18 @@ innodb_flush_log_at_trx_commit：日志刷新到磁盘时机，取值主要包�
 
 系统表空间是更改缓冲区的存储区域。如果表是在系统表空间而不是每个表文件或通用表空间中创建 的，它也可能包含表和索引数据。(在MySQL5.x版本中还包含InnoDB数据字典、undolog等) 
 参数：innodb_data_file_path
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB05.png)
+
 系统表空间，默认的文件名叫 ibdata1。
 
 2. File-Per-Table Tablespaces
 
 如果开启了innodb_file_per_table开关 ，则每个表的文件,表空间包含单个InnoDB表的数据和索引 ，并存储在文件系统上的单个数据文件中。 
 开关参数：innodb_file_per_table ，该参数默认开启。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB06.png)
+
 那也就是说，我们每创建一个表，都会产生一个表空间文件，如图：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB07.png)
 
@@ -945,6 +966,7 @@ InnoDB 使用会话临时表空间和全局临时表空间。存储用户创建�
 6. Doublewrite Buffer Files
 
 双写缓冲区，innoDB引擎将数据页从Buffer Pool刷新到磁盘前，先将数据页写入双写缓冲区文件中，便于系统异常时恢复数据。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB09.png)
 
 7. Redo Log
@@ -953,16 +975,19 @@ InnoDB 使用会话临时表空间和全局临时表空间。存储用户创建�
 buffer）以及重做日志文件（redo log）,前者是在内存中，后者在磁盘中。当事务提交之后会把所 
 有修改信息都会存到该日志中, 用于在刷新脏页到磁盘时,发生错误时, 进行数据恢复使用。 
 以循环方式写入重做日志文件，涉及两个文件：
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB10.png)
 
 ---
 
 前面我们介绍了InnoDB的内存结构，以及磁盘结构，那么内存中我们所更新的数据，又是如何到磁盘 
 中的呢？ 此时，就涉及到一组后台线程，接下来，就来介绍一些InnoDB中涉及到的后台线程。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB11.png)
 
 ### 后台线程
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB12.png)
+
 在InnoDB的后台线程中，分为4类，分别是：Master Thread 、IO Thread、Purge Thread、 
 Page Cleaner Thread。
 
@@ -1361,8 +1386,11 @@ mysqldump -uroot -p1234 -T /root db01 score
 SHOW VARIABLES LIKE '%secure_file_priv%'
 ```
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/manage02.png)
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/manage02.png)
+
 上述的两个文件 score.sql 中记录的就是表结构文件，而 score.txt 就是表数据文件，但是需要注意表数据文件，并不是记录一条条的insert语句，而是按照一定的格式记录表结构中的数据。如下：
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/manage03.png)
 
 #### mysqlimport/source
