@@ -100,7 +100,7 @@ import User from "./components/User.vue";
 
 export default {
   name: 'App',	// 定义了当前组件的名称为 "App"。这个名称可以在开发者工具中用于调试和识别组件。
-  components: {	// 注册和导入其他组件，以便在当前组件中使用。
+  components: {	// 注册和导入其他组件，以便在当前组件中使用。x
     // 使用Person、User组件
     Person,
     User
