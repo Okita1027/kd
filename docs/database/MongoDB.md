@@ -5,7 +5,7 @@ order: 6
 
 ## MongoDB
 
-[MongoDB 中文手册 v7.0](https://www.mongodb.com/zh-cn/docs/manual/)
+[MongoDB 中文手册 v8.0](https://www.mongodb.com/zh-cn/docs/manual/)
 
 ## Spring整合
 
