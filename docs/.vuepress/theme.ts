@@ -72,6 +72,11 @@ export default hopeTheme({
             link: "/web/",
             icon: "/icon/web.png",
         },
+        {
+            text: "",
+            link: "/dotnet/",
+            icon: "/icon/dotnet.png",
+        },
         // {
             // text: "相关链接",
             // link: "#",
@@ -112,6 +117,7 @@ export default hopeTheme({
         "/database/": "structure",
         "/frame/": "structure",
         "/web/": "structure",
+        "/dotnet/": "structure",
     },
 
     // 页脚
