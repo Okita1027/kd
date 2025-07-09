@@ -1,6 +1,6 @@
 ---
-title: 基础篇
-shortTitle: 基础篇
+title: 快速上手
+shortTitle: 快速上手
 description: .NET CORE
 date: 2024-07-08 17:08:18
 categories: [.NET, .NET CORE]
