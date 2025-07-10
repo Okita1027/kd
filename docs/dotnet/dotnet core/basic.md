@@ -3113,8 +3113,6 @@ public class UserController : ControllerBase
 }
 ```
 
-
-
 #### 配置方式
 
 ```JSON
@@ -3285,9 +3283,10 @@ app.Run();
 
 **使用日志消息模板和结构化日志**：强烈推荐使用占位符 `{}` 和传入参数的方式来构建日志消息（如 `_logger.LogInformation("User {UserId} logged in.", userId);`），而不是字符串拼接（如 `_logger.LogInformation("User " + userId + " logged in.");`）。
 
-- **优点**：
-  - **性能更好**：在日志级别不满足时，参数不会被格式化，节省开销。
-  - **结构化**：在支持结构化日志的提供程序（如 Serilog、Azure Log Analytics）中，`UserId` 会被作为独立的字段解析，方便查询和分析。
+**优点**：
+
+- **性能更好**：在日志级别不满足时，参数不会被格式化，节省开销。
+- **结构化**：在支持结构化日志的提供程序（如 Serilog、Azure Log Analytics）中，`UserId` 会被作为独立的字段解析，方便查询和分析。
 
 #### 第三方日志记录提供程序
 
@@ -3295,21 +3294,550 @@ app.Run();
 
 ### HTTP日志记录
 
+#### 概述
 
+HTTP 日志记录是一种中间件，用于记录传入 HTTP 请求和 HTTP 响应的相关信息。 HTTP 日志记录可以记录：
+
+- HTTP 请求信息
+- 公共属性
+- 标头
+- 正文
+- HTTP 响应信息
+
+HTTP 日志记录可以：
+
+- 记录所有请求和响应，或者仅记录满足特定条件的请求和响应。
+- 选择要记录请求和响应的哪些部分。
+- 允许您从日志中删除敏感信息。
+
+> HTTP 日志记录 ***会降低应用的性能***，尤其是在记录请求和响应正文时。 在选择要记录的字段时请考虑性能影响。 测试所选日志记录属性的性能影响。
+
+#### 使用方法
+
+1. 添加HTTP日志服务（AddHttpLogging）
+
+需要在应用程序的服务集合中注册 HTTP 日志服务。这是配置日志记录行为的地方。
+
+```C#
+// Program.cs
+using Microsoft.AspNetCore.HttpLogging; // 确保引入此命名空间
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 添加 HTTP 日志服务并进行配置
+builder.Services.AddHttpLogging(logging =>
+{
+    // 1. 配置要记录哪些字段
+    // HttpLoggingFields 枚举允许您选择要记录的HTTP数据类型。
+    // 您可以使用 | 运算符组合多个字段。
+    logging.LoggingFields = HttpLoggingFields.RequestHeaders | // 记录请求头
+                            HttpLoggingFields.RequestBody |    // 记录请求体
+                            HttpLoggingFields.ResponseBody |   // 记录响应体
+                            HttpLoggingFields.RequestPath |    // 记录请求路径
+                            HttpLoggingFields.RequestQuery |   // 记录查询字符串
+                            HttpLoggingFields.ResponseStatusCode; // 记录响应状态码
+
+    // 如果要记录所有字段（非常详细，慎用！），可以使用 HttpLoggingFields.All
+    // logging.LoggingFields = HttpLoggingFields.All;
+
+    // 2. 配置敏感信息隐藏 (非常重要！推荐！)
+    // 防止敏感信息（如认证令牌、密码）泄露到日志中。
+    // 指定请求头或响应头名称，这些头的值将不会被记录。
+    logging.RequestHeaders.Add("Authorization"); // 隐藏 Authorization 请求头的值
+    logging.RequestHeaders.Add("Cookie");       // 隐藏 Cookie 请求头的值
+    logging.ResponseHeaders.Add("Set-Cookie");  // 隐藏 Set-Cookie 响应头的值
+    logging.ResponseHeaders.Add("X-Api-Key");   // 如果您有自定义的API密钥头，也要隐藏
+
+    // 3. 限制请求体/响应体的大小 (推荐！)
+    // 防止因为请求或响应体过大而导致日志文件剧增或性能问题。
+    // 超过此大小的部分将被截断。设置为 -1 表示不限制（慎用）。
+    logging.RequestBodyLogLimit = 4096; // 限制请求体最大记录 4KB (4 * 1024 字节)
+    logging.ResponseBodyLogLimit = 4096; // 限制响应体最大记录 4KB
+
+    // 4. 配置要跳过日志记录的路径 (可选)
+    // 例如，跳过健康检查或静态文件的日志
+    // logging.MediaTypeOptions.AddText("text/plain"); // 可以添加更多要作为文本记录的MediaType
+});
+
+// ... 其他服务注册，如 AddControllers(), AddSwaggerGen() 等 ...
+
+var app = builder.Build();
+```
+
+2. 添加HTTP日志中间件
+
+服务注册完成后，您需要在应用程序的请求处理管道中添加 HTTP 日志中间件。这个中间件应该放置在管道的**早期位置**，以便它能捕获到所有后续中间件处理的请求和响应。
+
+**最佳实践：** 通常放在 `UseDeveloperExceptionPage()` 或 `UseExceptionHandler()` 之后，但要在 `UseRouting()` 和 `UseStaticFiles()` 等其他处理请求的中间件之前。
+
+```C#
+// Program.cs
+// ...
+var app = builder.Build();
+
+// 开发环境的异常处理页
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseExceptionHandler("/Error"); // 生产环境友好的错误页面
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+
+// **关键步骤：添加 HTTP 日志中间件**
+// 通常放在 UseHttpsRedirection() 之后，但要早于处理路由、认证等的中间件
+app.UseHttpLogging();
+
+app.UseStaticFiles(); // 处理静态文件
+app.UseRouting();     // 路由匹配
+
+app.UseAuthorization(); // 认证和授权
+
+app.MapControllers();   // 映射控制器路由
+app.MapRazorPages();    // 映射 Razor Pages 路由
+app.MapDefaultControllerRoute(); // 如果是MVC
+
+app.Run();
+```
+
+#### 日志输出的目的地
+
+HTTP 日志记录中间件会将捕获到的日志发送到应用程序配置的 **`ILogger` 提供程序**。这意味着，如果您配置了控制台日志提供程序、调试窗口日志提供程序或集成了 Serilog/NLog，HTTP 日志就会出现在这些目标的输出中。
+
+**示例输出（取决于ILogger配置和格式化器）**
+
+在控制台中，可能会看到类似这样的日志（通常以 `Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware` 作为分类器）：
+
+```LOG
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[1]
+      Request:
+        Method: POST
+        Path: /api/products
+        Query: ?source=web
+        Headers:
+          Accept: [application/json]
+          Content-Type: [application/json]
+          Authorization: [***REDACTED***] // 被隐藏的敏感头
+        Body: {"name":"New Product","price":19.99}
+
+info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[2]
+      Response:
+        StatusCode: 201
+        Headers:
+          Content-Type: [application/json; charset=utf-8]
+          Date: [Thu, 10 Jul 2025 12:00:00 GMT]
+        Body: {"id":101,"name":"New Product","price":19.99}
+```
+
+#### 注意事项&最佳实践
+
+**敏感数据处理 (Data Redaction)**：
+
+- **极其重要！** HTTP 日志非常容易泄露敏感数据，如用户凭据、会话令牌、信用卡信息等。
+- **务必使用 `logging.RequestHeaders.Add("HeaderName")` 和 `logging.ResponseHeaders.Add("HeaderName")` 来隐藏这些头的值。**
+- 对于请求体和响应体中的敏感数据，您需要自行处理，例如在记录日志之前进行脱敏，或者在生产环境中限制记录体的大小并仅记录必要的头部信息。
+- 默认情况下，`Authorization`、`Cookie`、`Proxy-Authorization`、`WWW-Authenticate`、`Set-Cookie` 头的值会被自动隐藏。但您应该根据您的应用自定义额外的敏感头。
+
+**性能影响 (Performance Impact)**：
+
+- 记录请求体和响应体（特别是大型体）会产生显著的性能开销，因为它涉及读取整个流并将其缓冲到内存中。
+- 在**生产环境**中，请**谨慎启用** `HttpLoggingFields.RequestBody` 和 `HttpLoggingFields.ResponseBody`。通常，您可能只需要记录头部、路径和状态码。
+- 使用 `RequestBodyLogLimit` 和 `ResponseBodyLogLimit` 来限制记录体的大小，可以减轻部分性能影响。
+
+**日志量控制**：
+
+- 在高流量应用程序中，HTTP 日志会产生大量的日志数据，这可能迅速填满磁盘、增加日志管理成本。
+- 通过调整 `HttpLoggingFields` 来限制记录的详细程度。
+- 结合 `ILogger` 的日志级别过滤功能，例如，可以将 `Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware` 类别的日志级别在生产环境中设置为 `Warning` 或 `Error`，只记录异常的 HTTP 流量。
+
+**放置位置**：
+
+- `UseHttpLogging()` 应该放在请求管道的早期，以便捕获到尽可能多的请求和响应信息。
+- 通常放在异常处理中间件（`UseDeveloperExceptionPage()` 或 `UseExceptionHandler()`）之后，这样 HTTP 日志不会因为处理异常而中断，也能记录到异常导致的状态码。
+- 放在认证/授权中间件之前，可以记录未认证/未授权的请求。
+
+**与自定义日志的互补**：
+
+- HTTP 日志记录提供了网络层面的视图。您仍然需要在业务逻辑层使用 `ILogger<T>` 来记录应用程序内部的详细操作和业务事件。两者是互补的。
 
 ### W3C记录器
 
+#### 概述
 
+**定义**：
+
+W3CLogger 是一个以 [W3C 标准格式](https://www.w3.org/TR/WD-logfile.html)写入日志文件的中间件。 相关日志包含有关 HTTP 请求和 HTTP 响应的信息。 W3CLogger 提供以下内容的日志：
+
+- HTTP 请求信息
+- 公共属性
+- 标头
+- HTTP 响应信息
+- 有关请求/响应对的元数据（开始日期/时间，所用时间）
+
+在以下几种方案中，W3CLogger 很有价值：
+
+- 记录传入请求和响应的相关信息。
+- 筛选请求和响应的哪些部分被记录。
+- 筛选要记录的头。
+
+> W3CLogger 可能会降低应用的性能。 在选择要记录的字段时考虑性能影响 - 记录的属性越多，性能降低越多。 测试所选日志记录属性的性能影响。
+
+**文件格式：**
+
+W3C 扩展日志文件格式是一种文本格式，用于记录 Web 服务器的活动。它的特点是：
+
+- **结构化**：日志文件通常以 `#Fields:` 行开头，明确列出后面数据行中每个字段的名称。例如：
+
+  ```LOG
+  #Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) sc-status time-taken
+  ```
+
+- **可扩展**：您可以定义自己的字段。
+- **易于解析**：由于其结构化特性，各种日志分析工具（如 Log Parser、ELK Stack、Splunk）可以轻松地解析和处理 W3C 格式的日志。
+
+日志示例：
+
+```LOG
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) sc-status time-taken
+2025-07-10 17:30:00 127.0.0.1 GET /api/products - 443 - 127.0.0.1 Mozilla/5.0+(Windows+NT+10.0)+... 200 15
+2025-07-10 17:30:01 127.0.0.1 POST /api/orders - 443 - 127.0.0.1 curl/7.81.0 201 250
+```
+
+#### 使用方法
+
+1. 添加W3C日志服务
+
+```c#
+// Program.cs
+using Microsoft.AspNetCore.HttpLogging; // W3CLogger也在此命名空间下
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 添加 W3C 日志服务并进行配置
+builder.Services.AddW3CLogging(logging =>
+{
+    // 1. 配置要记录哪些字段
+    // W3CLoggingFields 枚举允许您选择要记录的字段。
+    // 您可以使用 | 运算符组合多个字段。
+    logging.LoggingFields = W3CLoggingFields.All; // 记录所有标准 W3C 字段
+
+    // 也可以选择性记录，例如：
+    // logging.LoggingFields = W3CLoggingFields.Date |
+    //                         W3CLoggingFields.Time |
+    //                         W3CLoggingFields.ClientIpAddress |
+    //                         W3CLoggingFields.Method |
+    //                         W3CLoggingFields.UriStem |
+    //                         W3CLoggingFields.UriQuery |
+    //                         W3CLoggingFields.ServerPort |
+    //                         W3CLoggingFields.UserAgent |
+    //                         W3CLoggingFields.StatusCode |
+    //                         W3CLoggingFields.TimeTaken;
+
+
+    // 2. 配置日志文件管理
+    logging.FileSizeLimit = 10 * 1024 * 1024; // 每个日志文件最大 10 MB (10 * 1024 * 1024 bytes)
+    logging.RetainedFileCountLimit = 50;      // 最多保留 50 个日志文件
+    logging.FileName = "my-app-access-";     // 日志文件名前缀，例如：my-app-access-20250710.log
+    logging.LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs", "w3c"); // 日志存储目录
+                                                                                 // AppContext.BaseDirectory 是应用程序的根目录
+
+    // 3. 配置日志刷新间隔
+    logging.FlushInterval = TimeSpan.FromSeconds(2); // 每 2 秒刷新一次日志到磁盘，防止数据丢失（但也增加I/O）
+
+    // 4. 是否跳过静态文件的日志 (可选，通常推荐)
+    // 默认为 false，这意味着静态文件请求也会被记录。
+    // 如果设置为 true，则对静态文件（如 .css, .js, .png）的请求将不会被记录。
+    logging.SkipSuccessfulStaticFileRequests = true;
+
+    // 5. 配置要忽略的请求路径 (可选)
+    // logging.IgnorePaths.Add("/healthz"); // 忽略健康检查路径的日志
+});
+
+// ... 其他服务注册 ...
+
+var app = builder.Build();
+```
+
+2. 添加W3C日志中间件
+
+服务注册完成后，您需要在应用程序的请求处理管道中添加 W3C 日志中间件。**这个中间件必须放置在管道的早期位置，才能捕获到尽可能多的请求信息，特别是要在 `UseStaticFiles()` 和 `UseRouting()` 之前。**
+
+```c#
+// Program.cs
+// ...
+var app = builder.Build();
+
+// 开发环境的异常处理页
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+
+// **关键步骤：添加 W3C 日志中间件**
+// W3CLogger 必须放在 UseStaticFiles() 和 UseRouting() 之前，
+// 这样才能记录所有进入应用程序的请求，包括静态文件和未路由的请求。
+app.UseW3CLogging();
+
+app.UseStaticFiles(); // 处理静态文件
+app.UseRouting();     // 路由匹配
+
+app.UseAuthorization();
+app.MapControllers();
+app.MapRazorPages();
+
+app.Run();
+```
+
+#### W3C VS HTTP
+
+| 特性         | HTTP 日志记录 (HttpLoggingMiddleware)                        | W3C 记录器 (W3CLoggingMiddleware)                            |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 日志格式     | 输出到标准的 ILogger，格式由所选的 ILogger 提供程序（如 Console, Serilog）决定。通常是结构化 JSON 或自定义文本。 | W3C 扩展日志文件格式（纯文本，带有 #Fields 头部）。          |
+| 输出目的地   | 应用程序配置的 ILogger 提供程序（控制台、调试窗口、文件、数据库、云日志等）。 | 专门的文件系统路径（通过 LogDirectory 配置）。               |
+| 记录内容     | 可配置记录请求头/体、响应头/体、路径、查询字符串、状态码等。对请求体和响应体支持更细致的控制和截断。 | 主要记录 HTTP 请求的元数据：日期、时间、IP、方法、URI、状态码、处理时间、用户代理等。通常不记录请求/响应体。 |
+| 性能/资源    | 记录请求/响应体时可能产生较大性能开销。                      | 通常性能开销较小，因为它主要记录元数据，不缓存整个体。       |
+| 适用场景     | 开发调试、问题诊断、需要查看请求/响应体内容的场景。可以与现有日志聚合工具无缝集成。 | 兼容现有 W3C 日志分析工具、需要与传统 Web 服务器日志统一、专注于 Web 访问分析和审计的场景。 |
+| 敏感数据处理 | 通过 RequestHeaders.Add 等方法对头进行 ***REDACTED*** 处理。对体需手动处理或限制大小。 | 记录的字段不包含请求/响应体，敏感数据风险相对较小。          |
+| 中间件顺序   | 放在异常处理之后，路由之前。                                 | 必须放在 UseStaticFiles() 和 UseRouting() 之前，以确保捕获所有进入应用的请求。 |
+
+#### 注意事项&最佳实践
+
+- **文件存储和清理**：W3C 记录器将日志写入本地文件。在生产环境中，请确保您有适当的策略来：
+  - **监控磁盘空间**：防止日志文件填满磁盘。
+  - **定期归档和删除旧文件**：`RetainedFileCountLimit` 可以帮助自动管理，但对于长期存储，您可能需要将它们传输到对象存储或日志聚合系统。
+- **性能**：虽然 W3C 记录器本身的开销比记录完整请求体/响应体的 HTTP 日志记录要小，但频繁的磁盘 I/O 仍然会产生一定影响。`FlushInterval` 的设置会影响写入频率和潜在的数据丢失风险。
+- **日志分析**：为了充分利用 W3C 格式日志，您需要使用能够解析这种格式的工具（如 Log Parser、自定义脚本或集成到 ELK Stack 等日志聚合平台）。
+- **与 `ILogger` 分离**：W3C 记录器不会将日志输出到您常规的 `ILogger` 提供程序。它们是独立的日志流。这意味着应用程序内部的业务逻辑日志和 Web 访问日志是分开管理的。
+- **不记录请求/响应体**：请记住，W3C 记录器通常不记录请求或响应的实际内容。如果需要这些内容进行调试，应该使用前面讲过的 **HTTP 日志记录中间件**。
 
 ### 健康检查
 
+#### 健康状态等级
 
+| 类型          | 说明                   | 典型应用                     |
+| ------------- | ---------------------- | ---------------------------- |
+| ✅ `Healthy`   | 一切正常               | 默认健康检查返回             |
+| ⚠️ `Degraded`  | 可用但性能或稳定性下降 | 比如响应慢、空间快满         |
+| ❌ `Unhealthy` | 无法使用或严重问题     | 连接失败、崩溃、依赖项不可用 |
 
-### 指标概述
+**状态码映射**
 
+- `HealthStatus.Healthy` -> HTTP 200 OK
+- `HealthStatus.Degraded` -> HTTP 200 OK (但通常监控系统会将其视为警告)
+- `HealthStatus.Unhealthy` -> HTTP 503 Service Unavailable
 
+#### 健康检查类型
 
-### 内置指标
+| 类型                                  | 说明                                                 |
+| ------------------------------------- | ---------------------------------------------------- |
+| 一般健康检查（General health checks） | 检查应用基本运行状态，例如 Redis、数据库等           |
+| 活跃性检查（Liveness probe）          | 检查应用是否存活，通常用于判断是否重启容器           |
+| 就绪性检查（Readiness probe）         | 检查应用是否准备好接收流量，常用于服务注册或负载均衡 |
+
+#### 使用方法
+
+1. 安装NuGet包
+
+对于基本的健康检查，您不需要额外的 NuGet 包，因为核心功能已包含在 `Microsoft.AspNetCore.App` 元包中。 如果您需要检查 SQL Server、Redis 等特定依赖项，则可能需要安装相应的扩展包，例如：
+
+- `Microsoft.Extensions.Diagnostics.HealthChecks.SqlServer`
+- `Microsoft.Extensions.Diagnostics.HealthChecks.Redis`
+- `AspNetCore.HealthChecks.UI` (用于健康检查仪表板)
+- `AspNetCore.HealthChecks.Publisher.Prometheus` (用于 Prometheus 集成)
+
+2. 在 `Program.cs` 中注册健康检查服务
+
+使用 `AddHealthChecks()` 扩展方法注册健康检查服务，并定义要执行的检查项。
+
+```c#
+// Program.cs
+using Microsoft.Extensions.Diagnostics.HealthChecks; // 确保引入此命名空间
+
+var builder = WebApplication.CreateBuilder(args);
+
+// **关键步骤：注册健康检查服务**
+builder.Services.AddHealthChecks()
+    // 1. 添加一个简单的存活检查 (Liveness Check)
+    // 这是一个最基本的检查，只返回 HealthStatus.Healthy
+    .AddCheck("liveness", () => HealthCheckResult.Healthy("A simple liveness check."), new[] { "live" })
+
+    // 2. 添加一个依赖项检查 - 数据库连接
+    // 需要安装 Microsoft.Extensions.Diagnostics.HealthChecks.SqlServer NuGet 包
+    .AddSqlServer(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+        healthQuery: "SELECT 1;", // 用于检查连接的SQL查询
+        name: "SQL Server DB",    // 检查项的名称
+        failureStatus: HealthStatus.Degraded, // 失败时返回 Degraded 而不是 Unhealthy
+        tags: new[] { "db", "ready" }) // 标签，用于分组和过滤检查
+
+    // 3. 添加一个自定义的健康检查,自定义逻辑请看下一个小节
+    // 实现 IHealthCheck 接口或使用 lambda 表达式
+    .AddCheck<MyCustomHealthCheck>("My Custom Service", tags: new[] { "custom", "ready" })
+
+    // 4. 添加一个外部 API 检查 (例如，检查某个外部服务的可达性)
+    // 可以使用 AddUrlGroup 或 AddCheck 来实现
+    .AddUrlGroup(
+        uri: new Uri("https://api.example.com/health"), // 外部API的健康检查端点
+        name: "External API",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "external" });
+
+// 注册自定义健康检查类 (如果使用 AddCheck<T> 方式)
+builder.Services.AddSingleton<MyCustomHealthCheck>();
+
+// ... 其他服务注册 ...
+
+var app = builder.Build();
+```
+
+3.  在 `Program.cs` 中映射健康检查终结点
+
+注册服务后，您需要通过 `MapHealthChecks()` 扩展方法将健康检查暴露为 HTTP 终结点。
+
+```c#
+// Program.cs
+// ...
+var app = builder.Build();
+
+// ... 中间件管道配置 ...
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+// **关键步骤：映射健康检查终结点**
+
+// 1. 映射一个基本的健康检查终结点
+// 默认返回所有注册的健康检查的状态
+app.MapHealthChecks("/healthz");
+
+// 2. 映射一个更详细的健康检查终结点，包含具体组件的状态
+// 可以使用 Predicate 过滤要显示的检查项 (基于标签)
+app.MapHealthChecks("/healthz/ready", new HealthCheckOptions
+{
+    Predicate = healthCheck => healthCheck.Tags.Contains("ready"), // 只显示带有 "ready" 标签的检查
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse // 使用 HealthChecks.UI 的响应写入器
+});
+
+// 3. 映射一个只显示 Liveness 检查的终结点
+app.MapHealthChecks("/healthz/live", new HealthCheckOptions
+{
+    Predicate = healthCheck => healthCheck.Tags.Contains("live")
+});
+
+app.Run();
+```
+
+#### 自定义健康检查逻辑
+
+可以创建一个类，实现 `IHealthCheck` 接口，编写自己的健康检查逻辑。
+
+```c#
+// MyCustomHealthCheck.cs
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+public class MyCustomHealthCheck : IHealthCheck
+{
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        // 模拟一个随机的健康检查结果
+        var isHealthy = Random.Shared.Next(0, 2) == 0; // 50% 概率健康
+
+        if (isHealthy)
+        {
+            return Task.FromResult(HealthCheckResult.Healthy("My custom service is healthy."));
+        }
+
+        // 可以返回 Unhealthy 或 Degraded
+        // Unhealthy: 服务无法正常工作，需要立即关注或重启
+        // Degraded: 服务功能受限，但仍可部分工作
+        return Task.FromResult(
+            HealthCheckResult.Unhealthy("My custom service is unhealthy. Simulated failure."));
+    }
+}
+```
+
+#### 响应格式
+
+当您访问健康检查终结点时，默认会返回一个简单的 JSON 响应，指示应用程序的总体健康状态。
+
+- 简单响应示例 (`/healthz`):
+
+```json
+{
+  "status": "Healthy" // 或 "Unhealthy", "Degraded"
+}
+```
+
+- 详细响应示例（`/healthz/ready` 使用 `UIResponseWriter`）
+
+```json
+{
+  "status": "Degraded", // 总体状态
+  "totalDuration": "00:00:00.0150000",
+  "entries": {
+    "liveness": {
+      "status": "Healthy",
+      "description": "A simple liveness check.",
+      "duration": "00:00:00.0001000"
+    },
+    "SQL Server DB": {
+      "status": "Healthy",
+      "description": "SQL Server DB is healthy.",
+      "duration": "00:00:00.0050000"
+    },
+    "My Custom Service": {
+      "status": "Unhealthy", // 模拟失败
+      "description": "My custom service is unhealthy. Simulated failure.",
+      "duration": "00:00:00.0005000"
+    },
+    "External API": {
+      "status": "Healthy",
+      "description": "External API is healthy.",
+      "duration": "00:00:00.0020000"
+    }
+  }
+}
+```
+
+#### 注意事项&最佳实践
+
+1. **轻量级和快速**：健康检查应该尽可能地轻量级和快速。避免在健康检查中执行耗时的操作，如复杂的数据库查询或长时间的外部 API 调用。如果检查项很慢，可能会导致监控系统误判服务不健康。
+
+2. **区分 Liveness 和 Readiness**：
+
+   - **Liveness Probe** 应该只检查应用程序本身是否活着（例如，Web 服务器是否响应）。不要在 Liveness Probe 中检查外部依赖项，因为如果依赖项暂时不可用，您不希望应用程序被无谓地重启。
+
+   - **Readiness Probe** 应该检查应用程序是否已准备好接收流量，包括其依赖项的可达性。
+
+3. **标签 (Tags)**：充分利用 `tags` 来对健康检查进行分类。这允许您创建多个健康检查终结点，每个终结点只报告特定类型的检查（例如，`/healthz/live` 用于 Liveness，`/healthz/ready` 用于 Readiness）。
+
+4. **响应写入器**：默认的健康检查响应非常简洁。对于人工查看或更高级的监控系统，考虑使用 `UIResponseWriter` 或自定义响应写入器来提供更详细的信息。
+
+5. **安全性**：健康检查终结点通常是公开的。确保它们不暴露任何敏感信息。如果需要，可以通过网络策略、API 网关或认证来保护它们。
+
+6. **外部依赖项**：当检查外部依赖项时，考虑其瞬时故障的可能性。如果一个依赖项只是暂时不可用，您可能希望返回 `Degraded` 而不是 `Unhealthy`，以避免不必要的服务重启。
+
+7. **与监控系统集成**：将健康检查终结点配置到您的容器编排平台（Kubernetes 的 `livenessProbe` 和 `readinessProbe`）、负载均衡器或云监控服务中。
+
+### 指标
 
 
 
