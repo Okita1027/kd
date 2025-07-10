@@ -3,7 +3,7 @@ title: 实战篇
 shortTitle: 实战篇
 description: 实战篇
 date: 2024-05-29 17:26:07
-categories: [数据库]
+categories: [数据库, Redis]
 tags: [Redis]
 order: 2
 ---

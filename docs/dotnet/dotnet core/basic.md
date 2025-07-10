@@ -1357,33 +1357,1959 @@ app.MapGet("/myservice", (IMyService myService) =>
 
 #### 使用方式
 
-##### 服务注册
+##### 服务注册(`Program.cs` 的 `builder.Services` 部分)
 
+将响应缓存服务添加到 ASP.NET Core 的依赖注入 (DI) 容器中。
 
+```C#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
 
-##### 中间件配置
+// 添加响应缓存服务
+builder.Services.AddResponseCaching();
 
+// ... 其他服务注册 ...
 
+var app = builder.Build();
+// ...
+```
+
+`AddResponseCaching()` 默认使用内存缓存来存储响应。你也可以通过重载来配置缓存选项，例如设置默认的缓存大小限制等。
+
+##### 中间件配置(`Program.cs` 的 `app` 部分)
+
+在管道中启用响应缓存中间件。它应该放在 **`UseStaticFiles()` 之后**（静态文件通常由自己的中间件处理），并且在 **`UseRouting()` 之前**（因为缓存逻辑需要在路由匹配之前介入）。
+
+```C#
+// Program.cs
+// ...
+var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+// 启用响应缓存中间件
+app.UseResponseCaching();
+
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// ... 你的终结点定义 ...
+
+app.Run();
+```
 
 ##### 配置缓存指令（在何处应用缓存） 
 
+光有中间件还不够，还需要告诉 ASP.NET Core **哪些响应可以被缓存，以及如何缓存**。这通常通过以下方式实现：
+
+###### 使用 `[ResponseCache]` 属性 (针对 MVC/Razor Pages/API 控制器):
+
+```c#
+using Microsoft.AspNetCore.Mvc;
+using System;
+
+[ApiController]
+[Route("[controller]")]
+public class ProductsController : ControllerBase
+{
+    [HttpGet]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, NoStore = false)]
+    public IActionResult GetAllProducts()
+    {
+        // 模拟从数据库获取数据
+        Console.WriteLine($"Getting all products from DB at {DateTime.Now}");
+        return Ok(new { Timestamp = DateTime.Now, Products = new[] { "Product A", "Product B" } });
+    }
+
+    [HttpGet("{id}")]
+    [ResponseCache(Duration = 30, Location = ResponseCacheLocation.Client)]
+    public IActionResult GetProductById(int id)
+    {
+        // 这个响应只在客户端缓存30秒
+        Console.WriteLine($"Getting product {id} from DB at {DateTime.Now}");
+        return Ok(new { Timestamp = DateTime.Now, ProductId = id, Name = $"Product {id}" });
+    }
+
+    [HttpGet("volatile")]
+    [ResponseCache(NoStore = true, Duration = 0)] // 不缓存此响应
+    public IActionResult GetVolatileData()
+    {
+        return Ok(new { Timestamp = DateTime.Now, Data = "This data changes frequently." });
+    }
+}
+```
+
+- **`Duration`**: 缓存的秒数。
+
+- **`Location`**: 响应可以在哪里缓存。
+
+  - `Any` (默认): 可以在客户端和任何共享缓存（如代理服务器）中缓存。
+
+  - `Client`: 只能在客户端（浏览器）中缓存。
+  - `None`: 不缓存。
+
+- **`NoStore`**: 设置 `Cache-Control: no-store` 头，表示不应缓存响应的任何部分。
+
+- **`VaryByHeader`**: 如果响应因某个请求头而异（例如 `Accept-Encoding`），则可以在这里指定。
+
+- **`VaryByQueryKeys`**: 如果响应因某个查询字符串参数而异，则可以在这里指定。例如，`VaryByQueryKeys = new string[] { "category" }` 意味着 `/products?category=food` 和 `/products?category=drinks` 会被单独缓存。
+
+###### 使用 `.CacheOutput()` 扩展方法 (针对 Minimal API):
+
+对于 Minimal API，你可以在终结点定义时使用 `CacheOutput()` 扩展方法。
+
+```c#
+// Program.cs
+// ...
+app.UseResponseCaching();
+app.UseRouting();
+// ...
+
+app.MapGet("/cached-minimal-api", () =>
+{
+    Console.WriteLine($"Executing minimal API at {DateTime.Now}");
+    return Results.Ok(new { Timestamp = DateTime.Now, Message = "This is cached." });
+})
+.CacheOutput(policy => policy.Expire(TimeSpan.FromSeconds(60))); // 缓存60秒
+
+app.MapGet("/cached-by-query", (string? category) =>
+{
+    Console.WriteLine($"Executing minimal API with category: {category} at {DateTime.Now}");
+    return Results.Ok(new { Timestamp = DateTime.Now, Category = category, Message = "Varies by category." });
+})
+.CacheOutput(policy => policy.Expire(TimeSpan.FromSeconds(30)).VaryByQuery("category")); // 缓存30秒，并根据 "category" 查询参数变化
+
+app.MapGet("/no-cache", () =>
+{
+    Console.WriteLine($"Executing no-cache API at {DateTime.Now}");
+    return Results.Ok(new { Timestamp = DateTime.Now, Message = "This is never cached." });
+})
+.CacheOutput(policy => policy.NoCache()); // 不缓存
+```
+
+#### 注意点
+
+- **不是所有响应都适合缓存：** 包含敏感用户数据、频繁变化或高度个性化的响应不应被缓存。
+- **缓存过期和失效：** 确保你理解缓存的过期机制 (`Duration`)，并有策略来**使缓存失效**（例如，当数据更新时）。直接改变 URL 或在 `ResponseCache` 属性中配置 `VaryByQueryKeys` 是常见的失效策略。
+- **认证与授权：** 缓存的响应是针对**所有**客户端的。如果你的响应根据用户身份或权限而不同，那么缓存可能会导致安全问题或不一致的数据。在这种情况下，你需要确保缓存的键包含了所有影响响应的因素（例如，通过 `Vary` 头），或者避免缓存这些响应。
+- **动态内容：** 除非你精心管理 `Vary` 头或分区，否则通常不建议缓存依赖于请求头、Cookie 或查询字符串的动态内容。
+- **缓存位置：** `ResponseCacheLocation` 决定了响应可以在哪里被缓存。`Any` 最激进，可能被共享代理缓存。`Client` 只在用户浏览器缓存。
+
+### 请求与响应操作
+
+这俩东西框架已经封装好了，一般不需要手动写相关代码。
+
+#### 流
+
+
+
+#### 管道
+
+
+
+### 请求解压缩
+
+#### 定义
+
+**请求解压缩中间件**是 ASP.NET Core 管道中的一个组件，它负责检测传入 HTTP 请求中是否包含已压缩的请求体。如果请求体被压缩了，中间件会根据 `Content-Encoding` 头部指示的压缩算法（例如 Gzip 或 Brotli）自动对其进行解压缩，然后将解压后的数据流传递给应用程序的后续部分（例如，Minimal API、MVC 控制器）。
+
+这样，应用程序代码就可以直接处理解压后的原始数据，而无需手动编写解压缩逻辑。
+
+#### 使用方法
+
+##### 服务注册 (`Program.cs` 的 `builder.Services` 部分)
+
+将请求解压缩服务添加到 ASP.NET Core 的依赖注入 (DI) 容器中
+
+```c#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// 添加请求解压缩服务
+builder.Services.AddRequestDecompression();
+
+// ... 其他服务注册，例如 AddControllers(), AddEndpointsApiExplorer() ...
+
+var app = builder.Build();
+// ...
+```
+
+`AddRequestDecompression()` 方法默认支持 **Gzip** 和 **Brotli** 压缩算法。你也可以通过重载来配置支持的压缩算法或添加自定义算法。
+
+DEMO:配置请求解压缩选项
+
+```c#
+builder.Services.AddRequestDecompression(options =>
+{
+    // 默认已启用 Gzip 和 Brotli
+    options.Providers.Add<BrotliRequestDecompressionProvider>();
+    options.Providers.Add<GzipRequestDecompressionProvider>();
+
+    // 如果你不希望它在压缩失败时抛出异常，可以设置为 false
+    options.EnableRequestBodyCompression = true; // 默认为 true
+    // options.SkipDecompressionWhenBodyLengthIsZero = true; // 默认为 true
+});
+```
+
+##### 中间件配置 (`Program.cs` 的 `app` 部分)
+
+在管道中启用请求解压缩中间件。它应该放置在管道中较早的位置，通常在需要读取请求体的中间件之前。
+
+```c#
+// Program.cs
+// ...
+var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+// 启用请求解压缩中间件
+// 应该在任何尝试读取或解析请求体的中间件之前
+app.UseRequestDecompression();
+
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// ... 你的终结点定义 ...
+
+// 示例：一个接受 POST 请求的 Minimal API 终结点
+app.MapPost("/data", async (HttpRequest request) =>
+{
+    // 这里的 request.Body 会自动是解压后的流
+    using var reader = new StreamReader(request.Body);
+    var content = await reader.ReadToEndAsync();
+    Console.WriteLine($"Received decompressed content: {content.Length} chars.");
+    return Results.Ok($"Received decompressed content: {content}");
+});
+
+app.Run();
+```
+
+#### 客户端如何发送压缩请求
+
+客户端需要设置 `Content-Encoding` 请求头，并实际对请求体进行压缩。
+
+DEMO: (使用 C# `HttpClient` 发送 Gzip 压缩请求)：
+
+```c#
+using System.IO.Compression;
+using System.Net.Http.Headers;
+using System.Text;
+
+public class MyApiClient
+{
+    private readonly HttpClient _httpClient;
+
+    public MyApiClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task SendCompressedData(string url, string data)
+    {
+        using var memoryStream = new MemoryStream();
+        // 使用 GZipStream 压缩数据
+        using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+        using (var writer = new StreamWriter(gzipStream, Encoding.UTF8))
+        {
+            await writer.WriteAsync(data);
+        }
+
+        memoryStream.Position = 0; // 重置流位置到开始
+
+        // 创建 HttpContent
+        var content = new StreamContent(memoryStream);
+        // 设置 Content-Type
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        // 设置 Content-Encoding 头，告知服务器数据已压缩
+        content.Headers.ContentEncoding.Add("gzip");
+
+        // 发送 POST 请求
+        var response = await _httpClient.PostAsync(url, content);
+
+        response.EnsureSuccessStatusCode();
+        Console.WriteLine($"Compressed request sent. Response: {await response.Content.ReadAsStringAsync()}");
+    }
+}
+
+// 在 Program.cs 或其他地方调用
+// var client = new MyApiClient(new HttpClient());
+// await client.SendCompressedData("https://localhost:7199/data", "This is some large data that will be compressed.");
+```
+
+### 基于工厂的中间件
+
+中间件通常有两种实现方式：一种是直接在 `InvokeAsync` 方法中注入依赖（称为**约定式中间件**或**请求管道中间件**），另一种就是我们现在要讨论的基于工厂的方式。
+
+基于工厂的中间件允许你通过**依赖注入 (DI)** 来更灵活地管理中间件自身的生命周期和其内部依赖的生命周期。
+
+#### 问题引入
+
+自定义中间件是这样写的：
+
+```c#
+public class MyMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly IMyService _myService; // 假设 IMyService 是单例或瞬态服务
+
+    // 构造函数注入依赖
+    public MyMiddleware(RequestDelegate next, IMyService myService)
+    {
+        _next = next;
+        _myService = myService; // 这个 MyService 实例的生命周期由 DI 容器决定
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        // 使用 _myService
+        _myService.DoSomething();
+        await _next(context);
+    }
+}
+```
+
+这种标准方式非常方便。但它有一个潜在的“陷阱”：**如果 `IMyService` 是一个作用域 (Scoped) 服务，那么每次 HTTP 请求，`MyMiddleware` 都会被实例化一次。** 这通常不是问题，因为中间件本身就是按请求生命周期处理的。
+
+然而，如果你的中间件**自己有一些很重的初始化操作**，或者它需要依赖于**另一个生命周期更长的服务**，比如一个单例服务，你可能不希望每次请求都重新创建中间件实例。
+
+基于工厂的中间件就是为了解决这种场景：它允许你**控制中间件的实例化方式**，并且可以在中间件自身的构造函数中注入**单例服务**，而在 `InvokeAsync` 方法中通过 `HttpContext` 获取**作用域服务**。
+
+#### 实现方法
+
+基于工厂的中间件需要实现 `IMiddleware` 接口。
+
+1. 定义基于工厂的中间类
+
+```c#
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging; // 假设你需要日志
+
+// 1. 定义中间件接口和实现
+public interface IMyService
+{
+    void LogOperation(string message);
+}
+
+public class MyScopedService : IMyService
+{
+    private readonly ILogger<MyScopedService> _logger;
+    private readonly Guid _instanceId;
+
+    public MyScopedService(ILogger<MyScopedService> logger)
+    {
+        _logger = logger;
+        _instanceId = Guid.NewGuid();
+        _logger.LogInformation($"MyScopedService instance {_instanceId} created.");
+    }
+
+    public void LogOperation(string message)
+    {
+        _logger.LogInformation($"Scoped service {_instanceId}: {message}");
+    }
+}
+
+
+// 这是基于工厂的中间件类，实现了 IMiddleware 接口
+public class FactoryBasedLoggingMiddleware : IMiddleware
+{
+    private readonly ILogger<FactoryBasedLoggingMiddleware> _logger;
+    private readonly Guid _instanceId;
+
+    // 构造函数：这里只能注入单例服务或自行创建的对象
+    // RequestDelegate _next 参数不再在构造函数中，因为它是在 InvokeAsync 中提供的
+    public FactoryBasedLoggingMiddleware(ILogger<FactoryBasedLoggingMiddleware> logger)
+    {
+        _logger = logger;
+        _instanceId = Guid.NewGuid(); // 用于观察中间件实例的生命周期
+        _logger.LogInformation($"FactoryBasedLoggingMiddleware instance {_instanceId} created (probably once).");
+    }
+
+    // InvokeAsync 方法：通过 HttpContext.RequestServices 获取作用域服务
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        // 可以在这里通过 HttpContext 获取作用域（或瞬态）服务
+        // 这个 IMyService 是针对当前请求作用域的实例
+        var myScopedService = context.RequestServices.GetRequiredService<IMyService>();
+
+        _logger.LogInformation($"Middleware {_instanceId} handling request for {context.Request.Path}.");
+        myScopedService.LogOperation("Request started in FactoryBasedLoggingMiddleware.");
+
+        await next(context); // 调用管道中的下一个中间件
+
+        myScopedService.LogOperation("Request finished in FactoryBasedLoggingMiddleware.");
+        _logger.LogInformation($"Middleware {_instanceId} finished request for {context.Request.Path}. Status: {context.Response.StatusCode}");
+    }
+}
+```
+
+2. 注册服务和中间件到DI容器
+
+```c#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// 注册你的 Scoped 服务
+builder.Services.AddScoped<IMyService, MyScopedService>();
+
+// 注册基于工厂的中间件本身
+// 由于它实现了 IMiddleware，你需要像注册其他服务一样注册它
+// 这里我们注册为 Transient，这意味着每次通过 UseMiddleware<T>() 引用它时，都会尝试创建一个新实例。
+// 但因为 UseMiddleware<T>() 在内部会缓存 IMiddlewareFactory，
+// 实际上这个 IMiddleware 实例的生命周期取决于你是如何添加它的。
+builder.Services.AddTransient<FactoryBasedLoggingMiddleware>();
+
+// ... 其他服务注册 ...
+
+var app = builder.Build();
+
+// --- 中间件管道配置 ---
+
+// 使用 UseMiddleware<T>() 添加基于工厂的中间件
+// ASP.NET Core 内部会使用 IServiceProvider 来解析 FactoryBasedLoggingMiddleware 实例。
+app.UseMiddleware<FactoryBasedLoggingMiddleware>();
+
+app.MapGet("/", () => "Hello World!");
+
+// ... 其他终结点 ...
+
+app.Run();
+```
+
+---
+
+#### 基于工厂中间件的生命周期和依赖注入
+
+- **中间件自身的生命周期：** 当你使用 `app.UseMiddleware<T>()` 时，ASP.NET Core 内部会使用 `IMiddlewareFactory`（默认实现是 `MiddlewareFactory`）来创建中间件实例。默认情况下，`IMiddlewareFactory` 会从根服务提供者 (Root Service Provider) 请求中间件的实例。
+  - 如果你将 `FactoryBasedLoggingMiddleware` 注册为 `AddSingleton`：那么中间件实例只会被创建一次，并在整个应用程序生命周期中重用。它的构造函数依赖（如 `ILogger`）也会是单例的。
+  - 如果你将 `FactoryBasedLoggingMiddleware` 注册为 `AddTransient` 或 `AddScoped`：虽然注册的是 `Transient` 或 `Scoped`，但 `app.UseMiddleware<T>()` 默认情况下会**缓存第一个解析到的实例**并在所有请求中重用这个实例。这意味着即使你注册为 `Transient` 或 `Scoped`，它实际上也可能表现得像一个单例。
+    - **例外：** 如果你是在一个分支管道 (`app.Map()`, `app.MapWhen()`, `app.UseWhen()`) 中使用 `app.UseMiddleware<T>()`，并且该分支通过 `app.ApplicationServices.CreateScope()` 创建了新的作用域，那么中间件的生命周期可能更符合你注册的服务生命周期。但通常情况下，它的生命周期是单例的。
+- **中间件内部依赖的生命周期：**
+  - 通过构造函数注入的依赖 (`ILogger`): 这些依赖的生命周期与中间件实例的生命周期一致。如果中间件是单例的，那么构造函数注入的依赖也必须是单例的，或者能够被单例依赖（即不能注入作用域或瞬态服务）。
+  - 通过 `InvokeAsync` 方法注入（通过 `HttpContext.RequestServices.GetRequiredService<T>()` 或作为 `InvokeAsync` 参数）的依赖 (`IMyService`): 这些依赖的生命周期**与当前请求的作用域一致**。这意味着你可以安全地在 `InvokeAsync` 中获取作用域服务（如 `DbContext`），而不用担心生命周期冲突。
+
+---
+
+#### 总结
+
+基于工厂的中间件（实现 `IMiddleware` 接口）提供了一种更灵活的方式来管理中间件本身的依赖注入。
+
+- **优点：**
+  - 允许在中间件的**构造函数中注入单例服务**，避免每次请求都创建中间件实例，从而优化性能。
+  - 允许在 `InvokeAsync` 方法中**按请求作用域获取服务**（如数据库上下文），而不会引起生命周期冲突。
+  - 更清晰地分离了中间件的生命周期管理和其内部依赖的生命周期管理。
+- **缺点：**
+  - 比传统的约定式中间件稍微复杂一点。
+
+在大多数情况下，传统的约定式中间件（构造函数直接注入 `RequestDelegate next` 和所有依赖）已经足够，因为它更简洁。但当你的中间件有复杂的初始化逻辑，或其依赖的生命周期需要更精细的控制时，基于工厂的中间件就显得非常有用。
+
+### 使用第三方容器的基于工厂的中间件
+
+
+
 ## 主机
 
+在**最小 API (Minimal API)** 架构中，`WebApplication` 和 `WebApplicationBuilder` 是构建和运行 ASP.NET Core 应用程序的**首选和最简洁**的方式。它们是 ASP.NET Core 团队对泛型主机进行简化和优化的结果，专为 Web 应用设计。
 
+### WebApplicationBuilder
+
+**角色：** 负责**构建** `WebApplication` 实例。它是配置和注册应用程序所有服务和中间件的起点。
+
+**创建方式：** 通过静态方法 `WebApplication.CreateBuilder(args)` 创建。
+
+**功能：**
+
+- **自动配置：** `CreateBuilder` 方法会自动进行大量默认配置，包括：
+  - 使用 **Kestrel** 作为默认 Web 服务器。
+  - 从 `appsettings.json`、`appsettings.{EnvironmentName}.json`、环境变量和命令行参数加载配置。
+  - 配置默认的日志提供程序（如控制台、调试输出、EventSource）。
+  - 启用依赖注入 (DI)。
+- **`builder.Services`：** 提供一个 `IServiceCollection` 实例，用于向 DI 容器注册应用程序的服务。
+- **`builder.Configuration`：** 提供对应用程序配置的访问。
+- **`builder.Environment`：** 提供对当前运行环境（如 `Development`、`Production`）的访问。
+- **`builder.Logging`：** 配置日志。
+- **`builder.WebHost`：** 允许对底层的 Web 主机进行更底层的配置（例如更改 Kestrel 选项、绑定 URL 等），虽然在 `WebApplicationBuilder` 中大部分常用配置已被简化。
+
+### WebApplication
+
+**角色：** 代表了**已构建完成且可运行**的 ASP.NET Core 应用程序实例（也就是**主机**本身）。它包含了配置好的服务容器和请求处理管道。
+
+**创建方式：** 通过 `builder.Build()` 方法从 `WebApplicationBuilder` 创建。
+
+**功能：**
+
+- **中间件管道配置：** 通过一系列 `app.Use...()` 方法来定义 HTTP 请求的管道。
+- **终结点路由：** 通过 `app.MapGet()`、`app.MapPost()` 等方法定义 Minimal API 终结点，或通过 `app.MapControllers()`、`app.MapRazorPages()` 映射 MVC/Razor Pages。
+- **运行应用程序：** 调用 `app.Run()` 来启动 Web 服务器并开始监听 HTTP 请求。
+- **`app.Services`：** 运行时服务提供者（`IServiceProvider`）。
+- **`app.Configuration`：** 运行时配置。
+- **`app.Lifetime`：** 应用程序生命周期事件。
+
+---
+
+`WebApplication` 和 `WebApplicationBuilder` 是 .NET 6+ 时代 ASP.NET Core Web 应用最推荐的启动方式，它们在简洁性、自动化配置和开发体验上达到了最佳平衡。它在内部封装了泛型主机和 Web 主机的大部分复杂性。
+
+### 泛型主机
+
+**泛型主机 (Generic Host)** 是 .NET Core 2.1 引入的，它是一个**通用且不限于 Web 应用**的宿主模型。它设计的目标是为所有类型的 .NET 应用程序（包括控制台应用、后台服务、ASP.NET Core Web 应用等）提供一个统一的生命周期、配置、DI 和日志管理框架。
+
+**核心概念**
+
+- **`IHost` 接口：** 代表了泛型主机实例。
+- **`IHostBuilder` 接口：** 用于构建 `IHost` 实例。
+
+**创建和配置方式**
+
+```c#
+// Program.cs (泛型主机，不一定用于Web，但Web应用底层也用它)
+using Microsoft.Extensions.Hosting; // 核心命名空间
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        CreateHostBuilder(args).Build().Run();
+    }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args) // 默认配置，包括配置、日志、DI
+            .ConfigureServices((hostContext, services) => // 配置应用程序的服务
+            {
+                // 注册后台服务
+                services.AddHostedService<MyBackgroundService>();
+                // 注册其他服务...
+            })
+            .ConfigureAppConfiguration((hostContext, config) => // 配置应用程序配置
+            {
+                // config.AddJsonFile(...)
+            })
+            .ConfigureLogging((hostContext, logging) => // 配置日志
+            {
+                // logging.AddConsole()
+            })
+            .ConfigureWebHostDefaults(webBuilder => // 如果要添加Web功能，需要这个扩展
+            {
+                webBuilder.UseStartup<Startup>(); // 旧版或更复杂的Web配置
+                // 或者直接 webBuilder.UseKestrel().UseUrls(...)
+            });
+}
+
+// Startup.cs (如果使用 UseStartup)
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        // Add Web-specific services
+    }
+
+    public void Configure(IApplicationBuilder app)
+    {
+        // Configure Web-specific middleware pipeline
+    }
+}
+```
+
+**关键特性**
+
+- **通用性：** 可以运行任何基于 .NET Core 的应用，不局限于 Web。
+- **统一抽象：** 为配置、日志、DI、生命周期管理等提供了一致的接口。
+- **`IHostedService`：** 这是泛型主机的一大亮点，用于运行后台任务和长时间运行的服务，与 Web 请求生命周期解耦。
+- **可扩展性：** 通过 `ConfigureServices`, `ConfigureAppConfiguration`, `ConfigureLogging`, `ConfigureWebHostDefaults` 等方法链式配置。
+
+**小结**
+
+泛型主机是 ASP.NET Core 应用程序更底层、更通用的宿主框架。虽然 `WebApplication.CreateBuilder` 在 Web 应用中简化了它的用法，但理解泛型主机有助于深入理解 ASP.NET Core 的架构，尤其是在构建后台服务或非 Web 应用时非常有用。它提供了一个更模块化、可测试的应用程序结构。
+
+### Web主机
+
+**Web 主机 (Web Host)** 是 ASP.NET Core 1.x 和 2.0 时代的**旧版 Web 专用主机模型**。它由 `Microsoft.AspNetCore.WebHost` 类和 `IWebHost` 接口组成。
+
+**创建和配置方式**
+
+```c#
+// Program.cs (Web主机 - 旧版)
+using Microsoft.AspNetCore.Hosting; // 核心命名空间
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        CreateWebHostBuilder(args).Build().Run();
+    }
+
+    public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+        WebHost.CreateDefaultBuilder(args) // 默认配置Web相关服务
+            .UseStartup<Startup>(); // 指定Startup类来配置服务和请求管道
+}
+
+// Startup.cs (与泛型主机中的Startup类似，但更紧密耦合于Web)
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        // Add Web-specific services
+    }
+
+    public void Configure(IApplicationBuilder app)
+    {
+        // Configure Web-specific middleware pipeline
+    }
+}
+```
+
+**关键特性**
+
+- **Web 专用：** 只能用于托管 Web 应用程序。
+- **`Startup` 类：** 这是 Web 主机（以及早期泛型主机中）配置服务和中间件的核心。`Startup` 类包含 `ConfigureServices` 和 `Configure` 方法。
+- **已弃用：** 在 .NET Core 2.1 引入泛型主机后，Web 主机已被标记为**过时 (deprecated)**。尽管它仍然可以工作，但官方推荐使用泛型主机（或其简化形式 `WebApplication`）。
+
+**小结**
+
+Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。它已被更通用、更强大的**泛型主机**及其在 .NET 6+ 中的简化版本 **`WebApplication`** 所取代。在新的项目中，你几乎不会再手动创建 Web 主机。
+
+### 三者关系
+
+这三者代表了 ASP.NET Core **主机模型** 的演进：
+
+1. **Web 主机 (ASP.NET Core 1.x - 2.0)**：最初的 Web 应用专用宿主。
+2. **泛型主机 (ASP.NET Core 2.1+)**：为了提供一个通用的宿主模型，将 Web 主机的功能提取并通用化，使其可以托管任何类型的 .NET 应用，并通过 `ConfigureWebHostDefaults` 扩展来支持 Web 功能。
+3. **WebApplication 和 WebApplicationBuilder (ASP.NET Core 6.0+)**：在泛型主机之上，进一步为 Web 应用提供了一个**高度优化和简化的抽象**。它隐藏了 `IHostBuilder` 和 `IHost` 的大部分底层细节，直接在 `Program.cs` 中提供了简洁的配置和启动体验，尤其适合最小 API 和更简单的 Web 应用，但其底层仍然是基于泛型主机构建的。
 
 ## 配置
 
+### 配置提供程序
 
+**文件提供程序**：
+
+- `appsettings.json`：默认的主配置文件。
+- `appsettings.{EnvironmentName}.json`：环境特定文件（例如 `appsettings.Development.json` 用于开发环境，`appsettings.Production.json` 用于生产环境）。
+- 可以通过 `AddXmlFile()` 或 `AddIniFile()` 添加其他格式的文件。
+
+**环境变量提供程序**：
+
+- 从操作系统环境变量中读取配置。这是在生产环境管理敏感信息（如连接字符串、API 密钥）的**推荐方式**，因为环境变量不会被提交到版本控制。键名通常遵循约定，例如 `MySettings__Setting1`。
+
+**命令行参数提供程序**：
+
+- 从应用启动时的命令行参数中读取配置，例如 `dotnet run --Logging:LogLevel:Default Debug`。
+  - `dotnet run MyKey="Using =" Position:Title=Cmd Position:Name=Cmd_Rick`
+  - `dotnet run /MyKey "Using /" /Position:Title=Cmd /Position:Name=Cmd_Rick`
+  - `dotnet run --MyKey "Using --" --Position:Title=Cmd --Position:Name=Cmd_Rick`
+
+**内存中提供程序**：
+
+- 允许您以编程方式在内存中添加键值对。
+
+**用户秘密提供程序 (User Secrets)**：
+
+- **仅在开发环境**下使用，用于存储敏感信息。这些秘密存储在本地用户配置文件的一个 JSON 文件中，不会被提交到源代码管理。
+
+**Azure Key Vault 提供程序**：
+
+- 在云环境中，用于安全地存储和管理敏感信息。
+
+### 配置加载顺序与覆盖规则
+
+配置提供程序是有优先级的，**后添加或加载的提供程序会覆盖前面提供程序中的相同键的值**。
+
+**`WebApplication.CreateBuilder`（或 `Host.CreateDefaultBuilder`）的默认加载顺序：**
+
+1. `appsettings.json`
+2. `appsettings.{EnvironmentName}.json` (例如 `appsettings.Development.json`)
+3. 用户秘密 (User Secrets) **（仅在 `Development` 环境中加载）**
+4. 环境变量
+5. 命令行参数
+
+### 在程序中读取/使用配置
+
+#### 配置对象模型`IConfiguration`
+
+配置系统将所有加载的键值对组织成一个**层次结构**。可以通过 `IConfiguration` 接口访问这些数据。
+
+- **`IConfiguration`**：表示整个配置的根对象。
+- **`IConfigurationSection`**：表示配置层次结构中的一个子部分。
+- **键名约定**：
+  - 使用**冒号 `:`** 分隔层次结构中的部分。例如：`Logging:LogLevel:Default`。
+  - 在 JSON 文件中，这对应于嵌套的对象。
+
+配置文件案例`appsettings.json`
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=MyDb;Trusted_Connection=True;"
+  },
+  "MyCustomSettings": {
+    "WelcomeMessage": "Hello from config!",
+    "FeatureToggle": true,
+    "ApiKeys": {
+      "GoogleMaps": "your-google-maps-key",
+      "OpenWeather": "your-open-weather-key"
+    }
+  }
+}
+```
+
+#### 直接通过`IConfiguration`访问
+
+这是最直接的方式，可以将 `IConfiguration` 服务注入到您的类中，然后通过键名获取值。
+
+##### configuration["key"]
+
+- Web API 写法：
+
+```C#
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration; // 确保引入此命名空间
+
+[ApiController]
+[Route("[controller]")]
+public class ConfigController : ControllerBase
+{
+    private readonly IConfiguration _configuration;
+
+    // 构造函数注入 IConfiguration
+    public ConfigController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
+    [HttpGet("direct")]
+    public IActionResult GetDirectConfigInfo()
+    {
+        // 直接通过键名访问配置
+        var defaultLogLevel = _configuration["Logging:LogLevel:Default"];
+        var connectionString = _configuration.GetConnectionString("DefaultConnection"); // 快捷方法获取连接字符串
+        var welcomeMessage = _configuration["MyCustomSettings:WelcomeMessage"];
+        var googleMapsKey = _configuration["MyCustomSettings:ApiKeys:GoogleMaps"];
+
+        return Ok(new
+        {
+            DefaultLogLevel = defaultLogLevel,
+            ConnectionString = connectionString,
+            WelcomeMessage = welcomeMessage,
+            GoogleMapsKey = googleMapsKey
+        });
+    }
+}
+```
+
+- 最小 API 写法
+
+```C#
+// Program.cs
+// ...
+var app = builder.Build();
+// ...
+
+// 直接通过 IConfiguration 访问
+app.MapGet("/config-info-direct", (IConfiguration config) =>
+{
+    var defaultLogLevel = config["Logging:LogLevel:Default"];
+    var connectionString = config.GetConnectionString("DefaultConnection");
+    var welcomeMessage = config["MyCustomSettings:WelcomeMessage"];
+    var openWeatherKey = config["MyCustomSettings:ApiKeys:OpenWeather"];
+
+    return Results.Ok(new
+    {
+        DefaultLogLevel = defaultLogLevel,
+        ConnectionString = connectionString,
+        WelcomeMessage = welcomeMessage,
+        OpenWeatherKey = openWeatherKey
+    });
+});
+
+// ...
+app.Run();
+```
+
+##### GetValue
+
+语法：GetValue<T>(string key, T defaultValue = default)
+
+作用：这是获取单个配置值的**推荐方式**，因为它提供了**类型安全**和**默认值**的功能。
+
+```c#
+// 获取字符串值，如果不存在则为 null
+string? welcomeMessage = _configuration.GetValue<string>("MyCustomSettings:WelcomeMessage");
+
+// 获取布尔值，如果不存在则为 false
+bool featureToggle = _configuration.GetValue<bool>("MyCustomSettings:FeatureToggle");
+
+// 获取整数值，如果不存在则为 8080
+int appPort = _configuration.GetValue<int>("App:Port", 8080);
+```
+
+**对比`configuration["key"]`**
+
+- `_configuration["key"]` 总是返回 `string?` 类型。如果键不存在，它返回 `null`。您需要手动进行类型转换和空值检查。
+- `GetValue<T>()` 提供了类型转换和默认值处理，让代码更简洁、更安全。
+
+##### GetSection
+
+**作用：** 获取配置层次结构中的一个**子部分（Section）**。这个子部分本身也是一个 `IConfigurationSection` 接口的实例，而 `IConfigurationSection` 又继承自 `IConfiguration`。这意味着可以像操作整个配置一样操作一个子节点。
+
+**使用方法**
+
+- 提供字节的键，如`MyCustSettings`
+- 返回一个`IConfigurationSection`对象，该对象包含指定字节下的配置
+
+**案例**
+
+```c#
+// 获取 "MyCustomSettings" 这个配置节
+IConfigurationSection mySettingsSection = _configuration.GetSection("MyCustomSettings");
+
+// 现在，您可以通过这个子节访问其内部的键，就像访问根配置一样
+string? welcomeMessageFromSection = mySettingsSection["WelcomeMessage"]; // "Hello from config!"
+bool featureToggleFromSection = mySettingsSection.GetValue<bool>("FeatureToggle"); // true
+
+// 获取更深层次的子节
+IConfigurationSection apiKeysSection = mySettingsSection.GetSection("ApiKeys");
+string? googleMapsKey = apiKeysSection["GoogleMaps"]; // "your-google-maps-key"
+```
+
+##### GetChildren
+
+**作用：** 获取当前配置节下**所有直接子节**的集合。它返回一个 `IEnumerable<IConfigurationSection>`。
+
+**如何使用：** 在 `IConfiguration` 实例（可以是根配置，也可以是某个 `IConfigurationSection`）上调用。
+
+**案例**:
+
+```json
+// appsettings.json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "...",
+    "ReportingConnection": "...",
+    "AnalyticsConnection": "..."
+  },
+  "FeatureToggles": {
+    "FeatureA": true,
+    "FeatureB": false
+  }
+}
+```
+
+```c#
+IConfigurationSection connectionStringsSection = _configuration.GetSection("ConnectionStrings");
+
+// 遍历所有连接字符串
+foreach (var connection in connectionStringsSection.GetChildren())
+{
+    Console.WriteLine($"Connection Name: {connection.Key}, Value: {connection.Value}");
+    // Output:
+    // Connection Name: DefaultConnection, Value: ...
+    // Connection Name: ReportingConnection, Value: ...
+    // Connection Name: AnalyticsConnection, Value: ...
+}
+
+// 也可以直接在根配置上获取顶级子节
+foreach (var topLevelSection in _configuration.GetChildren())
+{
+    Console.WriteLine($"Top Level Section: {topLevelSection.Key}");
+    // Output:
+    // Top Level Section: Logging
+    // Top Level Section: AllowedHosts
+    // Top Level Section: ConnectionStrings
+    // Top Level Section: MyCustomSettings
+}
+```
+
+> **注意：** `GetChildren()` 只返回**直接的子节**，不递归。如果您需要递归遍历整个配置树，需要自己编写递归逻辑。
+
+##### Exists
+
+**作用：** 检查当前的 `IConfigurationSection` 是否**存在**。
+
+**如何使用：** 在 `IConfigurationSection` 实例上调用。
+
+**案例**:
+
+```c#
+IConfigurationSection optionalFeatureSection = _configuration.GetSection("OptionalFeatures:FeatureZ");
+
+if (optionalFeatureSection.Exists())
+{
+    Console.WriteLine("FeatureZ configuration exists.");
+    bool featureZEnabled = optionalFeatureSection.GetValue<bool>("IsEnabled");
+    // ... 使用 FeatureZ 的其他配置 ...
+}
+else
+{
+    Console.WriteLine("FeatureZ configuration does not exist. Using default behavior.");
+}
+```
+
+**对比`== NULL`**
+
+- `_configuration.GetSection("SomeSection")` 即使 `SomeSection` 不存在，也会返回一个非 `null` 的 `IConfigurationSection` 实例。这个实例的 `Value` 属性会是 `null`，但它本身不是 `null`。
+- 所以，直接 `if (_configuration.GetSection("SomeSection") == null)` 是**无效的**。必须使用 `Exists()` 方法来正确检查子节是否存在。
+
+#### 使用选项模式
+
+选项模式是一种更结构化、类型安全且易于维护的配置访问方式。它将配置值绑定到普通的 C# 类上。
+
+1. 定义选项类
+
+```C#
+// Models/MyCustomSettings.cs
+public class MyCustomSettings
+{
+    // 定义常量以方便引用配置节的名称，减少硬编码字符串
+    public const string SectionName = "MyCustomSettings";
+
+    public string WelcomeMessage { get; set; } = string.Empty;
+    public bool FeatureToggle { get; set; }
+    public ApiKeys ApiKeys { get; set; } = new ApiKeys(); // 嵌套对象
+}
+
+public class ApiKeys
+{
+    public string GoogleMaps { get; set; } = string.Empty;
+    public string OpenWeather { get; set; } = string.Empty;
+}
+```
+
+2. 在`Program.cs`中绑定配置
+
+```C#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// ... 其他服务注册 ...
+
+// 绑定 MyCustomSettings 配置节到 MyCustomSettings 类
+// IConfiguration.GetSection(SectionName) 获取名为 "MyCustomSettings" 的配置子节
+builder.Services.Configure<MyCustomSettings>(builder.Configuration.GetSection(MyCustomSettings.SectionName));
+
+// ...
+var app = builder.Build();
+// ...
+```
+
+3. 在服务或控制器中注入并使用选项
+
+可以通过注入 `IOptions<T>`、`IOptionsSnapshot<T>` 或 `IOptionsMonitor<T>` 来获取配置。
+
+- **`IOptions<T>`**
+  - 最常用。它是一个单例服务，提供配置的**快照**。配置在应用启动时加载一次，之后不会改变。
+  - 使用场景：简单且不经常变化的配置
+- **`IOptionsSnapshot<T>`**
+  - 作用域服务。它在**每个请求**中都会创建一个新的 `T` 实例，并会从配置源中重新加载最新的配置值。这对于在请求生命周期内需要最新配置的场景有用（但文件内容变化通常需要重启应用才能生效）。
+  - 使用场景：**每个请求需要最新配置**，且无需订阅实时变化的场景
+- **`IOptionsMonitor<T>`**
+  - 单例服务。允许您获取**最新**的配置值，并且可以**订阅配置更改通知**（例如，如果 `appsettings.json` 文件在运行时发生变化，`IOptionsMonitor` 能够检测到并通知）。适用于需要运行时热重载配置的场景。
+  - **需要在运行时监听配置更改并作出响应**的场景
+
+---
+
+Web API 写法：
+
+```C#
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options; // 确保引入此命名空间
+
+[ApiController]
+[Route("[controller]")]
+public class OptionsConfigController : ControllerBase
+{
+    private readonly MyCustomSettings _settingsSnapshot; // 使用 IOptionsSnapshot
+    private readonly IOptionsMonitor<MyCustomSettings> _settingsMonitor; // 使用 IOptionsMonitor
+
+    // 构造函数注入 IOptionsSnapshot 和 IOptionsMonitor
+    public OptionsConfigController(
+        IOptionsSnapshot<MyCustomSettings> optionsSnapshot,
+        IOptionsMonitor<MyCustomSettings> optionsMonitor)
+    {
+        _settingsSnapshot = optionsSnapshot.Value; // 获取配置快照
+        _settingsMonitor = optionsMonitor;
+    }
+
+    [HttpGet("options-snapshot")]
+    public IActionResult GetOptionsSnapshotInfo()
+    {
+        // 每次请求都会获取最新的快照
+        var currentSettings = _settingsSnapshot;
+        return Ok(new
+        {
+            currentSettings.WelcomeMessage,
+            currentSettings.FeatureToggle,
+            GoogleMapsKey = currentSettings.ApiKeys.GoogleMaps,
+            Source = "IOptionsSnapshot"
+        });
+    }
+
+    [HttpGet("options-monitor")]
+    public IActionResult GetOptionsMonitorInfo()
+    {
+        // 可以获取最新的配置值，如果文件在运行时更改，这里会反映出来
+        var currentSettings = _settingsMonitor.CurrentValue;
+        return Ok(new
+        {
+            currentSettings.WelcomeMessage,
+            currentSettings.FeatureToggle,
+            OpenWeatherKey = currentSettings.ApiKeys.OpenWeather,
+            Source = "IOptionsMonitor"
+        });
+    }
+}
+```
+
+最小API写法：
+
+```C#
+// Program.cs
+// ...
+var app = builder.Build();
+// ...
+
+// 使用 IOptionsSnapshot
+app.MapGet("/options-info-snapshot", (IOptionsSnapshot<MyCustomSettings> optionsSnapshot) =>
+{
+    var settings = optionsSnapshot.Value;
+    return Results.Ok(new
+    {
+        settings.WelcomeMessage,
+        settings.FeatureToggle,
+        GoogleMapsKey = settings.ApiKeys.GoogleMaps,
+        Source = "IOptionsSnapshot Minimal API"
+    });
+});
+
+// 使用 IOptionsMonitor
+app.MapGet("/options-info-monitor", (IOptionsMonitor<MyCustomSettings> optionsMonitor) =>
+{
+    var settings = optionsMonitor.CurrentValue; // 获取当前最新值
+    return Results.Ok(new
+    {
+        settings.WelcomeMessage,
+        settings.FeatureToggle,
+        OpenWeatherKey = settings.ApiKeys.OpenWeather,
+        Source = "IOptionsMonitor Minimal API"
+    });
+});
+
+// ...
+app.Run();
+```
+
+#### 通过依赖注入将配置传递给其他组件
+
+如果自定义服务需要直接访问 `IConfiguration` 或配置的某个子节，您可以直接将其注入到服务的构造函数中。
+
+- Web API 写法
+
+```C#
+// Services/MyDataService.cs
+public class MyDataService
+{
+    private readonly IConfiguration _configuration;
+    private readonly MyCustomSettings _settings; // 也可以注入 IOptions<MyCustomSettings>
+
+    public MyDataService(IConfiguration configuration, IOptions<MyCustomSettings> settings)
+    {
+        _configuration = configuration;
+        _settings = settings.Value;
+    }
+
+    public string GetDataBasedOnConfig()
+    {
+        var dbName = _configuration["ConnectionStrings:DefaultConnection"];
+        var welcomeMsg = _settings.WelcomeMessage;
+        return $"Using DB: {dbName}, Welcome: {welcomeMsg}";
+    }
+}
+
+// Program.cs
+builder.Services.AddScoped<MyDataService>(); // 注册服务
+// ...
+
+// Controllers/DataController.cs
+[ApiController]
+[Route("[controller]")]
+public class DataController : ControllerBase
+{
+    private readonly MyDataService _dataService;
+
+    public DataController(MyDataService dataService)
+    {
+        _dataService = dataService;
+    }
+
+    [HttpGet("data-from-service")]
+    public IActionResult GetServiceData()
+    {
+        return Ok(_dataService.GetDataBasedOnConfig());
+    }
+}
+```
+
+- 最小API写法
+
+```C#
+// Program.cs
+// ...
+builder.Services.AddScoped<MyDataService>(); // 注册服务 (MyDataService 类如上定义)
+// ...
+
+app.MapGet("/data-from-minimal-service", (MyDataService dataService) =>
+{
+    return Results.Ok(dataService.GetDataBasedOnConfig());
+});
+// ...
+app.Run();
+```
+
+### 在Razor Pages访问配置
+
+```c#
+// .CSHTML
+@page
+@model Test5Model
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+Configuration value for 'MyKey': @Configuration["MyKey"]
+```
+
+### 在MVC视图文件访问配置
+
+```C#
+// .CSHTML
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+Configuration value for 'MyKey': @Configuration["MyKey"]
+```
+
+### 在`Program.cs`中访问配置
+
+```JSON
+// appsettings.json
+{
+  ...
+  "KeyOne": "Key One Value",
+  "KeyTwo": 1999,
+  "KeyThree": true
+}
+```
+
+```c#
+//Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+var key1 = builder.Configuration.GetValue<string>("KeyOne");
+
+var app = builder.Build();
+
+app.MapGet("/", () => "Hello World!");
+
+var key2 = app.Configuration.GetValue<int>("KeyTwo");
+var key3 = app.Configuration.GetValue<bool>("KeyThree");
+
+app.Logger.LogInformation("KeyOne: {KeyOne}", key1);
+app.Logger.LogInformation("KeyTwo: {KeyTwo}", key2);
+app.Logger.LogInformation("KeyThree: {KeyThree}", key3);
+
+app.Run();
+```
 
 ## 选项
 
+### 使用方法
 
+[选项模式](#使用选项模式)
+
+### 选项验证
+
+选项模式还支持对配置值进行验证，确保它们是有效的。这有助于在应用程序启动时捕获错误配置，而不是在运行时。
+
+1. 为选项类添加验证属性
+
+可以使用 `System.ComponentModel.DataAnnotations` 属性。
+
+```C#
+using System.ComponentModel.DataAnnotations;
+
+public class EmailSettings
+{
+    public const string SectionName = "EmailSettings";
+
+    [Required(ErrorMessage = "SMTP Server is required.")]
+    [StringLength(100, MinimumLength = 5, ErrorMessage = "SMTP Server must be between 5 and 100 characters.")]
+    public string SmtpServer { get; set; } = string.Empty;
+
+    [Range(1, 65535, ErrorMessage = "SMTP Port must be between 1 and 65535.")]
+    public int SmtpPort { get; set; }
+
+    [Required(ErrorMessage = "Sender Email is required.")]
+    [EmailAddress(ErrorMessage = "Invalid sender email format.")]
+    public string SenderEmail { get; set; } = string.Empty;
+
+    public string SenderName { get; set; } = string.Empty;
+    public bool EnableSsl { get; set; }
+    public Credentials Credentials { get; set; } = new Credentials();
+}
+// Credentials 类也可以添加验证属性
+public class Credentials
+{
+    [Required(ErrorMessage = "Username is required.")]
+    public string Username { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Password is required.")]
+    public string Password { get; set; } = string.Empty;
+}
+```
+
+2. 在`Program.cs`中添加验证
+
+使用 `Services.AddOptions<T>().Bind(Configuration.GetSection("SectionName")).ValidateDataAnnotations();`。
+
+```C#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// ... 其他服务注册 ...
+
+// 绑定 EmailSettings 并添加数据注解验证
+builder.Services.AddOptions<EmailSettings>()
+    .Bind(builder.Configuration.GetSection(EmailSettings.SectionName))
+    .ValidateDataAnnotations(); // 启用数据注解验证
+
+// 你也可以添加自定义的验证逻辑：
+// .Validate(options => { /* 自定义验证逻辑 */ return options.SmtpPort != 0; }, "Port cannot be zero.")
+
+// 默认情况下，如果验证失败，应用程序会在启动时抛出异常并终止。
+// 你可以通过 .ValidateOnStart() 来明确在启动时进行验证（这通常是默认行为）
+// .ValidateOnStart()
+
+// ...
+var app = builder.Build();
+// ...
+```
+
+如果配置不满足验证规则，应用程序将在启动时抛出 `OptionsValidationException` 异常，并显示详细的验证错误信息。
 
 ## 环境
 
+### 概述
 
+**环境**是一个字符串值，它表示应用程序当前运行的上下文。框架和您的代码都可以使用这个环境字符串来执行不同的行为或加载不同的配置。
+
+三个主要的环境名称：
+
+1. **Development (开发)**：
+   - **特点**：用于应用程序开发阶段。
+   - **常见用途**：
+     - 启用详细的错误页面（如 `DeveloperExceptionPage`）。
+     - 启用热重载和文件更改监视。
+     - 使用本地开发数据库。
+     - 禁用缓存，方便即时看到更改。
+     - 更详细的日志输出（如 `Debug` 或 `Trace` 级别）。
+     - 可能跳过 HTTPS 重定向，方便本地调试。
+2. **Staging (分阶段/预生产)**：
+   - **特点**：用于部署到生产环境之前的测试环境。它应该尽可能地模仿生产环境，但通常用于最终的 QA、性能测试和用户验收测试 (UAT)。
+   - **常见用途**：
+     - 禁用开发相关的调试功能。
+     - 启用生产级别的错误处理（友好的错误页面）。
+     - 连接到独立的测试数据库或预生产数据库。
+     - 启用缓存。
+     - 更简洁的日志输出（如 `Information` 或 `Warning` 级别）。
+     - 强制 HTTPS。
+3. **Production (生产)**：
+   - **特点**：应用程序最终用户使用的真实运行环境。
+   - **常见用途**：
+     - 启用健壮的错误处理和用户友好的错误页面。
+     - 禁用任何可能泄露敏感信息的调试功能。
+     - 连接到生产数据库。
+     - 优化性能（如启用响应压缩、缓存）。
+     - 精简的日志输出（通常是 `Information` 或 `Error` 级别）。
+     - 严格的安全措施（如 HSTS、CORS 策略）。
+
+除了这些约定好的环境，您也可以定义自己的自定义环境名称（例如 `QA`、`UAT`、`Testing` 等）。
+
+### 设置环境
+
+#### `launchSettings.json` 
+
+- 仅限开发环境
+
+- 每个启动配置文件 (`profile`) 都可以有自己的 `environmentVariables` 设置。
+- **优先级**：**最低**（仅在本地开发工具中使用，部署后无效）。
+
+```JSON
+// Properties/launchSettings.json
+{
+  "profiles": {
+    "MyWebApp": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7001;http://localhost:5001",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development" // 这里设置了开发环境
+      },
+      "dotnetRunMessages": true
+    },
+    "StagingProfile": { // 您可以添加自定义配置文件
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7002;http://localhost:5002",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging" // 这是一个示例，用于本地模拟分阶段环境
+      }
+    }
+  }
+}
+```
+
+#### 在代码中设置
+
+优先级比`launchSettings.json`中设置要高一级
+
+若要在代码中设置环境，请在创建 [WebApplicationBuilder](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.aspnetcore.builder.webapplicationbuilder) 时使用 [WebApplicationOptions.EnvironmentName](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.aspnetcore.builder.webapplicationoptions.environmentname#microsoft-aspnetcore-builder-webapplicationoptions-environmentname)，如以下示例所示：
+
+```C#
+// 在代码中设置环境变量
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    EnvironmentName = Environments.Staging
+}); 
+
+// Add services to the container.
+builder.Services.AddRazorPages();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseAuthorization();
+
+app.MapRazorPages();
+
+app.Run();
+```
+
+
+
+#### 操作系统环境变量
+
+- 在部署到服务器（Windows Server、Linux、Azure App Service、Docker 等）时，通常通过设置操作系统的环境变量来指定环境。
+
+- **优先级**：**中等**（会覆盖 `launchSettings.json`）
+
+- Windows (CMD/PowerShell)：
+
+  ```bash
+  set ASPNETCORE_ENVIRONMENT=Production
+  dotnet run
+  ```
+
+- Linux/Mac OS(Bash/Zsh)
+
+  ```bash
+  export ASPNETCORE_ENVIRONMENT=Production
+  dotnet run
+  ```
+
+- Docker:在 `Dockerfile` 或 `docker-compose.yml` 中使用 `ENV` 或 `environment`。
+
+  ```dockerfile
+  # Dockerfile
+  ENV ASPNETCORE_ENVIRONMENT=Production
+  ```
+
+#### 命令行参数
+
+- 可以在启动应用程序时，通过命令行参数直接覆盖环境。
+- **优先级**：**最高**（会覆盖所有其他方式）。
+- **格式**：`--ASPNETCORE_ENVIRONMENT=Production`
+
+```BASH
+dotnet run --ASPNETCORE_ENVIRONMENT=Staging
+```
+
+> 环境变量的命名遵循特定的约定：**点号 `:` 被替换为双下划线 `__`。**
+>
+> 要设置 `Logging:LogLevel:Default`，环境变量名应为 `Logging__LogLevel__Default`。
+
+### 在代码中访问环境
+
+通过注入 `IWebHostEnvironment` (对于 Web 应用) 或 `IHostEnvironment` (对于通用主机) 来访问当前环境信息。
+
+```csharp
+// Program.cs
+using Microsoft.AspNetCore.Hosting; // 用于 IWebHostEnvironment
+using Microsoft.Extensions.Hosting; // 用于 IHostEnvironment 及其扩展方法
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 在 builder 阶段获取环境信息
+// builder.Environment 是 IWebHostEnvironment 的实例
+Console.WriteLine($"Current environment (builder stage): {builder.Environment.EnvironmentName}");
+Console.WriteLine($"Is Development? {builder.Environment.IsDevelopment()}");
+Console.WriteLine($"Is Staging? {builder.Environment.IsStaging()}");
+Console.WriteLine($"Is Production? {builder.Environment.IsProduction()}");
+
+// ... 服务注册 ...
+
+var app = builder.Build();
+
+// 在 app 阶段获取环境信息
+// app.Environment 也是 IWebHostEnvironment 的实例
+Console.WriteLine($"Current environment (app stage): {app.Environment.EnvironmentName}");
+
+// ... 中间件管道配置 ...
+
+app.Run();
+```
+
+Web API:在控制器或服务中，通过构造函数注入 `IWebHostEnvironment`。
+
+```C#
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting; // 确保引入此命名空间
+
+[ApiController]
+[Route("[controller]")]
+public class EnvironmentController : ControllerBase
+{
+    private readonly IWebHostEnvironment _env;
+
+    // 构造函数注入 IWebHostEnvironment
+    public EnvironmentController(IWebHostEnvironment env)
+    {
+        _env = env;
+    }
+
+    [HttpGet("info")]
+    public IActionResult GetEnvironmentInfo()
+    {
+        return Ok(new
+        {
+            EnvironmentName = _env.EnvironmentName,
+            IsDevelopment = _env.IsDevelopment(),
+            IsStaging = _env.IsStaging(),
+            IsProduction = _env.IsProduction(),
+            ContentRootPath = _env.ContentRootPath, // 应用程序内容的根目录
+            WebRootPath = _env.WebRootPath // 静态文件的根目录 (wwwroot)
+        });
+    }
+
+    [HttpGet("feature")]
+    public IActionResult GetFeatureBasedOnEnvironment()
+    {
+        if (_env.IsDevelopment())
+        {
+            return Ok("This is a development-only feature enabled.");
+        }
+        else if (_env.IsStaging())
+        {
+            return Ok("This is a staging-specific feature enabled.");
+        }
+        else if (_env.IsProduction())
+        {
+            return Ok("This is a production-only feature enabled. Be careful!");
+        }
+        else
+        {
+            return Ok($"This is for custom environment: {_env.EnvironmentName}.");
+        }
+    }
+}
+```
+
+最小API: 在 Minimal API 终结点中，直接通过方法参数注入 `IWebHostEnvironment`。
+
+```C#
+// Program.cs
+// ...
+var app = builder.Build();
+// ...
+
+app.MapGet("/environment-info-minimal", (IWebHostEnvironment env) =>
+{
+    return Results.Ok(new
+    {
+        EnvironmentName = env.EnvironmentName,
+        IsDevelopment = env.IsDevelopment(),
+        IsStaging = env.IsStaging(),
+        IsProduction = env.IsProduction(),
+        ContentRootPath = env.ContentRootPath,
+        WebRootPath = env.WebRootPath
+    });
+});
+
+app.MapGet("/environment-feature-minimal", (IWebHostEnvironment env) =>
+{
+    if (env.IsDevelopment())
+    {
+        return Results.Ok("Minimal API: Development feature is active.");
+    }
+    else if (env.IsStaging())
+    {
+        return Results.Ok("Minimal API: Staging feature is active.");
+    }
+    else if (env.IsProduction())
+    {
+        return Results.Ok("Minimal API: Production feature is active. Be cautious!");
+    }
+    else
+    {
+        return Results.Ok($"Minimal API: Custom environment feature for {env.EnvironmentName}.");
+    }
+});
+// ...
+app.Run();
+```
 
 ## 日志记录与监视
+
+### 日志记录
+
+#### 核心组件
+
+- **ILogger**：日志记录接口，用于写入日志。
+- **ILoggerProvider**：日志提供程序，决定日志的输出目标（如控制台、文件、第三方服务）。
+- **ILoggerFactory**：工厂类，用于创建 ILogger 实例。
+
+#### 日志类别
+
+##### 概述
+
+**日志类别**是一个字符串，用于**标识日志消息的来源或生成该日志的组件**。可以把它看作是日志的“命名空间”或“标签”，用来给日志消息分组。
+
+**作用：**
+
+- **过滤和控制**：日志系统可以根据日志类别来应用不同的过滤规则和日志级别。比如，你可以设置所有来自 `Microsoft.EntityFrameworkCore` 类别的日志只记录 `Warning` 级别及以上的信息，而你自己的业务逻辑（例如 `MyApp.Services.OrderService` 类别）可以记录更详细的 `Debug` 级别信息。
+- **组织和查找**：在大量的日志输出中，日志类别能帮助你快速识别是哪个部分的代码产生了这条日志，方便问题定位和分析。
+- **可读性**：日志输出中通常会包含类别信息，让日志本身更容易理解。
+
+##### **如何确定日志类别**？
+
+1. **通过泛型参数 `ILogger<T>` 自动推断 (推荐方式)**： 这是最常见也是推荐的方式。当你通过依赖注入获取 `ILogger<T>` 实例时，`T` 的**完全限定名（包括命名空间和类名）**就会自动成为该 `ILogger` 实例的日志类别。
+
+```C#
+// C# 代码中
+using Microsoft.Extensions.Logging;
+
+namespace MyWebApp.Services
+{
+    public class OrderService
+    {
+        private readonly ILogger<OrderService> _logger; // 这里的 T 是 OrderService
+
+        public OrderService(ILogger<OrderService> logger)
+        {
+            _logger = logger;
+        }
+
+        public void ProcessOrder(int orderId)
+        {
+            _logger.LogInformation("Processing order {OrderId}", orderId); // 这个日志的类别就是 "MyWebApp.Services.OrderService"
+        }
+    }
+}
+```
+
+2. **通过 `ILoggerFactory.CreateLogger(string categoryName)` 手动指定 (较少用)**： 如果你需要更灵活地控制类别名称，或者你的代码不是通过 DI 获取 `ILogger`，你可以直接向 `ILoggerFactory` 提供一个字符串作为类别名称。
+
+```C#
+// Program.cs 或某个需要创建日志器的地方
+using Microsoft.Extensions.Logging;
+
+public class MyStartupClass
+{
+    private readonly ILogger _logger;
+
+    public MyStartupClass(ILoggerFactory loggerFactory)
+    {
+        // 手动指定日志类别为 "MyWebApp.Startup"
+        _logger = loggerFactory.CreateLogger("MyWebApp.Startup");
+    }
+
+    public void Configure()
+    {
+        _logger.LogInformation("Application configuration started."); // 这个日志的类别就是 "MyWebApp.Startup"
+    }
+}
+```
+
+##### 匹配规则
+
+配置文件：
+
+```JSON
+// appsettings.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",                  // 所有未指定类别的日志
+      "Microsoft": "Warning",                    // 所有以 "Microsoft" 开头的类别
+      "Microsoft.AspNetCore.Hosting": "Information", // 更具体的 "Microsoft.AspNetCore.Hosting" 类别
+      "MyWebApp.Controllers.HomeController": "Debug", // 针对特定的控制器
+      "MyWebApp.Services": "Debug"               // 针对整个 MyWebApp.Services 命名空间下的所有类别
+    },
+    // ... 提供程序配置 ...
+  }
+}
+```
+
+匹配规则：
+
+日志类别匹配是**从最具体到最不具体**的原则。
+
+如果一个日志消息的类别是 `MyWebApp.Services.OrderService`：
+
+- 它会优先尝试匹配 `MyWebApp.Services.OrderService` 的配置。
+- 如果没有，会尝试匹配 `MyWebApp.Services` 的配置。
+- 再没有，会尝试匹配 `MyWebApp` 的配置。
+- 最后，会回退到 `Default` 的配置。
+
+#### 日志级别
+
+按严重程度递增：
+
+- `Trace (0)`：**最详细的日志**，可能包含非常底层的细节，甚至敏感数据。通常只在开发和深度调试时使用，不适合生产环境。
+- `Debug (1)`：用于**调试目的**，包含足以诊断问题的详细信息。在开发环境中比较常用。
+- `Information (2)`：**跟踪应用程序的常规流**。例如，HTTP 请求进入、服务启动、用户登录成功等事件。这是生产环境中最常见的默认级别。
+- `Warning (3)`：表示**非致命错误**或潜在问题。应用程序可以继续运行，但可能存在需要注意的情况，例如数据不一致、某个操作未按预期完成等。
+- `Error (4)`：表示**当前操作失败的错误或异常**。例如，数据库连接失败、外部 API 调用失败。这些错误通常需要开发人员介入。
+- `Critical (5)`：表示应用程序或托管环境中的**灾难性故障**。通常意味着应用程序无法继续正常运行，需要立即关注，例如内存耗尽、主数据库崩溃。
+- `None (6)`：表示**不记录任何日志**。
+
+默认最低级别：*Information*，即只记录 Information 及以上级别的日志。
+
+#### 日志事件ID
+
+##### 概述
+
+**定义：**事件 ID 是一个整数值，用于唯一标识日志记录中的特定事件类型，帮助开发者分类和跟踪日志消息。
+
+**作用：**
+
+- **事件分类**：为日志消息分配一个编号，便于区分不同类型的事件（如用户登录、数据库错误）。
+- **日志分析**：在日志分析工具（如 ELK、Serilog）中通过事件 ID 过滤或查询特定事件。
+- **调试和监控**：提供标准化方式，快速定位问题。
+
+**类型**：EventId 结构体，包含 Id（整数）和可选的 Name（字符串描述）。
+
+##### 事件ID结构
+
+类定义：
+
+```C#
+public struct EventId
+{
+    public int Id { get; }
+    public string Name { get; }
+    public EventId(int id, string name = null);
+}
+```
+
+创建方式：
+
+- 直接使用整数：new EventId(1001)。
+- 带名称：new EventId(1001, "UserLogin")。
+
+默认值：如果不指定，EventId 默认值为 0，名称为 null。
+
+##### 使用方法
+
+- 完整方法
+
+```C#
+void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter);
+```
+
+- 便捷方法(例如LogInfomartion)
+
+```C#
+void LogInformation(EventId eventId, string message, params object[] args);
+```
+
+案例：
+```C#
+public class UserController : ControllerBase
+{
+    private readonly ILogger<UserController> _logger;
+
+    // 定义事件 ID 为常量或枚举，方便管理和避免魔术数字
+    public static class EventIds
+    {
+        public const int UserLoginSuccess = 1001;
+        public const int UserLoginFailed = 1002;
+        public const int DatabaseError = 2001;
+        public const int UserNotFound = 3001;
+    }
+
+    public UserController(ILogger<UserController> logger)
+    {
+        _logger = logger;
+    }
+
+    [HttpPost("login")]
+    public IActionResult Login(string username, string password)
+    {
+        // 模拟登录逻辑
+        if (username == "admin" && password == "password")
+        {
+            // 记录日志时使用事件ID
+            _logger.LogInformation(EventIds.UserLoginSuccess, "User {Username} logged in successfully.", username);
+            return Ok("Login successful!");
+        }
+        else
+        {
+            // 记录日志时使用事件ID
+            _logger.LogWarning(EventIds.UserLoginFailed, "User {Username} login failed due to invalid credentials.", username);
+            return Unauthorized("Invalid credentials.");
+        }
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetUser(int id)
+    {
+        if (id <= 0)
+        {
+            // 记录日志时使用事件ID
+            _logger.LogWarning(EventIds.UserNotFound, "Attempted to retrieve user with invalid ID: {UserId}.", id);
+            return BadRequest("Invalid user ID.");
+        }
+        // ... 数据库操作 ...
+        try
+        {
+            // 模拟数据库异常
+            throw new InvalidOperationException("Database connection issue.");
+        }
+        catch (Exception ex)
+        {
+            // 记录日志时使用事件ID
+            _logger.LogError(EventIds.DatabaseError, ex, "Database error occurred while fetching user {UserId}.", id);
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+}
+```
+
+
+
+#### 配置方式
+
+```JSON
+// appsettings.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",        // 默认所有提供程序和所有分类器的最低级别
+      "Microsoft": "Warning",          // 所有以 "Microsoft" 开头的分类器（如框架内部日志）设置为 Warning 级别
+      "Microsoft.Hosting.Lifetime": "Information", // 专门针对主机生命周期日志，保持 Information 级别
+      "System": "Warning",             // 所有以 "System" 开头的分类器设置为 Warning 级别
+      "MyWebApp.Services.OrderService": "Debug" // 针对您自己的 OrderService，输出 Debug 级别日志
+    },
+    // 您也可以为特定的提供程序配置日志级别，这会覆盖上面 LogLevel 下的全局设置
+    "Console": {
+      "LogLevel": {
+        "Default": "Information" // 控制台提供程序默认只输出 Information 及以上
+      }
+    },
+    "Debug": {
+      "LogLevel": {
+        "Default": "Debug" // 调试窗口提供程序默认输出 Debug 及以上
+      }
+    }
+  },
+  "AllowedHosts": "*"
+}
+```
+
+#### 注册日志服务
+
+在 `Program.cs` 中调用 `WebApplication.CreateBuilder(args)` 时，它会**自动**配置并注册默认的日志提供程序（控制台、调试等），并从 `appsettings.json` 加载日志配置。在大多数情况下，您不需要额外编写代码来注册它们。
+
+如果您需要**自定义**日志行为，例如清除默认提供程序、添加新的提供程序或进行更高级的配置，可以使用 `builder.Logging` 对象：
+
+```C#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// builder.Logging 允许您进一步配置日志系统
+// builder.Logging.ClearProviders(); // 清除所有默认提供程序，如果您想完全自定义
+// builder.Logging.AddConsole();    // 重新添加控制台提供程序
+// builder.Logging.AddDebug();      // 添加调试提供程序
+// builder.Logging.AddEventSourceLogger(); // 添加事件源提供程序
+
+// 您也可以在这里以编程方式配置最低级别，这会覆盖 appsettings.json 中的 Default 级别
+// builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+// ... 其他服务注册 ...
+```
+
+#### 使用日志
+
+记录日志的方式是通过**依赖注入 `ILogger<T>`**。
+
+Web API案例
+
+```C#
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging; // 确保引入此命名空间
+
+[ApiController]
+[Route("[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly ILogger<ProductsController> _logger; // 注入 ILogger<ProductsController>
+
+    public ProductsController(ILogger<ProductsController> logger)
+    {
+        _logger = logger;
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetProduct(int id)
+    {
+        // 记录不同级别的日志，只有当前配置允许的级别才会被输出
+        _logger.LogTrace($"Trace: Getting product with ID {id}"); // 通常只在 Trace 级别启用时才记录
+        _logger.LogDebug($"Debug: Fetching product {id} from database."); // 通常只在 Debug 级别启用时才记录
+
+        if (id <= 0)
+        {
+            _logger.LogWarning("Warning: Invalid product ID received: {ProductId}. Must be positive.", id); // 使用结构化日志
+            return BadRequest("Invalid product ID.");
+        }
+
+        // 模拟获取产品
+        var product = new { Id = id, Name = $"Product {id}", Price = 99.99 };
+        if (product == null)
+        {
+            _logger.LogError("Error: Product with ID {ProductId} not found.", id); // 记录错误
+            return NotFound();
+        }
+
+        _logger.LogInformation("Information: Successfully retrieved product {ProductId}.", id);
+        return Ok(product);
+    }
+
+    [HttpPost]
+    public IActionResult CreateProduct([FromBody] object newProduct)
+    {
+        try
+        {
+            // 模拟产品创建失败，并抛出异常
+            throw new InvalidOperationException("Simulated product creation failure.");
+            // _logger.LogInformation("Product created successfully.");
+            // return CreatedAtAction(nameof(GetProduct), new { id = 1 }, newProduct);
+        }
+        catch (Exception ex)
+        {
+            // 记录 Critical 级别日志，并传入异常对象，日志提供程序会格式化异常信息
+            _logger.LogCritical(ex, "Critical: An unhandled exception occurred during product creation for product {ProductData}.", newProduct);
+            return StatusCode(500, "An internal server error occurred.");
+        }
+    }
+}
+```
+
+最小API案例
+
+```C#
+// Program.cs
+// ...
+var app = builder.Build();
+// ...
+
+app.MapGet("/items/{id}", (int id, ILogger<Program> logger) => // 注入 ILogger<Program>
+{
+    logger.LogDebug("Minimal API Debug: Attempting to get item {ItemId}.", id);
+
+    if (id <= 0)
+    {
+        logger.LogWarning("Minimal API Warning: Invalid item ID {ItemId} received.", id);
+        return Results.BadRequest("Invalid item ID.");
+    }
+
+    // 模拟获取数据
+    var item = new { Id = id, Name = $"Item {id}", Description = "A sample item." };
+    if (item == null)
+    {
+        logger.LogError("Minimal API Error: Item with ID {ItemId} not found.", id);
+        return Results.NotFound();
+    }
+
+    logger.LogInformation("Minimal API Information: Item {ItemId} retrieved successfully.", id);
+    return Results.Ok(item);
+});
+
+app.MapPost("/items", (ILogger<Program> logger) =>
+{
+    try
+    {
+        throw new Exception("Minimal API: Simulated item creation error.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogCritical(ex, "Minimal API Critical: Failed to create item.");
+        return Results.StatusCode(500); // Internal Server Error
+    }
+});
+
+// ...
+app.Run();
+```
+
+#### 最佳实践
+
+`ILogger` 接口提供了 `LogTrace()`, `LogDebug()`, `LogInformation()`, `LogWarning()`, `LogError()`, `LogCritical()` 等**扩展方法**。它们是类型安全的，并且参数与日志级别相对应，是记录日志的首选方式。
+
+**使用日志消息模板和结构化日志**：强烈推荐使用占位符 `{}` 和传入参数的方式来构建日志消息（如 `_logger.LogInformation("User {UserId} logged in.", userId);`），而不是字符串拼接（如 `_logger.LogInformation("User " + userId + " logged in.");`）。
+
+- **优点**：
+  - **性能更好**：在日志级别不满足时，参数不会被格式化，节省开销。
+  - **结构化**：在支持结构化日志的提供程序（如 Serilog、Azure Log Analytics）中，`UserId` 会被作为独立的字段解析，方便查询和分析。
+
+#### 第三方日志记录提供程序
+
+
+
+### HTTP日志记录
+
+
+
+### W3C记录器
+
+
+
+### 健康检查
+
+
+
+### 指标概述
+
+
+
+### 内置指标
 
 
 
