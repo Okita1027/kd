@@ -3984,14 +3984,16 @@ public IActionResult UnsafeOperation()
 
 `HttpContext.User` 属性是一个 `ClaimsPrincipal` 对象，它代表了**当前 HTTP 请求的用户的身份信息**。它是 .NET Core **认证和授权机制的核心**。
 
-- **用途**：
-  - **身份识别**：获取当前用户的用户名、ID 或其他标识信息。
-  - **角色检查**：判断用户是否属于某个角色。
-  - **权限检查**：根据用户的声明（Claims）判断用户是否有权执行某个操作。
-- **组成**：
-  - **`ClaimsPrincipal`**：可以包含一个或多个 `ClaimsIdentity`。
-  - **`ClaimsIdentity`**：代表一个身份，包含一组与该身份相关的**声明 (Claims)**。
-  - **`Claim`**：一个键值对，表示用户的一个属性或事实，例如用户的姓名、电子邮件、角色、权限等。
+**用途**：
+
+- **身份识别**：获取当前用户的用户名、ID 或其他标识信息。
+- **角色检查**：判断用户是否属于某个角色。
+- **权限检查**：根据用户的声明（Claims）判断用户是否有权执行某个操作。
+
+**组成**：
+- **`ClaimsPrincipal`**：可以包含一个或多个 `ClaimsIdentity`。
+- **`ClaimsIdentity`**：代表一个身份，包含一组与该身份相关的**声明 (Claims)**。
+- **`Claim`**：一个键值对，表示用户的一个属性或事实，例如用户的姓名、电子邮件、角色、权限等。
 
 ```C#
 using System.Security.Claims; // 确保引入此命名空间
@@ -4026,7 +4028,7 @@ public IActionResult GetUserProfile()
 
 **作用：**
 
-- ASP.NET Core 的许多底层功能（如请求/响应处理、连接信息、认证状态）都是通过“特性”（Feature）来实现的。
+- .NET Core 的许多底层功能（如请求/响应处理、连接信息、认证状态）都是通过“特性”（Feature）来实现的。
 - `Features` 提供了一种灵活的机制来扩展和定制请求管道的行为，而无需修改 `HttpContext` 的核心接口。
 - 它允许中间件和低层组件在请求处理过程中**暴露和发现特定功能**。
 
@@ -4063,7 +4065,7 @@ public IActionResult GetConnectionInfo()
 }
 ```
 
-在大多数高层应用代码中，您可能不会直接与 `Features` 交互，而是通过 `HttpContext.Request`、`HttpContext.Response` 等更高级别的属性来访问信息，因为这些属性已经封装了对底层特性的访问。然而，在编写自定义中间件或深度定制框架行为时，`Features` 变得非常有用。
+在大多数高层应用代码中，可能不会直接与 `Features` 交互，而是通过 `HttpContext.Request`、`HttpContext.Response` 等更高级别的属性来访问信息，因为这些属性已经封装了对底层特性的访问。然而，在编写自定义中间件或深度定制框架行为时，`Features` 变得非常有用。
 
 #### 线程不安全性
 
@@ -4121,9 +4123,283 @@ public IActionResult GetConnectionInfo()
 
 ## 路由
 
-### 路由模板
+### 约定式路由
 
-#### 模板
+> [!CAUTION]
+>
+> 若在控制类上标记了[ApiController]，则该类不会匹配约定式路由
+
+默认的路由匹配格式：`{controller=Home}/{action=Index}/{id?}`
+
+#### 基础使用
+
+```C#
+// Program.cs
+app.UseEndpoints(endpoints =>
+{
+    // 定义一个名为 "default" 的约定式路由
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}"); // 路由模板
+
+    // 如果有其他约定式路由，可以继续添加，顺序很重要
+    // endpoints.MapControllerRoute(
+    //     name: "blog",
+    //     pattern: "blog/{year}/{month?}/{slug?}");
+
+    // 如果有 Razor Pages，也需要映射，它们默认也使用约定路由
+    endpoints.MapRazorPages();
+});
+```
+
+#### 复杂配置
+
+```C#
+// ========== 复杂约定式路由模式 ==========
+// 1. 多层嵌套路由
+app.MapControllerRoute(
+    name: "nested_resource",
+    pattern: "{controller}/{id:int}/{subController}/{subId:int?}",
+    defaults: new { action = "Index" });
+
+// 2. 文件路径路由
+app.MapControllerRoute(
+    name: "file_path",
+    pattern: "files/{*filePath}",
+    defaults: new { controller = "Files", action = "Get" });
+
+// 3. 多语言路由
+app.MapControllerRoute(
+    name: "localized",
+    pattern: "{culture:regex(^[a-z]{{2}}-[A-Z]{{2}}$)}/{controller=Home}/{action=Index}/{id?}");
+
+// 4. 子域名路由
+app.MapControllerRoute(
+    name: "subdomain",
+    pattern: "{controller=Home}/{action=Index}/{id?}",
+    defaults: new { subdomain = "api" });
+
+// 5. 日期路由
+app.MapControllerRoute(
+    name: "date_route",
+    pattern: "archive/{year:int:min(2000):max(2030)}/{month:int:min(1):max(12)}/{day:int:min(1):max(31)}/{controller=Archive}/{action=Index}");
+
+// 6. 分页路由
+app.MapControllerRoute(
+    name: "paging",
+    pattern: "{controller}/page/{page:int:min(1)}/{action=Index}");
+
+// 7. 默认路由（最后定义）
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+```
+
+#### 自定义路由约定
+
+1. 自定义约定类
+
+```C#
+// 1:API控制器约定
+public class ApiControllerConvention : IControllerModelConvention
+{
+    public void Apply(ControllerModel controller)
+    {
+        // 为所有以Api结尾的控制器添加api/前缀
+        if (controller.ControllerName.EndsWith("Api"))
+        {
+            controller.Selectors.Add(new SelectorModel
+            {
+                AttributeRouteModel = new AttributeRouteModel
+                {
+                    Template = $"api/{controller.ControllerName[..^3].ToLower()}"
+                }
+            });
+        }
+    }
+}
+
+// 2:CRUD操作约定
+public class CrudActionConvention : IActionModelConvention
+{
+    public void Apply(ActionModel action)
+    {
+        var controllerName = action.Controller.ControllerName.ToLower();
+        var actionName = action.ActionName.ToLower();
+
+        // 为CRUD操作定义标准路由
+        switch (actionName)
+        {
+            case "index":
+            case "list":
+            case "getall":
+                action.Selectors.Add(CreateSelector($"{controllerName}", "GET"));
+                break;
+            case "details":
+            case "get":
+            case "getbyid":
+                action.Selectors.Add(CreateSelector($"{controllerName}/{{id}}", "GET"));
+                break;
+            case "create":
+            case "add":
+                action.Selectors.Add(CreateSelector($"{controllerName}", "POST"));
+                break;
+            case "update":
+            case "edit":
+                action.Selectors.Add(CreateSelector($"{controllerName}/{{id}}", "PUT"));
+                break;
+            case "delete":
+            case "remove":
+                action.Selectors.Add(CreateSelector($"{controllerName}/{{id}}", "DELETE"));
+                break;
+        }
+    }
+
+    private SelectorModel CreateSelector(string template, string httpMethod)
+    {
+        return new SelectorModel
+        {
+            AttributeRouteModel = new AttributeRouteModel { Template = template },
+            ActionConstraints = { new HttpMethodActionConstraint(new[] { httpMethod }) }
+        };
+    }
+}
+
+// 3. 版本化控制器约定
+public class VersionedControllerConvention : IControllerModelConvention
+{
+    public void Apply(ControllerModel controller)
+    {
+        var controllerName = controller.ControllerName;
+        
+        // 检查控制器名称是否包含版本信息
+        var versionMatch = System.Text.RegularExpressions.Regex.Match(controllerName, @"V(\d+)$");
+        if (versionMatch.Success)
+        {
+            var version = versionMatch.Groups[1].Value;
+            var baseName = controllerName.Substring(0, controllerName.Length - versionMatch.Length);
+            
+            controller.Selectors.Add(new SelectorModel
+            {
+                AttributeRouteModel = new AttributeRouteModel
+                {
+                    Template = $"api/v{version}/{baseName.ToLower()}"
+                }
+            });
+        }
+    }
+}
+```
+
+2. 添加服务
+
+```C#
+// Program.cs 添加服务
+builder.Services.AddControllers(options =>
+{
+    // 自定义约定
+    options.Conventions.Add(new ApiControllerConvention());
+    options.Conventions.Add(new CrudActionConvention());
+    options.Conventions.Add(new VersionedControllerConvention());
+});
+```
+
+### 特性路由
+
+#### 类注解
+
+[Route] 
+
+可以用在方法上
+
+- 如果模板以 `/` 开头**：表示这是一个**完整且独立的路径**，会忽略控制器级别的 `[Route]`。
+
+- 如果模板不以 `/` 开头：表示这是一个**相对路径**，会追加到控制器级别的 `[Route]` 之后。
+
+可以定义多个 `[Route]` 特性，使一个动作方法响应多个 URL。
+
+```C#
+[Route("products")]
+[Route("items")]
+public IActionResult GetAllProducts() { /* ... */ } // 可响应 /products 或 /items
+```
+
+#### 方法注解
+
+**[HttpGet]、[HttpPost]、[HttpPut]、[HttpDelete]**
+
+```C#
+[HttpGet] // 继承控制器路由
+public IActionResult Get() { /* GET /api/products */ }
+
+[HttpGet("popular")] // 追加到控制器路由后
+public IActionResult GetPopular() { /* GET /api/products/popular */ }
+
+[HttpGet("/latest-products")] // 独立路由
+public IActionResult GetLatest() { /* GET /latest-products */ }
+```
+
+---
+
+**PUT VS PATCH**
+
+| 特性       | `[HttpPut]`                | `[HttpPatch]`                          |
+| ---------- | -------------------------- | -------------------------------------- |
+| 语义       | 替换整个资源（完整更新）   | 局部更新资源的一部分字段（部分更新）   |
+| 使用场景   | 客户端发送整个对象进行覆盖 | 客户端只发送部分字段进行更新           |
+| 请求方法   | `PUT`                      | `PATCH`                                |
+| 请求体格式 | 通常为完整 JSON 对象       | 通常为 JSON Patch 格式或部分 JSON 对象 |
+
+---
+
+`[AcceptVerbs(...)]`支持多种请求方式，如：`[AcceptVerbs("GET", "Post")]`
+
+#### 方法参数注解
+
+[FromRoute] [FromQuery]
+
+```C#
+[HttpGet("{id}")]
+public IActionResult GetProduct([FromRoute] int id) { /* ... */ } // 'id' 从路由模板中的 {id} 获取
+[HttpGet("search")]
+public IActionResult SearchProducts([FromQuery] string name, [FromQuery] int minPrice) { /* ... */ } // 匹配 /search?name=abc&minPrice=100
+```
+
+[FromBody]
+
+在一个动作方法中，**只能有一个参数**被标记为 `[FromBody]`。
+
+```C#
+[HttpPost]
+public IActionResult CreateProduct([FromBody] Product product) { /* ... */ } // 'product' 对象从请求体中反序列化
+```
+
+[FromForm]
+
+指定参数值从 **HTML 表单数据**中获取（`application/x-www-form-urlencoded` 或 `multipart/form-data`）。
+
+```C#
+[HttpPost("upload")]
+public IActionResult UploadFile([FromForm] IFormFile file, [FromForm] string description) { /* ... */ }
+```
+
+[FromHeader]
+
+```C#
+[HttpGet("status")]
+public IActionResult GetStatus([FromHeader(Name = "X-My-Custom-Header")] string customHeader) { /* ... */ }
+```
+
+[FromServices]
+
+即使在 `AddControllers` 时没有明确配置，这也是默认行为之一，但显式使用可以增加代码可读性。
+
+```C#
+[HttpGet]
+public IActionResult Get([FromServices] ILogger<MyController> logger) { /* ... */ } // 从DI容器获取日志服务
+```
+
+### 路由模板
 
 一个路由模板由一个或多个段组成，这些段由 `/` 分隔。每个段可以是：
 
@@ -4160,7 +4436,7 @@ public IActionResult GetConnectionInfo()
 - 匹配的 URL：`/Products` (匹配 `controller = "Products"`, `action = "Index"`, `id = null`)
 - 匹配的 URL：`/Products/Detail` (匹配 `controller = "Products"`, `action = "Detail"`, `id = null`)
 
-#### 路由约束
+### 路由约束
 
 **常用的内置约束**：
 
@@ -4168,6 +4444,7 @@ public IActionResult GetConnectionInfo()
   - 模板：`products/{id:int}`
   - 匹配：`/products/123`
   - 不匹配：`/products/abc`
+- `double`: 匹配浮点数
 - **`guid`**：只匹配 GUID 格式的字符串。
   - 模板：`items/{itemId:guid}`
   - 匹配：`/items/a1b2c3d4-e5f6-7890-1234-567890abcdef`
@@ -4188,15 +4465,15 @@ public IActionResult GetConnectionInfo()
 
 - 模板：`posts/{year:int:min(2000)}/{month:int:range(1,12)}`
 
-#### 特殊路由段和令牌
+### 特殊路由段
 
-**控制器和动作令牌**
+**控制器类**
 
-- **`[controller]`**：在特性路由中，它是一个占位符，在运行时会被替换为控制器类名（不带 "Controller" 后缀）。
+**`[controller]`**：在特性路由中，它是一个占位符，在运行时会被替换为控制器类名（不带 "Controller" 后缀）。
 
 如果 `ProductsController` 定义了 `[Route("api/[controller]")]`，则其基路由是 `/api/products`。
 
-- **`[action]`**：在特性路由中，它是一个占位符，在运行时会被替换为动作方法的名称。
+**`[action]`**：在特性路由中，它是一个占位符，在运行时会被替换为动作方法的名称。
 
 如果 `ProductsController` 中的 `GetById()` 方法定义了 `[HttpGet("[action]/{id}")]`，则其路由可能是 `/api/products/GetById/{id}`。
 
@@ -4217,68 +4494,169 @@ public IActionResult GetConnectionInfo()
 - 模板：`catchall/{**filepath}`
 - 匹配：`/catchall/folder/subfolder/file.txt` (捕获 `filepath = "folder/subfolder/file.txt"`)
 
-#### 优先级
+### 路由的优先级
 
-当多个路由模板都可能匹配同一个 URL 时，ASP.NET Core 会根据一系列规则来确定哪个是最佳匹配。通常的优先级顺序是：
+1. 具体路由优先于通用路由
+2. 带约束的路由优先于不带约束的路由
+3. 定义顺序（对于相同优先级的路由）
 
-1. **字面量段多的路由优先**：模板中包含更多固定字符串的路由更具体，优先级更高。
-   - `products/detail` 优先于 `products/{id}`
-2. **更具体的参数约束**：如果两个路由有相同数量的字面量和参数，带有更严格约束的参数可能会影响优先级。
-3. **路由定义顺序**：在 `UseEndpoints` 中注册的路由的顺序对于约定式路由非常重要，先注册的路由会先被尝试匹配。对于特性路由，框架会进行更复杂的匹配，但仍然建议将更具体的路由放在更前面。
-
-**最佳实践**：始终将**最具体的路由模板**放在路由集合中的**最前面**，将**最通用的路由模板**（如默认路由 `"{controller}/{action}/{id?}"`）放在**最后面**。
+---
 
 
 
-**Web API示例：**
+### 参数转换器
+
+
+
+### 区域路由
+
+
+
+### 路由组
+
+> .NET 7.0及以上版本开始生效
+
+#### 问题引入
 
 ```C#
-[ApiController]
-[Route("api/[controller]")] // 控制器级别的路由前缀：/api/products
-public class ProductsController : ControllerBase
-{
-    // GET /api/products
-    [HttpGet]
-    public IEnumerable<Product> GetProducts() { /* ... */ }
+// 没有路由组之前的重复配置
+app.MapGet("/users", () => "List all users")
+   .RequireAuthorization("AdminPolicy")
+   .WithOpenApi();
 
-    // GET /api/products/{id}
-    [HttpGet("{id:int}")] // 要求id为整数
-    public Product GetProductById(int id) { /* ... */ }
+app.MapGet("/users/{id}", (int id) => $"Get user {id}")
+   .RequireAuthorization("AdminPolicy")
+   .WithOpenApi();
 
-    // POST /api/products
-    // [FromBody]表示从请求体里取
-    [HttpPost]
-    public IActionResult CreateProduct([FromBody] Product product) { /* ... */ }
-
-    // GET /api/products/search?term=value
-    // 路由模板：/api/products/search
-    [HttpGet("search")]
-    public IEnumerable<Product> SearchProducts(string term) { /* ... */ }
-}
+app.MapPost("/users", () => "Create a new user")
+   .RequireAuthorization("AdminPolicy")
+   .WithOpenApi();
 ```
 
-**最小API示例：**
+`RequireAuthorization("AdminPolicy")` 和 `WithOpenApi()` 被重复应用了三次。如果配置项更多，这种重复会非常严重。
+
+路由组提供了一种**链式调用 (Fluent API)** 的方式，将这些共同的配置应用到整个组。
+
+主要用于**最小 API (Minimal APIs)**。它允许你将一组相关的终结点（Endpoint）组织在一起，并对它们统一应用配置，例如：
+
+- **共同的前缀 (Prefix)**
+- **共同的中间件 (Middleware)**
+- **共同的元数据 (Metadata)**（如 `[Authorize]`, `[Produces]` 等）
+- **共同的命名约定 (Name Convention)**
+- **共同的 OpenAPI/Swagger 文档标签 (Tags)**
+
+#### 使用方法
+
+路由组的核心是 `app.MapGroup()` 方法。
+
+示例1：基本使用
 
 ```C#
 // Program.cs
-var app = Builder.Build();
+var app = WebApplication.CreateBuilder(args).Build();
 
-// GET /hello
-app.MapGet("/hello", () => "Hello World!");
+// 创建一个路由组，并指定一个共同的前缀
+var usersApi = app.MapGroup("/users"); // "/users" 是这个组所有终结点的共同前缀
 
-// GET /users/{id}
-app.MapGet("/users/{id:guid}", (Guid id) => Results.Ok($"User ID: {id}"));
-
-// POST /orders
-app.MapPost("/orders", ([FromBody] Order order) => Results.Created($"/orders/{order.Id}", order));
-
-// GET /files/{**path}
-app.MapGet("/files/{**path}", (string path) => Results.Ok($"Requested file path: {path}"));
+// 在组内定义终结点，它们的路由会自动加上 "/users" 前缀
+usersApi.MapGet("/", () => "List all users"); // 路由: GET /users
+usersApi.MapGet("/{id}", (int id) => $"Get user {id}"); // 路由: GET /users/{id}
+usersApi.MapPost("/", () => "Create a new user"); // 路由: POST /users
 
 app.Run();
 ```
 
-### 区域路由
+在本例中：`usersApi` 组下的所有 `MapGet` 和 `MapPost` 终结点都会自动以 `/users` 为前缀。
+
+---
+
+示例2：将常用的 `RequireAuthorization()`, `WithTags()`, `WithOpenApi()` 等方法应用到整个路由组
+
+```C#
+// Program.cs
+var app = WebApplication.CreateBuilder(args).Build();
+
+// 启用授权
+app.UseAuthorization();
+app.UseAuthentication(); // 认证也通常是必需的
+
+// 为组添加认证和授权策略
+app.MapGroup("/users")
+   .RequireAuthorization("AdminPolicy") // 要求所有 /users 相关的 API 都需要 AdminPolicy 授权
+   .WithTags("Users API")             // 将所有 /users 相关的 API 在 Swagger 中归类到 "Users API" 标签下
+   .WithOpenApi()                     // 为组内所有 API 生成 OpenAPI 规范
+   .MapGet("/", () => "List all users")
+   .MapGet("/{id}", (int id) => $"Get user {id}")
+   .MapPost("/", () => "Create a new user");
+
+// 示例：另一个不需要授权的公共 API
+app.MapGet("/products", () => "List all products");
+
+app.Run();
+```
+
+现在，`"/users"` 组内的所有终结点都继承了 `RequireAuthorization("AdminPolicy")` 和 `WithTags("Users API")` 等配置，大大减少了重复代码。
+
+---
+
+示例3：路由组可以嵌套，这使得组织更复杂的 API 结构成为可能
+
+```C#
+var adminApi = app.MapGroup("/admin")
+                   .RequireAuthorization("AdminRole"); // 管理员通用授权
+
+var userManagement = adminApi.MapGroup("/users")
+                             .WithTags("Admin Users"); // 管理员用户接口
+
+userManagement.MapGet("/", () => "Admin: Get all users");
+userManagement.MapDelete("/{id}", (int id) => $"Admin: Delete user {id}");
+
+var productManagement = adminApi.MapGroup("/products")
+                               .WithTags("Admin Products"); // 管理员产品接口
+
+productManagement.MapPost("/", () => "Admin: Create product");
+productManagement.MapPut("/{id}", (int id) => $"Admin: Update product {id}");
+```
+
+- `GET /admin/users` 将需要 `AdminRole` 授权，并带有 "Admin Users" 标签。
+- `POST /admin/products` 将需要 `AdminRole` 授权，并带有 "Admin Products" 标签。
+
+---
+
+示例4：将控制器添加到路由组
+
+虽然路由组主要用于最小 API，但你也可以将控制器映射到路由组中，并利用路由组的共同配置。
+
+```C#
+// Program.cs
+var app = WebApplication.CreateBuilder(args).Build();
+builder.Services.AddControllers(); // 添加控制器支持
+
+var apiGroup = app.MapGroup("/api")
+                  .WithTags("API Endpoints")
+                  .RequireAuthorization(); // 所有 /api 下的控制器都需要授权
+
+// 映射控制器到路由组
+apiGroup.MapControllers(); // 这会将所有控制器映射到 /api/ 前缀下，并继承组的配置
+
+app.Run();
+
+// Controllers/MyController.cs
+[ApiController]
+[Route("[controller]")] // 注意这里是相对路由，会继承组的 /api 前缀
+public class MyController : ControllerBase
+{
+    // GET /api/my
+    [HttpGet]
+    public string Get() => "Hello from MyController!";
+}
+```
+
+通过 `apiGroup.MapControllers()`，`MyController` 的路由 `[controller]`（即 `my`）会组合到 `api` 组的前缀下，形成 `/api/my`。同时，`MyController` 下的所有动作方法也会继承 `apiGroup` 上配置的 `WithTags("API Endpoints")` 和 `RequireAuthorization()`。
+
+---
+
+**中间件顺序**：在路由组上添加的中间件（例如 `RequireAuthorization()`）只对组内的终结点生效，并且在这些终结点被匹配之后执行。它们是在 **终结点管道 (Endpoint Pipeline)** 中执行的，而不是全局请求管道（`app.Use...`）的一部分。
 
 ## 异常处理
 
