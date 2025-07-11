@@ -5,7 +5,7 @@ description: .NET CORE
 date: 2024-07-08 17:08:18
 categories: [.NET, .NET CORE]
 tags: [.NET]
-order: 0
+order: 1
 ---
 
 > ASP.NET Core in .NET 8.0

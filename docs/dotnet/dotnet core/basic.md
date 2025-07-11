@@ -5,6 +5,7 @@ description: .NET CORE
 date: 2024-07-08 17:08:18
 categories: [.NET, .NET CORE]
 tags: [.NET]
+order: 2
 ---
 
 ## 依赖注入
@@ -398,7 +399,7 @@ dotnet publish -c Release -r win-x64 --self-contained true
 
 2. 将中间件添加到请求管道
 
-   - 方式1：直接使用UseMiddleware<T>()
+   - 方式1：直接使用`UseMiddleware<T>()`
 
    ```C#
    // Program.cs
@@ -2130,7 +2131,7 @@ app.Run();
 
 ##### GetValue
 
-语法：GetValue<T>(string key, T defaultValue = default)
+语法：`GetValue<T>(string key, T defaultValue = default)`
 
 作用：这是获取单个配置值的**推荐方式**，因为它提供了**类型安全**和**默认值**的功能。
 
