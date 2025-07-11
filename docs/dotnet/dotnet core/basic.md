@@ -7,8 +7,6 @@ categories: [.NET, .NET CORE]
 tags: [.NET]
 ---
 
-
-
 ## 依赖注入
 
 .NET中的DI与Spring中的IOC极其相似
@@ -853,11 +851,11 @@ app.Run();
 - `RateLimit-Remaining`: 当前窗口剩余的请求数。
 - `RateLimit-Reset`: 当前窗口何时重置的时间戳。
 
-### 速率限制分区
+#### 速率限制分区
 
 分区就是将传入的请求流分成多个独立的组，并对每个组应用自己的速率限制计数器。
 
-#### 使用方法
+##### 使用方法
 
 通过 `PartitionedRateLimiter.Create<TResource, TPartitionKey>()` 方法来创建基于分区的速率限制器。这个方法接受两个主要的参数：
 
@@ -940,7 +938,7 @@ app.MapGet("/", () => "Hello from Main App!");
 app.Run();
 ```
 
-#### 限流算法 VS 限流分区
+##### 限流算法 VS 限流分区
 
 **速率限制算法**定义了**如何**计算和管理请求的额度。它们是数学模型，用来决定在特定时间内允许多少请求通过，以及当超过限制时如何处理（例如，拒绝、排队）。
 
@@ -952,9 +950,9 @@ app.Run();
 
 简而言之：分区是定义“独立账户”的机制，每个“账户”有自己的“流量套餐”。
 
-### 被限流后的处理方式
+#### 被限流后的处理方式
 
-#### 默认的处理方式
+##### 默认的处理方式
 
 当请求被速率限制器拒绝时，默认情况下会发生以下情况：
 
@@ -966,7 +964,7 @@ app.Run();
    - `RateLimit-Remaining`: 指示当前时间窗口内还剩余多少个请求。
    - `RateLimit-Reset`: 指示当前时间窗口何时重置的时间戳（通常是 Unix 时间戳或 HTTP 日期）。
 
-#### 自定义处理方式
+##### 自定义处理方式
 
 速率限制中间件允许你通过配置 `RateLimiterOptions.RejectionStatusCode` 和 `RateLimiterOptions.OnRejected` 回调来定制被拒绝请求的处理方式。
 
@@ -1057,9 +1055,9 @@ app.MapGet("/", () => "Hello World!");
 app.Run();
 ```
 
-### 启用/禁用的注解
+#### 启用/禁用的注解
 
-#### [EnableRateLimiting("PolicyName")]
+##### [EnableRateLimiting("PolicyName")]
 
 `EnableRateLimiting` 属性用于在控制器或 Action 方法上**启用**速率限制，并指定要使用的**命名策略 (Named Policy)**。
 
@@ -1123,7 +1121,7 @@ public class ProductsController : ControllerBase
 }
 ```
 
-#### [DisableRateLimiting]
+##### [DisableRateLimiting]
 
 `DisableRateLimiting` 属性用于在控制器或 Action 方法上**禁用**速率限制。
 
@@ -1166,7 +1164,7 @@ public class ProductsController : ControllerBase
 }
 ```
 
-#### 在最小API中的用法
+在最小API中的用法
 
 `EnableRateLimiting` 和 `DisableRateLimiting` 也可以用于 Minimal API 终结点：
 
@@ -1186,7 +1184,7 @@ app.MapGet("/api/health", () => "I'm healthy!")
 // ...
 ```
 
-### 最小API应用程序中的中间件
+### 最小API中的中间件
 
 #### 执行流程
 
@@ -3839,11 +3837,448 @@ public class MyCustomHealthCheck : IHealthCheck
 
 ## HttpContext
 
+**定义**：HttpContext 是 ASP.NET Core 中的核心类，封装了 HTTP 请求和响应的上下文信息，包含请求、响应、会话、用户身份等数据。
 
+**作用**：
+
+- 提供对当前 HTTP 请求和响应的访问。
+- 存储请求生命周期内的上下文数据（如认证信息、会话状态）。
+- 在中间件、控制器、Razor Pages 等中用于处理请求和生成响应。
+
+**生命周期**：每个 HTTP 请求创建一个新的 HttpContext 实例，请求结束后销毁。
+
+#### HttpRequest
+
+通过`HttpContext.Request`，可以访问和读取所有关于传入请求的信息。
+
+**主要属性：**
+
+- **`Method`**：获取请求的 HTTP 方法，例如 "GET", "POST", "PUT", "DELETE" 等。
+
+- **`Path`**：获取请求的 URL 路径，不包括域名和查询字符串。
+
+- **`Query`**：获取请求的**查询字符串参数集合** (`IQueryCollection`)。您可以按键访问参数值。
+
+  ```C#
+  string productId = HttpContext.Request.Query["productId"]; // 获取 "?productId=123" 中的 "123"
+  ```
+
+- **`Headers`**：获取请求的**头部信息集合** (`IHeaderDictionary`)。您可以按键访问头部值。
+
+  ```C#
+  string userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+  ```
+
+- **`Body`**：获取请求体的**输入流** (`Stream`)。当客户端发送 POST 或 PUT 请求，并且请求体中包含数据（如 JSON、表单数据、文件）时，您需要从这个流中读取。
+
+  读取 `Body` 是一个异步操作。通常会使用 `StreamReader` 或特定的模型绑定器来处理。
+
+  ```C#
+  // 读取请求体为字符串（慎用大请求体）
+  using var reader = new StreamReader(HttpContext.Request.Body);
+  string requestBody = await reader.ReadToEndAsync();
+  ```
+
+- **`ContentLength`**：获取请求体内容的长度（以字节为单位）。
+- **`ContentType`**：获取请求体的 MIME 类型，例如 "application/json", "application/x-www-form-urlencoded" 等。
+- **`IsHttps`**：指示请求是否通过 HTTPS 安全连接发送。
+- **`Host`**：获取请求的主机名（域名和端口）。
+
+#### HttpResponse
+
+通过`HttpResponse`，您可以写入响应内容、设置状态码和头部信息。
+
+- **`StatusCode`**：设置 HTTP 响应状态码，例如 200 (OK), 404 (Not Found), 500 (Internal Server Error) 等。
+
+  ```C#
+  HttpContext.Response.StatusCode = 200;
+  ```
+
+- **`Headers`**：获取响应的**头部信息集合** (`IHeaderDictionary`)。您可以设置自定义响应头。
+
+  ```C#
+  HttpContext.Response.Headers.Add("X-Custom-Header", "MyValue");
+  ```
+
+- **`Body`**：获取响应体的**输出流** (`Stream`)。您将数据写入此流以发送给客户端。
+
+  写入 `Body` 是一个异步操作。通常会使用 `StreamWriter` 或通过 `ControllerBase` 提供的 `Ok()`, `Json()` 等方法来间接写入。
+
+  ```C#
+  // 直接写入字符串到响应体
+  await HttpContext.Response.WriteAsync("Hello, World!");
+  ```
+
+- **`ContentType`**：设置响应体的 MIME 类型，例如 "application/json", "text/plain", "text/html" 等。
+
+  ```C#
+  HttpContext.Response.ContentType = "application/json";
+  ```
+
+- **`ContentLength`**：设置响应体的长度（以字节为单位）。通常在写入 `Body` 后由框架自动计算。
+
+- **`Redirect()`**：执行 HTTP 重定向，将客户端引导到另一个 URL。
+
+  ```C#
+  HttpContext.Response.Redirect("/login");
+  ```
+
+#### RequestAborted
+
+`HttpContext.RequestAborted` 是一个 `CancellationToken`（取消令牌）。它表示**客户端取消了请求**（例如，用户关闭了浏览器标签页，或者网络连接中断）。
+
+**用途**：在执行长时间运行的异步操作时，您应该**监听这个令牌**。如果令牌被取消，意味着客户端不再等待响应，您可以安全地终止当前操作，释放资源，避免不必要的计算。这对于服务器资源管理和性能优化至关重要。
+
+```C#
+public async Task<IActionResult> DownloadLargeFile()
+{
+    // 假设这是一个耗时的文件生成或下载操作
+    for (int i = 0; i < 100; i++)
+    {
+        // 检查客户端是否已取消请求
+        if (HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogWarning("Client cancelled download for large file.");
+            return new EmptyResult(); // 返回空结果或适当的错误
+        }
+        await Task.Delay(100, HttpContext.RequestAborted); // 模拟耗时操作，并传递取消令牌
+        // 写入部分数据到响应流
+        await HttpContext.Response.WriteAsync($"Part {i}\n");
+        await HttpContext.Response.Body.FlushAsync(); // 刷新缓冲区
+    }
+    return Ok("File downloaded successfully.");
+}
+```
+
+在上面的例子中，`Task.Delay` 和 `HttpContext.Response.WriteAsync` 等异步操作通常会接受 `CancellationToken` 参数。当 `RequestAborted` 被触发时，这些操作就会抛出 `OperationCanceledException`，您可以捕获它来处理取消逻辑。
+
+#### Abort
+
+`HttpContext.Abort()` 方法用于**立即终止当前 HTTP 请求的处理**。
+
+当处于某种异常或不可恢复的状态，需要立即关闭连接并停止处理请求时使用。它会阻止进一步的中间件或终结点执行。
+
+**注意**
+
+- 这是一个**非常粗暴**的操作，因为它会直接关闭底层 TCP 连接，可能导致客户端收到不完整的响应或连接错误。
+- 通常情况下，您应该优先通过设置 `HttpContext.Response.StatusCode` 并返回一个 `IActionResult` 来优雅地结束请求（例如 `BadRequest()`, `NotFound()`, `StatusCode(500)`），而不是使用 `Abort()`。
+- `Abort()` 在某些极端的错误场景下才会被考虑使用，例如，当检测到恶意请求或服务器资源耗尽，需要紧急切断连接时。
+
+```C#
+public IActionResult UnsafeOperation()
+{
+    if (Environment.IsProduction() && HttpContext.Request.IsLocal()) // 假设只允许本地访问
+    {
+        _logger.LogError("Unauthorized access attempt detected from non-local IP. Aborting request.");
+        HttpContext.Abort(); // 立即终止连接
+        // 后续代码将不会执行
+        return Content("Should not reach here");
+    }
+    return Ok("Allowed access.");
+}
+```
+
+大多数情况下，使用 `return Unauthorized()` 或 `return Forbid()` 来处理访问控制，它们会发送一个标准的 HTTP 响应，而不是粗暴地终止连接。
+
+#### User
+
+`HttpContext.User` 属性是一个 `ClaimsPrincipal` 对象，它代表了**当前 HTTP 请求的用户的身份信息**。它是 .NET Core **认证和授权机制的核心**。
+
+- **用途**：
+  - **身份识别**：获取当前用户的用户名、ID 或其他标识信息。
+  - **角色检查**：判断用户是否属于某个角色。
+  - **权限检查**：根据用户的声明（Claims）判断用户是否有权执行某个操作。
+- **组成**：
+  - **`ClaimsPrincipal`**：可以包含一个或多个 `ClaimsIdentity`。
+  - **`ClaimsIdentity`**：代表一个身份，包含一组与该身份相关的**声明 (Claims)**。
+  - **`Claim`**：一个键值对，表示用户的一个属性或事实，例如用户的姓名、电子邮件、角色、权限等。
+
+```C#
+using System.Security.Claims; // 确保引入此命名空间
+
+public IActionResult GetUserProfile()
+{
+    // 检查用户是否已认证
+    if (HttpContext.User.Identity?.IsAuthenticated ?? false)
+    {
+        string userName = HttpContext.User.Identity.Name; // 获取用户名
+        // 获取用户ID声明（假设在登录时添加了 ClaimTypes.NameIdentifier）
+        string userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        // 检查用户是否在 "Admin" 角色中
+        bool isAdmin = HttpContext.User.IsInRole("Admin");
+
+        // 获取自定义声明（如果存在）
+        string department = HttpContext.User.FindFirst("Department")?.Value;
+
+        return Ok($"User: {userName}, ID: {userId}, IsAdmin: {isAdmin}, Department: {department}");
+    }
+    else
+    {
+        return Unauthorized("User not authenticated.");
+    }
+}
+```
+
+#### Features
+
+`HttpContext.Features` 是一个 `IFeatureCollection`，它是一个**低级别的、键值对集合**，用于**访问和操作当前请求的特定功能和能力**。
+
+**作用：**
+
+- ASP.NET Core 的许多底层功能（如请求/响应处理、连接信息、认证状态）都是通过“特性”（Feature）来实现的。
+- `Features` 提供了一种灵活的机制来扩展和定制请求管道的行为，而无需修改 `HttpContext` 的核心接口。
+- 它允许中间件和低层组件在请求处理过程中**暴露和发现特定功能**。
+
+**使用方式：**
+
+使用泛型方法 `Get<TFeature>()` 来获取特定类型的特性接口。
+
+- **`IHttpRequestFeature`**：提供对请求方法、路径、协议等基本信息的访问。
+- **`IHttpResponseFeature`**：提供对响应状态码、头部等基本信息的访问。
+- **`IHttpConnectionFeature`**：提供连接信息，如本地和远程 IP 地址。
+- **`IExceptionHandlerFeature`**：在异常处理中间件中获取异常信息。
+
+```C#
+using Microsoft.AspNetCore.Http.Features; // 确保引入此命名空间
+
+public IActionResult GetConnectionInfo()
+{
+    // 获取连接特性
+    var connectionFeature = HttpContext.Features.Get<IHttpConnectionFeature>();
+
+    if (connectionFeature != null)
+    {
+        string remoteIp = connectionFeature.RemoteIpAddress?.ToString() ?? "N/A";
+        int remotePort = connectionFeature.RemotePort;
+        string localIp = connectionFeature.LocalIpAddress?.ToString() ?? "N/A";
+        int localPort = connectionFeature.LocalPort;
+
+        return Ok($"Client IP: {remoteIp}:{remotePort}, Server IP: {localIp}:{localPort}");
+    }
+    else
+    {
+        return StatusCode(500, "Connection feature not available.");
+    }
+}
+```
+
+在大多数高层应用代码中，您可能不会直接与 `Features` 交互，而是通过 `HttpContext.Request`、`HttpContext.Response` 等更高级别的属性来访问信息，因为这些属性已经封装了对底层特性的访问。然而，在编写自定义中间件或深度定制框架行为时，`Features` 变得非常有用。
+
+#### 线程不安全性
+
+**含义**
+
+`HttpContext` 对象是**为单个 HTTP 请求而创建的**，它的设计目的是在**单线程的请求处理管道中**使用。这意味着，您不应该在多个线程之间共享同一个 `HttpContext` 实例，也不应该在异步操作中跨越 `await` 边界后继续直接使用它，除非您了解其限制并采取了适当的措施。
+
+**为什么线程不安全？**
+
+`HttpContext` 内部包含许多可变状态（如 `Request`、`Response` 等），这些状态在请求处理过程中可能会被修改。如果在多个线程同时修改或读取这些状态，就会导致数据损坏、竞态条件或不可预测的行为。
+
+**常见问题场景**：
+
+1. **后台任务**：在 ASP.NET Core 请求处理结束后的后台任务中，直接引用从请求中捕获的 `HttpContext` 是一个错误。此时 `HttpContext` 可能已经被销毁或重用了。
+
+2. **异步操作中的 `await` 陷阱**：在 `async` 方法中，如果 `HttpContext` 在 `await` 之前被访问，并且 `await` 之后又被访问，由于上下文切换，`HttpContext` 可能不再是同一个实例，或者其内部状态已经发生变化。
+
+   ```C#
+   public async Task<IActionResult> MyAsyncAction()
+   {
+       string originalPath = HttpContext.Request.Path; // 第一次访问
+   
+       await Task.Delay(1000); // 模拟耗时操作，可能导致上下文切换
+   
+       // 警告：这里的 HttpContext.Request.Path 可能不再是原始请求的路径，
+       // 如果在await期间请求被取消或上下文被重用
+       string currentPath = HttpContext.Request.Path; // 第二次访问，风险点
+   
+       return Ok();
+   }
+   ```
+
+**正确的手法**
+
+1. **在 `await` 前捕获所需数据**：如果在`await`之后需要`HttpContext`中的特定数据，请在`await`之前将其复制到局部变量中。
+
+   ```C#
+   public async Task<IActionResult> MyAsyncAction()
+   {
+       string pathAtStart = HttpContext.Request.Path; // 捕获数据
+       string traceId = HttpContext.TraceIdentifier; // 捕获数据
+   
+       await Task.Delay(1000); // 模拟耗时操作
+   
+       // 安全地使用已捕获的数据
+       _logger.LogInformation("Path at start: {Path}, Trace ID: {TraceId}", pathAtStart, traceId);
+   
+       return Ok();
+   }
+   ```
+
+2. **避免在后台任务中直接引用 `HttpContext`**：如果需要在后台任务中使用请求数据，请将所需的数据作为参数传递给后台任务，而不是传递 `HttpContext` 本身。
+3. **使用 `IHttpContextAccessor` 的注意事项**：`IHttpContextAccessor` 虽然允许在服务层访问 `HttpContext`，但它也存在同样的线程安全限制。在后台任务中 `IHttpContextAccessor.HttpContext` 将会是 `null`。
+4. **将操作包装在同步代码中**：如果操作是同步的，或者您能确保 `await` 不会导致上下文切换，那么风险较小。但通常，最好遵循上述捕获数据的原则。
 
 ## 路由
 
+### 路由模板
 
+#### 模板
+
+一个路由模板由一个或多个段组成，这些段由 `/` 分隔。每个段可以是：
+
+1. 字面量段
+
+字面量段是 URL 中必须**精确匹配**的固定字符串。
+
+**示例**：
+
+- 模板：`api/products`
+- 匹配的 URL：`/api/products`
+- 不匹配的 URL：`/api/items`
+
+2. 参数段
+
+参数段用大括号 `{}` 包裹，表示 URL 中这部分是一个**可变的值**。路由系统会捕获这个值，并将其作为路由数据传递给你的终结点代码
+
+**基本参数**：
+
+- 模板：`products/{id}`
+- 匹配的 URL：`/products/123` (捕获 `id = "123"`)
+- 匹配的 URL：`/products/abc` (捕获 `id = "abc"`)
+
+**可选参数**：通过在参数名后添加问号 `?` 来表示。如果 URL 中没有提供这个参数，它将是 `null` 或其默认值。
+
+- 模板：`products/{id?}`
+- 匹配的 URL：`/products/123` (捕获 `id = "123"`)
+- 匹配的 URL：`/products` (捕获 `id = null`)
+
+**带默认值的参数**：通过在参数名后添加 `=` 来指定一个默认值。这也会使参数变为可选。
+
+- 模板：`{controller=Home}/{action=Index}/{id?}`
+- 匹配的 URL：`/` (匹配 `controller = "Home"`, `action = "Index"`, `id = null`)
+- 匹配的 URL：`/Products` (匹配 `controller = "Products"`, `action = "Index"`, `id = null`)
+- 匹配的 URL：`/Products/Detail` (匹配 `controller = "Products"`, `action = "Detail"`, `id = null`)
+
+#### 路由约束
+
+**常用的内置约束**：
+
+- **`int`**：只匹配整数。
+  - 模板：`products/{id:int}`
+  - 匹配：`/products/123`
+  - 不匹配：`/products/abc`
+- **`guid`**：只匹配 GUID 格式的字符串。
+  - 模板：`items/{itemId:guid}`
+  - 匹配：`/items/a1b2c3d4-e5f6-7890-1234-567890abcdef`
+- **`bool`**：只匹配布尔值 (`true`, `false`)。
+- **`datetime`**：只匹配日期时间格式的字符串。
+- **`alpha`**：只匹配字母字符。
+  - 模板：`users/{username:alpha}`
+  - 匹配：`/users/john`
+  - 不匹配：`/users/john123`
+- **`minlength(length)` / `maxlength(length)` / `length(min, max)`**：限制字符串长度。
+  - 模板：`codes/{code:length(5)}` (精确长度为5)
+- **`min(value)` / `max(value)` / `range(min, max)`**：限制数字范围。
+- **`regex(pattern)`**：使用正则表达式进行匹配。
+  - 模板：`articles/{year:regex(^\\d{{4}}$)}` (匹配4位数字的年份)
+  - **注意**：在 C# 字符串中，正则表达式中的 `\` 和 `{}` 需要转义。
+
+**组合约束**：你可以为同一个参数应用多个约束，用 `:` 分隔。
+
+- 模板：`posts/{year:int:min(2000)}/{month:int:range(1,12)}`
+
+#### 特殊路由段和令牌
+
+**控制器和动作令牌**
+
+- **`[controller]`**：在特性路由中，它是一个占位符，在运行时会被替换为控制器类名（不带 "Controller" 后缀）。
+
+如果 `ProductsController` 定义了 `[Route("api/[controller]")]`，则其基路由是 `/api/products`。
+
+- **`[action]`**：在特性路由中，它是一个占位符，在运行时会被替换为动作方法的名称。
+
+如果 `ProductsController` 中的 `GetById()` 方法定义了 `[HttpGet("[action]/{id}")]`，则其路由可能是 `/api/products/GetById/{id}`。
+
+---
+
+**通配符**
+
+作用：用于匹配 URL 路径的剩余部分。
+
+**`{\*param}`**：捕获所有剩余的路径段，但不包括路径分隔符 `/`。
+
+- 模板：`files/{*path}`
+- 匹配：`/files/documents/report.pdf` (捕获 `path = "documents/report.pdf"`)
+- 如果 URL 是 `/files/documents/sub/report.pdf`，`path` 仍为 `"documents/sub/report.pdf"`。
+
+**`{\**param}`**：捕获所有剩余的路径段，**包括路径分隔符 `/`**。这在代理或处理文件路径时非常有用。
+
+- 模板：`catchall/{**filepath}`
+- 匹配：`/catchall/folder/subfolder/file.txt` (捕获 `filepath = "folder/subfolder/file.txt"`)
+
+#### 优先级
+
+当多个路由模板都可能匹配同一个 URL 时，ASP.NET Core 会根据一系列规则来确定哪个是最佳匹配。通常的优先级顺序是：
+
+1. **字面量段多的路由优先**：模板中包含更多固定字符串的路由更具体，优先级更高。
+   - `products/detail` 优先于 `products/{id}`
+2. **更具体的参数约束**：如果两个路由有相同数量的字面量和参数，带有更严格约束的参数可能会影响优先级。
+3. **路由定义顺序**：在 `UseEndpoints` 中注册的路由的顺序对于约定式路由非常重要，先注册的路由会先被尝试匹配。对于特性路由，框架会进行更复杂的匹配，但仍然建议将更具体的路由放在更前面。
+
+**最佳实践**：始终将**最具体的路由模板**放在路由集合中的**最前面**，将**最通用的路由模板**（如默认路由 `"{controller}/{action}/{id?}"`）放在**最后面**。
+
+
+
+**Web API示例：**
+
+```C#
+[ApiController]
+[Route("api/[controller]")] // 控制器级别的路由前缀：/api/products
+public class ProductsController : ControllerBase
+{
+    // GET /api/products
+    [HttpGet]
+    public IEnumerable<Product> GetProducts() { /* ... */ }
+
+    // GET /api/products/{id}
+    [HttpGet("{id:int}")] // 要求id为整数
+    public Product GetProductById(int id) { /* ... */ }
+
+    // POST /api/products
+    // [FromBody]表示从请求体里取
+    [HttpPost]
+    public IActionResult CreateProduct([FromBody] Product product) { /* ... */ }
+
+    // GET /api/products/search?term=value
+    // 路由模板：/api/products/search
+    [HttpGet("search")]
+    public IEnumerable<Product> SearchProducts(string term) { /* ... */ }
+}
+```
+
+**最小API示例：**
+
+```C#
+// Program.cs
+var app = Builder.Build();
+
+// GET /hello
+app.MapGet("/hello", () => "Hello World!");
+
+// GET /users/{id}
+app.MapGet("/users/{id:guid}", (Guid id) => Results.Ok($"User ID: {id}"));
+
+// POST /orders
+app.MapPost("/orders", ([FromBody] Order order) => Results.Created($"/orders/{order.Id}", order));
+
+// GET /files/{**path}
+app.MapGet("/files/{**path}", (string path) => Results.Ok($"Requested file path: {path}"));
+
+app.Run();
+```
+
+### 区域路由
 
 ## 异常处理
 
@@ -3858,3 +4293,4 @@ public class MyCustomHealthCheck : IHealthCheck
 
 
 ## .NET基架遥测
+
