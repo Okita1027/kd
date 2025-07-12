@@ -3665,7 +3665,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks; // 确保引入此命名空
 
 var builder = WebApplication.CreateBuilder(args);
 
-// **关键步骤：注册健康检查服务**
+// 关键步骤：注册健康检查服务
 builder.Services.AddHealthChecks()
     // 1. 添加一个简单的存活检查 (Liveness Check)
     // 这是一个最基本的检查，只返回 HealthStatus.Healthy
@@ -4512,6 +4512,8 @@ public IActionResult Get([FromServices] ILogger<MyController> logger) { /* ... *
 ### 区域路由
 
 
+
+---
 
 ### 路由组
 
