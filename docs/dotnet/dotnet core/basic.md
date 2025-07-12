@@ -2,15 +2,13 @@
 title: 基础篇
 shortTitle: 基础篇
 description: .NET CORE
-date: 2024-07-08 17:08:18
+date: 2025-07-08 17:08:18
 categories: [.NET, .NET CORE]
 tags: [.NET]
 order: 2
 ---
 
 ## 依赖注入
-
-.NET中的DI与Spring中的IOC极其相似
 
 ### 服务注册
 
@@ -4503,6 +4501,191 @@ public IActionResult Get([FromServices] ILogger<MyController> logger) { /* ... *
 
 ---
 
+### URL生成
+URL 生成允许你在代码（控制器、视图、Razor Pages）中动态地构建指向应用程序内部资源的 URL。这与路由匹配（将传入 URL 映射到代码）是相反的过程。
+URL 生成主要通过 `Microsoft.AspNetCore.Mvc.IUrlHelper` 接口及其实现类来完成。在控制器、视图和 Razor Pages 中，你可以通过不同的方式访问到这个功能。
+#### Controller中使用
+
+在继承 `Controller` 或 `ControllerBase` 的控制器中，你可以直接通过 `Url` 属性访问 `IUrlHelper` 接口的方法。
+
+
+
+`Url.Action()`
+
+- **用途**：生成指向另一个**控制器动作方法**的 URL。
+- **参数**：
+  - `actionName` (string)：目标动作方法的名称。
+  - `controllerName` (string, optional)：目标控制器的名称。如果省略，默认为当前控制器。
+  - `routeValues` (object, optional)：一个匿名对象，包含作为路由参数或查询字符串的附加数据。
+  - `protocol` (string, optional)：例如 "http" 或 "https"。
+  - `host` (string, optional)：主机名。
+  - `fragment` (string, optional)：URL 片段（`#` 后面的部分）。
+
+- 示例：
+
+```C#
+public class ProductsController : Controller
+{
+    public IActionResult GetProduct(int id)
+    {
+        // 生成指向 ProductController 的 Details 动作的 URL
+        // 假设 Details 动作路由是 /Products/Details/{id}
+        string productDetailsUrl = Url.Action("Details", "Products", new { id = 123 });
+        // 结果可能为: /Products/Details/123
+
+        // 生成指向当前控制器的另一个动作（例如 Index）的 URL
+        string indexUrl = Url.Action("Index");
+        // 结果可能为: /Products/Index
+
+        // 生成带有协议和主机的完整 URL
+        string absoluteUrl = Url.Action("Details", "Products", new { id = 456 }, protocol: Request.Scheme, host: Request.Host.Host);
+        // 结果可能为: https://localhost:5001/Products/Details/456
+
+        return View();
+    }
+
+    public IActionResult Details(int id) { return View(); }
+    public IActionResult Index() { return View(); }
+}
+```
+
+---
+
+`Url.RouteUrl()`
+
+**用途**：生成指向一个**命名路由 (Named Route)** 的 URL。命名路由是在 `Program.cs` 的 `MapControllerRoute` 或 `MapRazorPages` 中通过 `name` 参数定义的路由。
+
+**参数**：与 `Url.Action()` 类似，但第一个参数是路由名称。
+
+示例：
+
+```C#
+// Program.cs中定义了一个路由
+endpoints.MapControllerRoute(
+    name: "productDetailsRoute",
+    pattern: "products-info/{id}",
+    defaults: new { controller = "Products", action = "Details" });
+```
+
+```C#
+// 在控制器中生成 URL：
+public class ProductsController : Controller
+{
+    public IActionResult SomeAction()
+    {
+        string namedRouteUrl = Url.RouteUrl("productDetailsRoute", new { id = 789 });
+        // 结果可能为: /products-info/789
+        return View();
+    }
+}
+```
+
+---
+
+`Url.Page()`
+
+**用途**：生成指向 **Razor Pages** 的 URL。
+
+**参数**：
+
+- `pageName` (string)：Razor Page 的路径（不带 `.cshtml` 扩展名），例如 `/Products/Details`。如果页面在区域中，需要加上 `/AreaName/PageName`。
+- `routeValues` (object, optional)：路由值。
+- `protocol`, `host`, `fragment`：同 `Url.Action()`。
+- `handler` (string, optional)：指定 Razor Page 中的处理程序方法（例如 `OnGet`、`OnPost` 对应的命名处理程序）。
+
+```C#
+public class MyController : Controller
+{
+    public IActionResult SomePageAction()
+    {
+        // 生成指向 Pages/About.cshtml 的 URL
+        string aboutPageUrl = Url.Page("/About");
+        // 结果可能为: /About
+
+        // 生成指向 Pages/Products/Details.cshtml 并带参数的 URL
+        string productPageUrl = Url.Page("/Products/Details", new { id = 10 });
+        // 结果可能为: /Products/Details/10
+
+        // 生成指向 Admin 区域的 Pages/Dashboard.cshtml 的 URL
+        string adminDashboardUrl = Url.Page("/Dashboard", new { area = "Admin" });
+        // 结果可能为: /Admin/Dashboard
+
+        return View();
+    }
+}
+```
+
+#### Razor Pages中使用
+
+`Url` Helper 属性
+
+与控制器中类似，视图中也直接暴露了 `Url` 属性，你可以使用 `Url.Action()`, `Url.RouteUrl()`, `Url.Page()` 等方法。
+
+```C#
+<a href="@Url.Action("Details", "Products", new { id = 1 })">View Product 1</a>
+<a href="@Url.Page("/Contact")">Contact Us</a>
+```
+
+**Tag Helpers**
+
+Tag Helpers 是一种更推荐、更 HTML 友好的方式来生成 URL。它们将服务器端代码注入到 HTML 标签中，使 HTML 保持整洁。
+
+- **`asp-action`, `asp-controller`, `asp-route-\*`**：用于生成指向控制器动作的 URL。
+
+  ```C#
+  <a asp-action="Details" asp-controller="Products" asp-route-id="123">View Product</a>
+  <a asp-action="Index" asp-route-page="2">Go to Page 2</a>
+  ```
+
+- **`asp-page`, `asp-page-handler`, `asp-route-\*`**：用于生成指向 Razor Pages 的 URL。
+
+  ```C#
+  <a asp-page="/About">About Us</a>
+  <a asp-page="/Products/Details" asp-route-id="456">Product Page</a>
+  <a asp-area="Admin" asp-page="/Dashboard">Admin Dashboard</a>
+  ```
+
+- **`asp-route`**：用于生成指向命名路由的 URL。
+
+  ```C#
+  <a asp-route="productDetailsRoute" asp-route-id="789">Product Info (Named Route)</a>
+  ```
+
+#### URL 生成时的路由值优先级
+
+1. **匹配路由模板的参数**：如果提供的路由值名称与当前匹配的路由模板中的参数名一致（例如 `{id}`），那么它会被作为路由参数包含在 URL 路径中。
+2. **剩余作为查询字符串**：如果提供的路由值名称**不**匹配路由模板中的任何参数名，那么它将作为**查询字符串参数**添加到 URL 的末尾。
+3. **默认值**：如果路由模板中的某个参数有默认值，并且你没有在 `routeValues` 中为它提供值，那么它将使用默认值。
+
+示例：假设路由模板是 `products/{id}`
+
+```C#
+// Url.Action("Details", "Products", new { id = 10, category = "Electronics" });
+// 结果: /products/10?category=Electronics
+// 'id' 匹配路由参数，'category' 不匹配，成为查询字符串。
+```
+
+#### 注意事项
+
+- **区域 (Areas)**：如果你在区域内部工作或需要生成指向区域内资源的 URL，记住要显式地在 `routeValues` 中包含 `area` 参数，例如 `new { area = "Admin" }`。
+- **当前路由值**：默认情况下，URL 生成方法会继承当前请求的路由值。例如，如果你在 `/Products/Details/123` 页面中调用 `Url.Action("Edit")`，它可能会尝试生成 `/Products/Edit/123`。如果你不希望继承某些路由值，可以明确地将其设置为 `null` 或一个空字符串。
+- **协议和主机**：默认生成的 URL 是相对路径。如果需要生成绝对 URL（包含 `http://` 或 `https://` 和域名），你需要提供 `protocol` 和 `host` 参数。通常从 `Request.Scheme` 和 `Request.Host.Value` 获取。
+- **HTTPS 重定向**：在生产环境中，通常会强制使用 HTTPS。生成的 URL 也应该反映这一点。
+- **最小 API 的 URL 生成**：对于最小 API，通常会给终结点命名，然后通过 `LinkGenerator` 服务来生成 URL。
+
+```C#
+// Program.cs
+app.MapGet("/users/{id}", (int id) => Results.Ok($"User {id}"))
+   .WithName("GetUserById"); // 给终结点命名
+
+// 在其他地方注入 LinkGenerator
+app.MapGet("/generate-link", (LinkGenerator linker) =>
+{
+    var url = linker.GetPathByName("GetUserById", new { id = 5 });
+    return Results.Ok($"Link to user 5: {url}"); // 结果可能为 /users/5
+});
+```
+
 
 
 ### 参数转换器
@@ -4663,15 +4846,263 @@ public class MyController : ControllerBase
 
 ## 异常处理
 
+| 方式                         | 场景                   | 特点                                        |
+| ---------------------------- | ---------------------- | ------------------------------------------- |
+| `UseExceptionHandler` 中间件 | **全局统一处理异常**   | ✅ 推荐方式，返回标准 JSON（ProblemDetails） |
+| `UseDeveloperExceptionPage`  | **开发调试使用**       | 展示详细错误堆栈，仅限开发环境              |
+| 控制器中 `try-catch`         | 局部业务逻辑处理       | 对于可预见异常可局部处理                    |
+| 实现 `IExceptionFilter`      | 控制器层的统一异常过滤 | 可返回自定义格式 JSON                       |
+| 自定义中间件处理异常         | 深度定制               | 高自由度，需自行编写逻辑                    |
+
+### `UseExceptionHandler`中间件
+
+1. `Program.cs`注册
+
+   ```C#
+   if (!app.Environment.IsDevelopment())
+   {
+       app.UseExceptionHandler("/error");
+   }
+   ```
+
+2. 创建统一错误控制器
+
+   ```C#
+   [ApiController]
+   public class ErrorController : ControllerBase
+   {
+       [Route("/error")]
+       public IActionResult Error()
+       {
+           var feature = HttpContext.Features.Get<IExceptionHandlerFeature>();
+           var exception = feature?.Error;
+   
+           // 可记录日志
+           // _logger.LogError(exception, "未处理异常");
+   
+           return Problem(
+               detail: exception?.Message,
+               statusCode: 500,
+               title: "服务器内部错误"
+           );
+       }
+   }
+   ```
+
+3. 响应数据格式参考
+
+   ```JSON
+   {
+     "type": "about:blank",
+     "title": "服务器内部错误",
+     "status": 500,
+     "detail": "对象引用未设置到对象的实例。",
+     "instance": "/api/product/5"
+   }
+   
+   {
+     "status": 500,
+     "error": "服务器错误",
+     "detail": "数据库连接失败",
+     "path": "/api/user/1"
+   }
+   ```
+
+#### `UseDeveloperExceptionPage`
+
+仅开发时使用
+
+会输出完整堆栈、异常类型、请求详情
+
+```C#
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage(); // 仅在开发环境使用
+}
+```
+
+### 局部`try-catch`
+
+
+
+### 异常过滤器
+
+
+
+### 自定义异常处理中间件
+
 
 
 ## 发出HTTP请求
+
+### `HttpClient`
+
+
+
+### `IHttpClientFactory`
 
 
 
 ## 静态文件
 
+### 默认配置
+`wwwroot`是默认的静态文件根目录,结构如下：
+
+```C#
+MyProject/
+├── wwwroot/
+│   ├── index.html
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── app.js
+├── Program.cs
+```
+
+在`Program.cs`中启用中间件
+
+```CS
+var app = builder.Build();
+
+app.UseStaticFiles(); // 启用静态文件功能
+```
+
+请求示例：
+
+| 请求路径         | 实际访问文件路径        |
+| ---------------- | ----------------------- |
+| `/index.html`    | `wwwroot/index.html`    |
+| `/css/style.css` | `wwwroot/css/style.css` |
+| `/js/app.js`     | `wwwroot/js/app.js`     |
+
+### 自定义静态文件目录
+
+```CS
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "MyStaticFiles")),
+    RequestPath = "/files"
+});
+```
+
+假设存在目录：`MyStaticFiles/image.png`
+
+请求路径为：`/files/image.png`
+
+### 配置默认首页
+
+默认情况下，访问 `/` 并不会自动返回 `index.html`，需要启用默认文件中间件：
+
+```CS
+app.UseDefaultFiles();  // 匹配 index.html、default.html 等
+app.UseStaticFiles();   // 提供静态文件服务
+```
+
+- `/` → 自动返回 `/index.html`（如果存在）
+
+- > [!important]
+  >
+  > 必须先 UseDefaultFiles 再 UseStaticFiles。
+
+### 配置目录浏览
+
+```C#
+app.UseDirectoryBrowser(new DirectoryBrowserOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "MyStaticFiles")),
+    RequestPath = "/browse"
+});
+
+```
+访问 /browse/ 会展示该目录下的所有文件链接。
+
+> [!WARNING]
+>
+> 不要用于生产环境
+
+### 客户端缓存优化
+```C#
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+    	// max-age=604800 表示缓存 7 天（单位：秒）
+        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=604800");
+    }
+});
+```
+### 限制访问文件类型
+配置 StaticFileOptions 中间件来自定义访问控制，例如限制 `.config`、`.cs` 文件：
+```C#
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.File.Name;
+        if (path.EndsWith(".cs") || path.EndsWith(".json"))
+        {
+            ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            ctx.Context.Response.ContentLength = 0;
+            ctx.Context.Response.Body = Stream.Null;
+        }
+    }
+});
+```
+### 非标准文件类型的处理
+
+通过配置 `StaticFileOptions` 的 `ContentTypeProvider` 属性来 添加或覆盖 MIME 类型映射:
+
+需要创建一个 `FileExtensionContentTypeProvider` 实例，并向其 `Mappings` 字典添加自定义的扩展名到 MIME 类型的映射。
+
+案例：假设有以下非标准文件类型
+
+- `wwwroot/data/mydata.custom`，你希望它以 `text/plain` 格式提供。
+- `wwwroot/assets/model.gltf`，你希望它以 `model/gltf+json` 格式提供。
+
+```C#
+// Program.cs
+using Microsoft.AspNetCore.StaticFiles; // 确保引用此命名空间
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+// 创建一个内容类型提供者
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+
+// 添加或覆盖 MIME 类型映射
+// 对于 .custom 文件，映射到 text/plain
+contentTypeProvider.Mappings[".custom"] = "text/plain";
+// 对于 .gltf 文件，映射到 model/gltf+json (如果默认没有，或想覆盖)
+contentTypeProvider.Mappings[".gltf"] = "model/gltf+json";
+// 对于 .wasm 文件，通常是默认支持的，但你也可以明确添加
+contentTypeProvider.Mappings[".wasm"] = "application/wasm";
+// 对于 .webp 图片
+contentTypeProvider.Mappings[".webp"] = "image/webp";
+// 移除某个默认的映射 (例如，如果你不希望 .js 文件以 text/javascript 提供，可以移除它)
+// contentTypeProvider.Mappings.Remove(".js");
+
+// 将自定义的 ContentTypeProvider 传递给 UseStaticFiles
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypeProvider
+});
+
+// 其他中间件和路由映射
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllers(); // 或 MapRazorPages() 等
+
+app.Run();
+```
+---
+
+**`FileExtensionContentTypeProvider`工作原理**
+
+- `FileExtensionContentTypeProvider` 内部维护了一个字典，将文件扩展名（不含点，例如 "txt"）映射到相应的 MIME 类型字符串。
+- 当你通过 `contentTypeProvider.Mappings[".extension"] = "mime/type";` 添加映射时，它会自动处理扩展名开头的点，并将其添加到内部字典。
+- 当静态文件中间件需要确定一个文件的 `Content-Type` 时，它会查询这个 `ContentTypeProvider`。如果找到匹配的扩展名，就使用对应的 MIME 类型。如果没有找到，它会回退到默认行为（通常是 `application/octet-stream`）。
 
 
-## .NET基架遥测
 
