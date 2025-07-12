@@ -637,7 +637,18 @@ dotnet_diagnostic.CA2007.severity = none
      </Project>
    ```
 
-   
+
+### HttpRepl
+
+`HttpRepl` 是一个微软提供的 **命令行工具**，用于探索和调试 ASP.NET Core Web API。全称是 **HTTP REPL（Read-Eval-Print-Loop）**。
+
+它像是 Web API 的“命令行浏览器”，你可以：
+
+- 连接到 Web API 端点
+- 浏览控制器和操作
+- 发起 GET、POST、PUT、DELETE 请求
+- 自动提示路由、参数、可用 HTTP 动作
+- 用交互方式测试接口，而不需要 Postman、curl 或 Swagger
 
 ## 最小API
 
