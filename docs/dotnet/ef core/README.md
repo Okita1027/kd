@@ -1,6 +1,6 @@
 ---
-title: EF CORE
+title: EF Core
 index: false
 ---
 
-EF CORE README
+Entity Framework Core README

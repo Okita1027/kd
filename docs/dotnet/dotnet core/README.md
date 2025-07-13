@@ -1,5 +1,5 @@
 ---
-title: .NET CORE
+title: .NET Core
 index: false
 ---
 
