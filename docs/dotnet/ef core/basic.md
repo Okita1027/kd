@@ -2196,7 +2196,7 @@ modelBuilder.Entity<Category>().HasData(
 
 ### 实体类型构造函数
 
-在 EF Core 中，实体类型是普通的 C# 类。当你从数据库加载实体或者创建新实体时，EF Core 需要能够创建这些类的实例。这就涉及到实体类型的**构造函数**。
+EF Core 中，实体类型是普通的 C# 类。当你从数据库加载实体或者创建新实体时，EF Core 需要能够创建这些类的实例。这就涉及到实体类型的**构造函数**。
 
 #### 使用时机
 
@@ -5279,15 +5279,44 @@ WHERE (ShippingAddress = BillingAddress)
 | 空值处理                     | `x ?? 替代值`           | `ISNULL(x, 替代值)`                  |
 | 布尔类型 null 安全访问       | `x.GetValueOrDefault()` | `ISNULL(x, 0)`                       |
 
-
-
 ## 保存数据
 
 
 
 ## 更改跟踪
 
+在 EF Core 中，`DbContext` 内部有一个名为**更改跟踪器 (Change Tracker)** 的机制。这个跟踪器的工作就是监控你加载的实体实例以及你添加到 `DbContext` 中的新实体实例。
 
+- 当实体被加载到内存中时，更改跟踪器会存储这些实体的**原始值**。
+- 当你修改这些实体实例的属性时，更改跟踪器会检测到这些变化。
+- 当你调用 `SaveChanges()` 时，更改跟踪器会比较当前实体的值与其原始值，找出所有已更改、已添加或已删除的实体，然后生成并执行相应的 `UPDATE`、`INSERT` 或 `DELETE` SQL 语句。
+
+#### 实体状态
+
+在更改跟踪器中，每个被跟踪的实体都有一个特定的**状态 (EntityState)**
+
+`Microsoft.EntityFrameworkCore.EntityState` 枚举定义了以下几种状态：
+
+- **`Detached` (分离)**：
+  - 实体实例存在于内存中，但**不被任何 `DbContext` 实例跟踪**。
+  - 这是实体实例的初始状态，例如，当你使用 `new` 关键字创建一个实体时。
+  - `DbContext` 不知道它的存在，也不会对其进行任何操作。
+- **`Unchanged` (未更改)**：
+  - 实体被 `DbContext` 实例**跟踪**，并且它的当前值与数据库中的原始值**相同**。
+  - 这通常是实体从数据库加载时的默认状态。
+  - 调用 `SaveChanges()` 时，EF Core 不会为此实体生成任何 SQL。
+- **`Added` (已添加)**：
+  - 实体被 `DbContext` 实例**跟踪**，但它是一个**全新的实体**，尚未存在于数据库中。
+  - 当你调用 `DbContext.Add()` 或 `DbSet.Add()` 时，实体会进入此状态。
+  - 调用 `SaveChanges()` 时，EF Core 会为此实体生成 `INSERT` SQL 语句。
+- **`Modified` (已修改)**：
+  - 实体被 `DbContext` 实例**跟踪**，并且它的一个或多个属性的当前值与从数据库加载时的**原始值不同**。
+  - 当你修改一个 `Unchanged` 状态的实体属性时，EF Core 会自动将其状态变为 `Modified`。
+  - 调用 `SaveChanges()` 时，EF Core 会为此实体生成 `UPDATE` SQL 语句。
+- **`Deleted` (已删除)**：
+  - 实体被 `DbContext` 实例**跟踪**，并且已被标记为从数据库中**删除**。
+  - 当你调用 `DbContext.Remove()` 或 `DbSet.Remove()` 时，实体会进入此状态。
+  - 调用 `SaveChanges()` 时，EF Core 会为此实体生成 `DELETE` SQL 语句。
 
 ## 日志记录、事件和诊断
 

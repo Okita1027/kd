@@ -681,4 +681,149 @@ using (IDbContextTransaction transaction = await context.Database.BeginTransacti
 
 ### 断开连接的实体
 
-**断开连接的实体**，是指 **当前并未被 `DbContext` 所追踪的实体对象**。
+#### 定义
+
+**连接的实体 (Connected/Tracked Entity)**：如果一个实体实例是通过某个 `DbContext` 实例从数据库中加载出来的，或者通过 `DbContext.Add()`、`DbContext.Attach()` 等方法明确地附加到该 `DbContext` 实例的变更跟踪器中，那么它就是**连接的**或**被跟踪的**。EF Core 会监控这些实体属性的变化，并在调用 `SaveChanges()` 时自动生成相应的 `UPDATE` 或 `DELETE` 语句。
+
+**断开连接的实体 (Disconnected Entity)**：如果一个实体实例**不是**由当前的 `DbContext` 实例加载的，也**没有**被附加到它的变更跟踪器中，那么它就是**断开连接的**。
+
+**常见来源**：
+
+- 从数据库加载后，`DbContext` 被释放（例如，在 Web 请求结束时）。
+- 通过 API 接收的实体（例如，来自客户端的 JSON 数据）。
+- 从另一个 `DbContext` 实例加载，然后传递到当前 `DbContext` 实例的上下文之外。
+- 通过 `new` 关键字手动创建，但尚未添加到 `DbContext`。
+
+#### 处理方式
+
+处理断开连接的实体主要涉及告知 `DbContext` 它们的当前状态，以便 `SaveChanges()` 能够生成正确的 SQL。这通常通过 `DbContext.Entry()` 或 `DbContext.Add()` / `DbContext.Update()` / `DbContext.Remove()` 来实现。
+
+##### 添加一个全新的断开连接实体
+
+如果你有一个通过 `new` 操作符创建的实体，并且你希望将其添加到数据库，那么它是一个断开连接的新实体。
+
+```C#
+public class Blog
+{
+    public int Id { get; set; } // Id 会在保存后由数据库生成
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+}
+
+public class MyDbContext : DbContext
+{
+    public DbSet<Blog> Blogs { get; set; } = null!;
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+        optionsBuilder.UseSqlServer("YourConnectionString");
+}
+
+public async Task AddNewDisconnectedBlog(string name, string url)
+{
+    // 这是一个全新的、未被跟踪的 Blog 实体
+    var newBlog = new Blog
+    {
+        Name = name,
+        Url = url
+    };
+
+    using (var context = new MyDbContext())
+    {
+        // 使用 Add() 方法告诉 DbContext 这是一个新的实体。
+        // EF Core 会将其状态标记为 'Added'。
+        context.Blogs.Add(newBlog);
+        // 或者 context.Add(newBlog); // 泛型 Add 也能工作
+
+        await context.SaveChangesAsync();
+        Console.WriteLine($"New disconnected blog added. ID: {newBlog.Id}");
+    }
+}
+```
+
+**`Add()` 方法的内部机制**： 当你调用 `Add()` 时，EF Core 会检查实体的主键。如果主键的默认值表示它尚未被设置（例如，`int` 类型的 `0`），EF Core 就会假设这是一个新实体，并将其状态标记为 `Added`。
+
+##### 更新一个断开连接的实体
+
+这是最常见的场景，也最复杂。你从数据库加载了一个实体，把它发送到客户端（比如 Web 界面），用户修改了它，然后你从客户端接收回这个修改后的实体。此时，这个实体是断开连接的。
+
+- `Update()`方法
+
+  - 如果实体的主键不为默认值（即它已经存在于数据库中），`Update()` 会尝试将其附加到 `DbContext`，并将其状态标记为 `Modified`。
+  - 如果实体的主键是默认值（新实体），它会尝试将其标记为 `Added`（但通常这种场景用 `Add()` 更明确）。
+  - **注意**：`Update()` 会将实体**所有属性**标记为已修改，即使某些属性实际上没有变化。这可能导致不必要的 `UPDATE` 语句。
+
+  ```C#
+  public async Task UpdateDisconnectedBlogUsingUpdate(Blog blogToUpdate)
+  {
+      using (var context = new MyDbContext())
+      {
+          // blogToUpdate 是一个断开连接的实体，它可能包含了用户的修改
+          // Update() 方法会根据其主键（blogToUpdate.Id）判断它是否已存在。
+          // 如果 Id 有值，它会将其状态标记为 'Modified'。
+          context.Blogs.Update(blogToUpdate);
+  
+          await context.SaveChangesAsync();
+          Console.WriteLine($"Disconnected blog {blogToUpdate.Id} updated using Update().");
+      }
+  }
+  ```
+
+- `Entry().State = EntityState.Modified`
+
+  如果你想对哪些属性被修改有更精细的控制，或者你知道只有部分属性发生了变化，可以使用这种方法。
+
+  ```C#
+  using Microsoft.EntityFrameworkCore.ChangeTracking; // For EntityEntry
+  
+  public async Task UpdateDisconnectedBlogWithSpecificProperties(Blog blogToUpdate)
+  {
+      using (var context = new MyDbContext())
+      {
+          // 1. 将实体附加到 DbContext，其状态默认为 'Unchanged'
+          EntityEntry<Blog> entry = context.Blogs.Attach(blogToUpdate);
+  
+          // 2. 将实体状态明确设置为 'Modified'。
+          // 此时，EF Core 会认为所有属性都已修改。
+          entry.State = EntityState.Modified;
+  
+          // 或者，更推荐的方式：只标记特定属性为 Modified
+          // 如果你只知道 Name 和 Url 被修改了，而 Id 是主键不变的：
+          // entry.Property(b => b.Name).IsModified = true;
+          // entry.Property(b => b.Url).IsModified = true;
+          // 如果你需要比较旧值和新值，你可能需要先加载旧实体：
+          // var existingBlog = await context.Blogs.FindAsync(blogToUpdate.Id);
+          // context.Entry(existingBlog).CurrentValues.SetValues(blogToUpdate); // 将新值复制到现有跟踪实体
+  
+          await context.SaveChangesAsync();
+          Console.WriteLine($"Disconnected blog {blogToUpdate.Id} updated using Entry().State.");
+      }
+  }
+  ```
+
+  **何时使用**：当你希望 EF Core 只生成包含实际更改属性的 `UPDATE` 语句时，或者当你需要更复杂的比较逻辑来决定哪些属性被修改时（例如，使用 `CurrentValues.SetValues()` 来合并更改）。
+
+##### 删除一个断开连接实体
+
+如果你想删除一个你已经知道其主键的实体（但它当前没有被 `DbContext` 跟踪），你可以：
+
+```C#
+public async Task DeleteDisconnectedBlog(int blogId)
+{
+    // 创建一个只包含主键的“存根”实体
+    var blogToDelete = new Blog { Id = blogId };
+
+    using (var context = new MyDbContext())
+    {
+        // 1. 将存根实体附加到 DbContext。此时，它的状态默认为 'Unchanged'。
+        context.Blogs.Attach(blogToDelete);
+
+        // 2. 将其状态明确设置为 'Deleted'。
+        // EF Core 会知道要根据主键生成 DELETE SQL。
+        context.Blogs.Remove(blogToDelete); // Remove() 内部会设置状态为 Deleted
+
+        await context.SaveChangesAsync();
+        Console.WriteLine($"Disconnected blog {blogId} deleted.");
+    }
+}
+```
+
+> 你不需要加载整个实体来删除它，只需要一个包含主键的实体实例即可
