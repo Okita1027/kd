@@ -563,8 +563,6 @@ public async Task PerformProductOperations()
 
 每个拦截器接口都提供了多个方法，对应着操作的同步和异步版本，以及操作前 (`-ing`) 和操作后 (`-ed`) 的钩子。
 
-使用步骤
-
 ###### 使用步骤
 
 1. 创建一个拦截器类
@@ -581,7 +579,6 @@ public class MyCommandInterceptor : DbCommandInterceptor
         return base.ReaderExecuting(command, eventData, result);
     }
 }
-
 ```
 
 可以重写：

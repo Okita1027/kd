@@ -10,8 +10,6 @@ order: 6
 
 ## 更改跟踪
 
-### 定义
-
 在 EF Core 中，**更改跟踪器 (Change Tracker)** 是 `DbContext` 内部的一个核心组件，它的主要职责是：
 
 1. **监控 (Monitoring)**：记录通过 `DbContext` 查询加载或明确附加到 `DbContext` 的实体实例的**初始状态和当前状态**。
@@ -207,7 +205,7 @@ public class Product : INotifyPropertyChanged // 实现接口
 - `context.ChangeTracker.DetectChanges()`：强制 EF Core 立即扫描所有被跟踪实体以查找更改并更新它们的状态。`SaveChanges()` 在内部会自动调用此方法。
 - `context.Entry(entity).State = EntityState.Modified;`：直接设置实体状态。
 
-### 更改跟踪器API
+### 访问更改跟踪器API
 
 `DbContext.ChangeTracker` 属性提供了访问更改跟踪器实例的入口，允许你进行更高级的操作：
 
@@ -216,34 +214,65 @@ public class Product : INotifyPropertyChanged // 实现接口
 - `context.Entry(entity)`：获取特定实体的 `EntityEntry` 对象，从而检查或修改该实体的状态、访问其属性值（当前值、原始值）、标记特定属性为已修改等。
 
 ```CS
-public async Task CheckForChanges()
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking; // 引入此命名空间
+
+public class Blog
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+}
+
+public class MyDbContext : DbContext
+{
+    public DbSet<Blog> Blogs { get; set; } = null!;
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+        optionsBuilder.UseSqlServer("YourConnectionString");
+}
+
+public async Task DemonstrateChangeTracker()
 {
     using (var context = new MyDbContext())
     {
-        var product = new Product { Name = "Test Product", Price = 100m };
-        context.Products.Add(product);
-        Console.WriteLine($"HasChanges after Add: {context.ChangeTracker.HasChanges()}"); // True
+        // 1. 查询实体：它们将处于 Unchanged 状态
+        var blog = await context.Blogs.FirstAsync();
+        var newBlog = new Blog { Name = "New Blog", Url = "http://new.blog.com" };
 
-        await context.SaveChangesAsync();
-        Console.WriteLine($"HasChanges after SaveChanges: {context.ChangeTracker.HasChanges()}"); // False
+        // 2. 添加新实体：处于 Added 状态
+        context.Blogs.Add(newBlog);
 
-        product.Price = 110m; // 修改产品价格
-        Console.WriteLine($"HasChanges after modification: {context.ChangeTracker.HasChanges()}"); // True
+        // 3. 修改现有实体：将变成 Modified 状态
+        blog.Name = "Updated Blog Name";
 
-        // 查看具体变更
-        foreach (var entry in context.ChangeTracker.Entries<Product>())
+        Console.WriteLine("--- Before SaveChanges ---");
+        foreach (var entry in context.ChangeTracker.Entries())
         {
-            if (entry.State == EntityState.Modified)
+            Console.WriteLine($"Entity: {entry.Metadata.DisplayName()}, State: {entry.State}");
+            if (entry.Entity is Blog b)
             {
-                Console.WriteLine($"Entity {entry.Entity.Name} is Modified.");
-                foreach (var prop in entry.Properties)
+                Console.WriteLine($"  Id: {b.Id}, Name: {b.Name}");
+
+                // 演示获取原始值和当前值
+                if (entry.State == EntityState.Modified)
                 {
-                    if (prop.IsModified)
-                    {
-                        Console.WriteLine($"  Property '{prop.Metadata.Name}' changed from '{prop.OriginalValue}' to '{prop.CurrentValue}'");
-                    }
+                    Console.WriteLine($"  Original Name: {entry.OriginalValues[nameof(Blog.Name)]}");
+                    Console.WriteLine($"  Current Name: {entry.CurrentValues[nameof(Blog.Name)]}");
                 }
             }
+        }
+        // Output (类似):
+        // Entity: Blog, State: Modified (for 'blog' instance)
+        // Entity: Blog, State: Added (for 'newBlog' instance)
+
+        await context.SaveChangesAsync();
+
+        Console.WriteLine("\n--- After SaveChanges ---");
+        foreach (var entry in context.ChangeTracker.Entries())
+        {
+            Console.WriteLine($"Entity: {entry.Metadata.DisplayName()}, State: {entry.State}");
+            // Output (类似):
+            // Entity: Blog, State: Unchanged (for both blog and newBlog instances)
         }
     }
 }
