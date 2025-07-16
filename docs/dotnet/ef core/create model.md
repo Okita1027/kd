@@ -1870,7 +1870,7 @@ new ValueComparer<int[]>(
 
 通常，**值转换器 (ValueConverter)** 和 **值比较器 (ValueComparer)** 会一起使用。当你使用 `ValueConverter` 将复杂类型转换为基本类型存储时，你可能还需要提供一个 `ValueComparer` 来处理 C# 端复杂类型的比较。
 
-示例：List<string>属性的比较
+示例：`List<string>`属性的比较
 
 在“值转换”章节中，我们把 `List<string>` 转换成了逗号分隔的字符串。但如果你在 C# 代码中修改了 `List<string>` 内部的元素，EF Core 默认可能无法跟踪到这个变化。
 
@@ -2790,7 +2790,7 @@ public async Task<List<ProductSalesSummary>> GetCustomSalesData(int minSales)
 | 读写         | 可读写 (CRUD 操作)                           | 只读 (只能查询)                                      |
 | 变更跟踪     | EF Core 会跟踪状态变化                       | EF Core 不跟踪状态变化                               |
 | 映射到       | 通常映射到表                                 | 通常映射到视图、函数或没有主键的表                   |
-| DbSet        | 必须通过 DbSet<T> 暴露                       | 必须通过 DbSet<T> 暴露                               |
+| DbSet        | 必须通过 `DbSet<T>` 暴露                       | 必须通过 `DbSet<T>` 暴露                               |
 | Find() 方法  | 支持通过主键查找                             | 不支持                                               |
 | 关系中的主体 | 可以作为关系中的主体（被外键引用）           | 不能作为关系中的主体                                 |
 | 迁移生成     | EF Core 会在迁移中生成表创建、修改、删除语句 | EF Core 不会在迁移中管理其底层数据库对象 (视图/函数) |
