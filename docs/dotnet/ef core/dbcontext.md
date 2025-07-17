@@ -52,7 +52,7 @@ order: 1
   }
   ```
 
-- **通过依赖注入 (`Program.cs` / `Startup.cs`) (Web 应用推荐)**：
+- **通过依赖注入 (`Program.cs`) (Web 应用推荐)**：
 
   ```C#
   // Program.cs
