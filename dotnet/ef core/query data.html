@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="generator" content="VuePress 2.0.0-rc.11" />
+    <meta name="theme" content="VuePress Theme Hope 2.0.0-rc.43" />
+    <style>
+      html {
+        background: var(--bg-color, #fff);
+      }
+
+      html[data-theme="dark"] {
+        background: var(--bg-color, #1d1e1f);
+      }
+
+      body {
+        background: var(--bg-color);
+      }
+    </style>
+    <script>
+      const userMode = localStorage.getItem("vuepress-theme-hope-scheme");
+      const systemDarkMode =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (userMode === "dark" || (userMode !== "light" && systemDarkMode)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    </script>
+    <link rel="icon" href="/kd/favicon.ico"><title>查询数据 | 沖田さんの知識ベース</title><meta name="description" content="查询数据">
+    <link rel="preload" href="/kd/assets/style-BYmwuncu.css" as="style"><link rel="stylesheet" href="/kd/assets/style-BYmwuncu.css">
+    <link rel="modulepreload" href="/kd/assets/app-BeHCP7Xm.js"><link rel="modulepreload" href="/kd/assets/query data.html-DfjVvXLX.js"><link rel="modulepreload" href="/kd/assets/plugin-vue_export-helper-DlAUqK2U.js">
+    <link rel="prefetch" href="/kd/assets/index.html-CzYQ3X0-.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CgzIxrNq.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-BpA-YEk2.js" as="script"><link rel="prefetch" href="/kd/assets/MongoDB.html-BrgZNJRq.js" as="script"><link rel="prefetch" href="/kd/assets/MySQL.html-nnzEp0EY.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-Cc4xjQKd.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CXDtseXD.js" as="script"><link rel="prefetch" href="/kd/assets/Axios.html-6KYxJpGl.js" as="script"><link rel="prefetch" href="/kd/assets/React.html-SAy3ybol.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CYm6Xs2q.js" as="script"><link rel="prefetch" href="/kd/assets/TypeScript.html-DMrxIcpf.js" as="script"><link rel="prefetch" href="/kd/assets/Vue.html-CNqr1s-U.js" as="script"><link rel="prefetch" href="/kd/assets/functional-programming.html-DP9nirIW.js" as="script"><link rel="prefetch" href="/kd/assets/grammar.html-gSxuaknm.js" as="script"><link rel="prefetch" href="/kd/assets/JDK17.html-GkM3f449.js" as="script"><link rel="prefetch" href="/kd/assets/JDK18-20.html-BeforbwO.js" as="script"><link rel="prefetch" href="/kd/assets/JDK21.html-Ds7FEaG1.js" as="script"><link rel="prefetch" href="/kd/assets/JDK22-.html-DlGI0KvQ.js" as="script"><link rel="prefetch" href="/kd/assets/JDK8.html-DzBCmI1r.js" as="script"><link rel="prefetch" href="/kd/assets/JDK9-16.html-DJ55N92p.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-EqOPozSZ.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-C4Ku9p1W.js" as="script"><link rel="prefetch" href="/kd/assets/pattern.html-C0KklgqW.js" as="script"><link rel="prefetch" href="/kd/assets/principle.html-CDX5Vylq.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-DIA_u0T3.js" as="script"><link rel="prefetch" href="/kd/assets/JVM.html-BwINRwVG.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-C9Psy1AG.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-T2Y0dQqX.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CAgiyu8s.js" as="script"><link rel="prefetch" href="/kd/assets/centos.html-BP2EcphX.js" as="script"><link rel="prefetch" href="/kd/assets/common.html-BQ-A8mIq.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CalMg33t.js" as="script"><link rel="prefetch" href="/kd/assets/shell.html-BQM-Y4u2.js" as="script"><link rel="prefetch" href="/kd/assets/ubuntu.html-C_jxK9II.js" as="script"><link rel="prefetch" href="/kd/assets/wsl.html-DLYAH2rG.js" as="script"><link rel="prefetch" href="/kd/assets/principle.html-Dt8XLuN0.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-Be3Yd76h.js" as="script"><link rel="prefetch" href="/kd/assets/uml.html-G2uGFdOW.js" as="script"><link rel="prefetch" href="/kd/assets/core.html-DCJSXrfj.js" as="script"><link rel="prefetch" href="/kd/assets/install.html-D9-O4UQP.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-DfxyzyCa.js" as="script"><link rel="prefetch" href="/kd/assets/senior.html-BxpU_0x8.js" as="script"><link rel="prefetch" href="/kd/assets/Mybatis-plus.html-B4JywEEX.js" as="script"><link rel="prefetch" href="/kd/assets/Mybatis.html-vPGaA3Gs.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-BMduH5_L.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-DRGIA1FU.js" as="script"><link rel="prefetch" href="/kd/assets/SpringMVC.html-CdDlX3gI.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-G_wbEd_q.js" as="script"><link rel="prefetch" href="/kd/assets/Apache.html-uSpde1jX.js" as="script"><link rel="prefetch" href="/kd/assets/Nginx.html-3mD8RDen.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CdVFoRkU.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-BcjoT6PR.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-CXdwp98t.js" as="script"><link rel="prefetch" href="/kd/assets/practical.html-B1W8b325.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-Bz3tn5pM.js" as="script"><link rel="prefetch" href="/kd/assets/senior.html-BgLsH9Za.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-D1K-4rXH.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-C7L29n5N.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-pSiTrwZw.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-ByuRGJI5.js" as="script"><link rel="prefetch" href="/kd/assets/api interface.html-er6QuKpJ.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-DUhO-MmK.js" as="script"><link rel="prefetch" href="/kd/assets/quick start.html-Du5-EbKk.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-DOXb2F5N.js" as="script"><link rel="prefetch" href="/kd/assets/web application.html-cNCe_o98.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-COi-GgbD.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-BY2OOmAJ.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-DMaaVuUB.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-CnqCAkQY.js" as="script"><link rel="prefetch" href="/kd/assets/change track.html-CLnV2J65.js" as="script"><link rel="prefetch" href="/kd/assets/create model.html-CEqRSUhr.js" as="script"><link rel="prefetch" href="/kd/assets/dbcontext.html-Dsbl1Gch.js" as="script"><link rel="prefetch" href="/kd/assets/log.html-CUz4I07d.js" as="script"><link rel="prefetch" href="/kd/assets/manage db.html-B72HFP1e.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-B0aFXK59.js" as="script"><link rel="prefetch" href="/kd/assets/save data.html-CanxBkVm.js" as="script"><link rel="prefetch" href="/kd/assets/AOP.html-VaVW-XNO.js" as="script"><link rel="prefetch" href="/kd/assets/IOC_Annoation.html-SWNLKpl0.js" as="script"><link rel="prefetch" href="/kd/assets/IOC_senior.html-BudwCasg.js" as="script"><link rel="prefetch" href="/kd/assets/IOC_XML.html-vt43EST4.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-DiAmulAK.js" as="script"><link rel="prefetch" href="/kd/assets/事务.html-BIecXMIu.js" as="script"><link rel="prefetch" href="/kd/assets/core.html-16Rt2A_0.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-bratYNdJ.js" as="script"><link rel="prefetch" href="/kd/assets/behavioral.html-DX77fdC6.js" as="script"><link rel="prefetch" href="/kd/assets/creation.html-mPZNcWgm.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-BqWy9k9G.js" as="script"><link rel="prefetch" href="/kd/assets/structural.html-Bt00-fXf.js" as="script"><link rel="prefetch" href="/kd/assets/core.html--mWuezh2.js" as="script"><link rel="prefetch" href="/kd/assets/install.html-D9Su4zYf.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-C4qsiJL0.js" as="script"><link rel="prefetch" href="/kd/assets/core.html-BGbaNXdS.js" as="script"><link rel="prefetch" href="/kd/assets/integration.html-h1W1F1ig.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-Cwdbxsnd.js" as="script"><link rel="prefetch" href="/kd/assets/yaml.html-BGjxzHHp.js" as="script"><link rel="prefetch" href="/kd/assets/basic.html-CI4YzBvg.js" as="script"><link rel="prefetch" href="/kd/assets/index.html-Do8Cs_oD.js" as="script"><link rel="prefetch" href="/kd/assets/404.html-mZkuiWUZ.js" as="script"><link rel="prefetch" href="/kd/assets/mermaid.core-Co4NMh_G.js" as="script"><link rel="prefetch" href="/kd/assets/reveal.esm-DNnaG029.js" as="script"><link rel="prefetch" href="/kd/assets/markdown.esm-BG2Xu2Hd.js" as="script"><link rel="prefetch" href="/kd/assets/highlight.esm-C34tS8ua.js" as="script"><link rel="prefetch" href="/kd/assets/math.esm-BwrBS7iX.js" as="script"><link rel="prefetch" href="/kd/assets/search.esm-CXqruUHR.js" as="script"><link rel="prefetch" href="/kd/assets/notes.esm-DcquA2oP.js" as="script"><link rel="prefetch" href="/kd/assets/zoom.esm-Ctj_eavO.js" as="script"><link rel="prefetch" href="/kd/assets/photoswipe.esm-SzV8tJDW.js" as="script"><link rel="prefetch" href="/kd/assets/style-l0sNRNKZ.js" as="script"><link rel="prefetch" href="/kd/assets/docsearch-l0sNRNKZ.js" as="script"><link rel="prefetch" href="/kd/assets/index-zMbLkDvU.js" as="script">
+  </head>
+  <body>
+    <div id="app"><!--[--><!--[--><!--[--><span tabindex="-1"></span><a href="#main-content" class="vp-skip-link sr-only">跳至主要內容</a><!--]--><!--[--><div class="theme-container external-link-icon has-toc"><!--[--><header id="navbar" class="vp-navbar"><div class="vp-navbar-start"><button type="button" class="vp-toggle-sidebar-button" title="Toggle Sidebar"><span class="icon"></span></button><!----><!--[--><a class="route-link vp-brand" href="/kd/"><img class="vp-nav-logo light" src="/kd/logo.png" alt><img class="vp-nav-logo dark" src="/kd/logo-dark.png" alt><span class="vp-site-name hide-in-pad">沖田さんの知識ベース</span></a><!--]--><!----></div><div class="vp-navbar-center"><!----><!--[--><nav class="vp-nav-links"><div class="vp-nav-item hide-in-mobile"><a class="route-link vp-link" href="/kd/" aria-label="主页"><img class="icon" src="/kd/home.png" alt aria-hidden no-view style="">主页<!----></a></div><div class="vp-nav-item hide-in-mobile"><a class="route-link vp-link" href="/kd/basic/" aria-label="基础"><img class="icon" src="/kd/icon/java.png" alt aria-hidden no-view style="">基础<!----></a></div><div class="vp-nav-item hide-in-mobile"><a class="route-link vp-link" href="/kd/database/" aria-label="数据库"><img class="icon" src="/kd/icon/database.svg" alt aria-hidden no-view style="">数据库<!----></a></div><div class="vp-nav-item hide-in-mobile"><a class="route-link vp-link" href="/kd/frame/" aria-label="框架"><img class="icon" src="/kd/icon/frame.png" alt aria-hidden no-view style="">框架<!----></a></div><div class="vp-nav-item hide-in-mobile"><a class="route-link vp-link" href="/kd/web/" aria-label="前端"><img class="icon" src="/kd/icon/web.png" alt aria-hidden no-view style="">前端<!----></a></div><div class="vp-nav-item hide-in-mobile"><a class="route-link active vp-link" href="/kd/dotnet/" aria-label><img class="icon" src="/kd/icon/dotnet.png" alt aria-hidden no-view style=""><!----></a></div></nav><!--]--><!----></div><div class="vp-navbar-end"><!----><!--[--><div class="vp-nav-item hide-in-mobile"><button type="button" class="vp-outlook-button" tabindex="-1" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" class="icon outlook-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="outlook icon" name="outlook"><path d="M224 800c0 9.6 3.2 44.8 6.4 54.4 6.4 48-48 76.8-48 76.8s80 41.6 147.2 0 134.4-134.4 38.4-195.2c-22.4-12.8-41.6-19.2-57.6-19.2C259.2 716.8 227.2 761.6 224 800zM560 675.2l-32 51.2c-51.2 51.2-83.2 32-83.2 32 25.6 67.2 0 112-12.8 128 25.6 6.4 51.2 9.6 80 9.6 54.4 0 102.4-9.6 150.4-32l0 0c3.2 0 3.2-3.2 3.2-3.2 22.4-16 12.8-35.2 6.4-44.8-9.6-12.8-12.8-25.6-12.8-41.6 0-54.4 60.8-99.2 137.6-99.2 6.4 0 12.8 0 22.4 0 12.8 0 38.4 9.6 48-25.6 0-3.2 0-3.2 3.2-6.4 0-3.2 3.2-6.4 3.2-6.4 6.4-16 6.4-16 6.4-19.2 9.6-35.2 16-73.6 16-115.2 0-105.6-41.6-198.4-108.8-268.8C704 396.8 560 675.2 560 675.2zM224 419.2c0-28.8 22.4-51.2 51.2-51.2 28.8 0 51.2 22.4 51.2 51.2 0 28.8-22.4 51.2-51.2 51.2C246.4 470.4 224 448 224 419.2zM320 284.8c0-22.4 19.2-41.6 41.6-41.6 22.4 0 41.6 19.2 41.6 41.6 0 22.4-19.2 41.6-41.6 41.6C339.2 326.4 320 307.2 320 284.8zM457.6 208c0-12.8 12.8-25.6 25.6-25.6 12.8 0 25.6 12.8 25.6 25.6 0 12.8-12.8 25.6-25.6 25.6C470.4 233.6 457.6 220.8 457.6 208zM128 505.6C128 592 153.6 672 201.6 736c28.8-60.8 112-60.8 124.8-60.8-16-51.2 16-99.2 16-99.2l316.8-422.4c-48-19.2-99.2-32-150.4-32C297.6 118.4 128 291.2 128 505.6zM764.8 86.4c-22.4 19.2-390.4 518.4-390.4 518.4-22.4 28.8-12.8 76.8 22.4 99.2l9.6 6.4c35.2 22.4 80 12.8 99.2-25.6 0 0 6.4-12.8 9.6-19.2 54.4-105.6 275.2-524.8 288-553.6 6.4-19.2-3.2-32-19.2-32C777.6 76.8 771.2 80 764.8 86.4z"></path></svg><div class="vp-outlook-dropdown"><!----></div></button></div><div class="vp-nav-item vp-action"><a class="vp-action-link" href="https://github.com/Okita1027/kd/" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><svg xmlns="http://www.w3.org/2000/svg" class="icon github-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="github icon" name="github" style="width:1.25rem;height:1.25rem;vertical-align:middle;"><path d="M511.957 21.333C241.024 21.333 21.333 240.981 21.333 512c0 216.832 140.544 400.725 335.574 465.664 24.49 4.395 32.256-10.07 32.256-23.083 0-11.69.256-44.245 0-85.205-136.448 29.61-164.736-64.64-164.736-64.64-22.315-56.704-54.4-71.765-54.4-71.765-44.587-30.464 3.285-29.824 3.285-29.824 49.195 3.413 75.179 50.517 75.179 50.517 43.776 75.008 114.816 53.333 142.762 40.79 4.523-31.66 17.152-53.377 31.19-65.537-108.971-12.458-223.488-54.485-223.488-242.602 0-53.547 19.114-97.323 50.517-131.67-5.035-12.33-21.93-62.293 4.779-129.834 0 0 41.258-13.184 134.912 50.346a469.803 469.803 0 0 1 122.88-16.554c41.642.213 83.626 5.632 122.88 16.554 93.653-63.488 134.784-50.346 134.784-50.346 26.752 67.541 9.898 117.504 4.864 129.834 31.402 34.347 50.474 78.123 50.474 131.67 0 188.586-114.73 230.016-224.042 242.09 17.578 15.232 33.578 44.672 33.578 90.454v135.85c0 13.142 7.936 27.606 32.854 22.87C862.25 912.597 1002.667 728.747 1002.667 512c0-271.019-219.648-490.667-490.71-490.667z"></path></svg></a></div><!--[--><div id="docsearch-container" style="display:none;"></div><div><button type="button" class="DocSearch DocSearch-Button" aria-label="搜索文档"><span class="DocSearch-Button-Container"><svg width="20" height="20" class="DocSearch-Search-Icon" viewBox="0 0 20 20"><path d="M14.386 14.386l4.0877 4.0877-4.0877-4.0877c-2.9418 2.9419-7.7115 2.9419-10.6533 0-2.9419-2.9418-2.9419-7.7115 0-10.6533 2.9418-2.9419 7.7115-2.9419 10.6533 0 2.9419 2.9418 2.9419 7.7115 0 10.6533z" stroke="currentColor" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="DocSearch-Button-Placeholder">搜索文档</span></span><span class="DocSearch-Button-Keys"><kbd class="DocSearch-Button-Key"><svg width="15" height="15" class="DocSearch-Control-Key-Icon"><path d="M4.505 4.496h2M5.505 5.496v5M8.216 4.496l.055 5.993M10 7.5c.333.333.5.667.5 1v2M12.326 4.5v5.996M8.384 4.496c1.674 0 2.116 0 2.116 1.5s-.442 1.5-2.116 1.5M3.205 9.303c-.09.448-.277 1.21-1.241 1.203C1 10.5.5 9.513.5 8V7c0-1.57.5-2.5 1.464-2.494.964.006 1.134.598 1.24 1.342M12.553 10.5h1.953" stroke-width="1.2" stroke="currentColor" fill="none" stroke-linecap="square"></path></svg></kbd><kbd class="DocSearch-Button-Key">K</kbd></span></button></div><!--]--><!--]--><!----><button type="button" class="vp-toggle-navbar-button" aria-label="Toggle Navbar" aria-expanded="false" aria-controls="nav-screen"><span><span class="vp-top"></span><span class="vp-middle"></span><span class="vp-bottom"></span></span></button></div></header><!----><!--]--><!----><div class="toggle-sidebar-wrapper"><span class="arrow start"></span></div><aside id="sidebar" class="vp-sidebar"><!----><ul class="vp-sidebar-links"><li><section class="vp-sidebar-group"><button class="vp-sidebar-header clickable" type="button"><!----><span class="vp-sidebar-title">.NET Core</span><span class="vp-arrow end"></span></button><!----></section></li><li><section class="vp-sidebar-group"><button class="vp-sidebar-header clickable" type="button"><!----><span class="vp-sidebar-title">C#</span><span class="vp-arrow end"></span></button><!----></section></li><li><section class="vp-sidebar-group"><button class="vp-sidebar-header clickable" type="button"><!----><span class="vp-sidebar-title">Dapper</span><span class="vp-arrow end"></span></button><!----></section></li><li><section class="vp-sidebar-group"><button class="vp-sidebar-header clickable active" type="button"><!----><span class="vp-sidebar-title">EF Core</span><span class="vp-arrow down"></span></button><ul class="vp-sidebar-links"><li><a class="route-link vp-link vp-sidebar-link vp-sidebar-page" href="/kd/dotnet/ef%20core/dbcontext.html" aria-label="DbContext配置"><!---->DbContext配置<!----></a></li><li><a class="route-link vp-link vp-sidebar-link vp-sidebar-page" href="/kd/dotnet/ef%20core/create%20model.html" aria-label="创建模型"><!---->创建模型<!----></a></li><li><a class="route-link vp-link vp-sidebar-link vp-sidebar-page" href="/kd/dotnet/ef%20core/manage%20db.html" aria-label="管理数据库架构"><!---->管理数据库架构<!----></a></li><li><a class="route-link vp-link vp-sidebar-link vp-sidebar-page" href="/kd/dotnet/ef%20core/save%20data.html" aria-label="保存数据"><!---->保存数据<!----></a></li><li><a class="route-link active vp-link vp-sidebar-link vp-sidebar-page active" href="/kd/dotnet/ef%20core/query%20data.html" aria-label="查询数据"><!---->查询数据<!----></a></li><li><a class="route-link vp-link vp-sidebar-link vp-sidebar-page" href="/kd/dotnet/ef%20core/change%20track.html" aria-label="更改跟踪"><!---->更改跟踪<!----></a></li><li><a class="route-link vp-link vp-sidebar-link vp-sidebar-page" href="/kd/dotnet/ef%20core/log.html" aria-label="日志、事件和诊断"><!---->日志、事件和诊断<!----></a></li></ul></section></li><li><section class="vp-sidebar-group"><button class="vp-sidebar-header clickable" type="button"><!----><span class="vp-sidebar-title">Winform</span><span class="vp-arrow end"></span></button><!----></section></li><li><section class="vp-sidebar-group"><button class="vp-sidebar-header clickable" type="button"><!----><span class="vp-sidebar-title">WPF</span><span class="vp-arrow end"></span></button><!----></section></li></ul><!----></aside><!--[--><main id="main-content" class="vp-page"><!--[--><!----><!----><nav class="vp-breadcrumb disable"></nav><div class="vp-page-title"><h1><!---->查询数据</h1><div class="page-info"><span class="page-author-info" aria-label="作者🖊" data-balloon-pos="up"><svg xmlns="http://www.w3.org/2000/svg" class="icon author-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="author icon" name="author"><path d="M649.6 633.6c86.4-48 147.2-144 147.2-249.6 0-160-128-288-288-288s-288 128-288 288c0 108.8 57.6 201.6 147.2 249.6-121.6 48-214.4 153.6-240 288-3.2 9.6 0 19.2 6.4 25.6 3.2 9.6 12.8 12.8 22.4 12.8h704c9.6 0 19.2-3.2 25.6-12.8 6.4-6.4 9.6-16 6.4-25.6-25.6-134.4-121.6-240-243.2-288z"></path></svg><span><a class="page-author-item" href="https://Okita1027.github.io" target="_blank" rel="noopener noreferrer">Okita</a></span><span property="author" content="Okita"></span></span><span class="page-date-info" aria-label="写作日期📅" data-balloon-pos="up"><svg xmlns="http://www.w3.org/2000/svg" class="icon calendar-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="calendar icon" name="calendar"><path d="M716.4 110.137c0-18.753-14.72-33.473-33.472-33.473-18.753 0-33.473 14.72-33.473 33.473v33.473h66.993v-33.473zm-334.87 0c0-18.753-14.72-33.473-33.473-33.473s-33.52 14.72-33.52 33.473v33.473h66.993v-33.473zm468.81 33.52H716.4v100.465c0 18.753-14.72 33.473-33.472 33.473a33.145 33.145 0 01-33.473-33.473V143.657H381.53v100.465c0 18.753-14.72 33.473-33.473 33.473a33.145 33.145 0 01-33.473-33.473V143.657H180.6A134.314 134.314 0 0046.66 277.595v535.756A134.314 134.314 0 00180.6 947.289h669.74a134.36 134.36 0 00133.94-133.938V277.595a134.314 134.314 0 00-133.94-133.938zm33.473 267.877H147.126a33.145 33.145 0 01-33.473-33.473c0-18.752 14.72-33.473 33.473-33.473h736.687c18.752 0 33.472 14.72 33.472 33.473a33.145 33.145 0 01-33.472 33.473z"></path></svg><span><!----></span><meta property="datePublished" content="2025-07-15T11:27:33.000Z"></span><span class="page-category-info" aria-label="分类🌈" data-balloon-pos="up"><svg xmlns="http://www.w3.org/2000/svg" class="icon category-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="category icon" name="category"><path d="M148.41 106.992h282.176c22.263 0 40.31 18.048 40.31 40.31V429.48c0 22.263-18.047 40.31-40.31 40.31H148.41c-22.263 0-40.311-18.047-40.311-40.31V147.302c0-22.263 18.048-40.31 40.311-40.31zM147.556 553.478H429.73c22.263 0 40.311 18.048 40.311 40.31v282.176c0 22.263-18.048 40.312-40.31 40.312H147.555c-22.263 0-40.311-18.049-40.311-40.312V593.79c0-22.263 18.048-40.311 40.31-40.311zM593.927 106.992h282.176c22.263 0 40.31 18.048 40.31 40.31V429.48c0 22.263-18.047 40.31-40.31 40.31H593.927c-22.263 0-40.311-18.047-40.311-40.31V147.302c0-22.263 18.048-40.31 40.31-40.31zM730.22 920.502H623.926c-40.925 0-74.22-33.388-74.22-74.425V623.992c0-41.038 33.387-74.424 74.425-74.424h222.085c41.038 0 74.424 33.226 74.424 74.067v114.233c0 10.244-8.304 18.548-18.547 18.548s-18.548-8.304-18.548-18.548V623.635c0-20.388-16.746-36.974-37.33-36.974H624.13c-20.585 0-37.331 16.747-37.331 37.33v222.086c0 20.585 16.654 37.331 37.126 37.331H730.22c10.243 0 18.547 8.304 18.547 18.547 0 10.244-8.304 18.547-18.547 18.547z"></path></svg><!--[--><span class="page-category-item color6" role>.NET</span><span class="page-category-item color6" role>EF CORE</span><!--]--><meta property="articleSection" content=".NET,EF CORE"></span><span class="page-tag-info" aria-label="标签🏷" data-balloon-pos="up"><svg xmlns="http://www.w3.org/2000/svg" class="icon tag-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="tag icon" name="tag"><path d="M939.902 458.563L910.17 144.567c-1.507-16.272-14.465-29.13-30.737-30.737L565.438 84.098h-.402c-3.215 0-5.726 1.005-7.634 2.913l-470.39 470.39a10.004 10.004 0 000 14.164l365.423 365.424c1.909 1.908 4.42 2.913 7.132 2.913s5.223-1.005 7.132-2.913l470.39-470.39c2.01-2.11 3.014-5.023 2.813-8.036zm-240.067-72.121c-35.458 0-64.286-28.828-64.286-64.286s28.828-64.285 64.286-64.285 64.286 28.828 64.286 64.285-28.829 64.286-64.286 64.286z"></path></svg><!--[--><span class="page-tag-item color6" role>.NET</span><!--]--><meta property="keywords" content=".NET"></span><span class="page-reading-time-info" aria-label="阅读时间⌛" data-balloon-pos="up"><svg xmlns="http://www.w3.org/2000/svg" class="icon timer-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="timer icon" name="timer"><path d="M799.387 122.15c4.402-2.978 7.38-7.897 7.38-13.463v-1.165c0-8.933-7.38-16.312-16.312-16.312H256.33c-8.933 0-16.311 7.38-16.311 16.312v1.165c0 5.825 2.977 10.874 7.637 13.592 4.143 194.44 97.22 354.963 220.201 392.763-122.204 37.542-214.893 196.511-220.2 389.397-4.661 5.049-7.638 11.651-7.638 19.03v5.825h566.49v-5.825c0-7.379-2.849-13.981-7.509-18.9-5.049-193.016-97.867-351.985-220.2-389.527 123.24-37.67 216.446-198.453 220.588-392.892zM531.16 450.445v352.632c117.674 1.553 211.787 40.778 211.787 88.676H304.097c0-48.286 95.149-87.382 213.728-88.676V450.445c-93.077-3.107-167.901-81.297-167.901-177.093 0-8.803 6.99-15.793 15.793-15.793 8.803 0 15.794 6.99 15.794 15.793 0 80.261 63.69 145.635 142.01 145.635s142.011-65.374 142.011-145.635c0-8.803 6.99-15.793 15.794-15.793s15.793 6.99 15.793 15.793c0 95.019-73.789 172.82-165.96 177.093z"></path></svg><span>大约 28 分钟</span><meta property="timeRequired" content="PT28M"></span><span class="page-word-info" aria-label="字数🔠" data-balloon-pos="up"><svg xmlns="http://www.w3.org/2000/svg" class="icon word-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="word icon" name="word"><path d="M518.217 432.64V73.143A73.143 73.143 0 01603.43 1.097a512 512 0 01419.474 419.474 73.143 73.143 0 01-72.046 85.212H591.36a73.143 73.143 0 01-73.143-73.143z"></path><path d="M493.714 566.857h340.297a73.143 73.143 0 0173.143 85.577A457.143 457.143 0 11371.566 117.76a73.143 73.143 0 0185.577 73.143v339.383a36.571 36.571 0 0036.571 36.571z"></path></svg><span>约 8523 字</span><meta property="wordCount" content="8523"></span></div><hr></div><div class="vp-toc-placeholder"><aside id="toc"><!----><div class="vp-toc-header">此页内容<button type="button" class="print-button" title="打印"><svg xmlns="http://www.w3.org/2000/svg" class="icon print-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="print icon" name="print"><path d="M819.2 364.8h-44.8V128c0-17.067-14.933-32-32-32H281.6c-17.067 0-32 14.933-32 32v236.8h-44.8C145.067 364.8 96 413.867 96 473.6v192c0 59.733 49.067 108.8 108.8 108.8h44.8V896c0 17.067 14.933 32 32 32h460.8c17.067 0 32-14.933 32-32V774.4h44.8c59.733 0 108.8-49.067 108.8-108.8v-192c0-59.733-49.067-108.8-108.8-108.8zM313.6 160h396.8v204.8H313.6V160zm396.8 704H313.6V620.8h396.8V864zM864 665.6c0 25.6-19.2 44.8-44.8 44.8h-44.8V588.8c0-17.067-14.933-32-32-32H281.6c-17.067 0-32 14.933-32 32v121.6h-44.8c-25.6 0-44.8-19.2-44.8-44.8v-192c0-25.6 19.2-44.8 44.8-44.8h614.4c25.6 0 44.8 19.2 44.8 44.8v192z"></path></svg></button><div class="arrow end"></div></div><div class="vp-toc-wrapper"><ul class="vp-toc-list"><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level2" href="#查询数据">查询数据</a></li><li><ul class="vp-toc-list"><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#跟踪-不跟踪查询">跟踪/不跟踪查询</a></li><!----><!--]--><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#加载相关数据">加载相关数据</a></li><!----><!--]--><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#拆分查询">拆分查询</a></li><!----><!--]--><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#复杂查询运算符">复杂查询运算符</a></li><!----><!--]--><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#sql查询">SQL查询</a></li><!----><!--]--><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#查询标记">查询标记</a></li><!----><!--]--><!--[--><li class="vp-toc-item"><a class="route-link vp-toc-link level3" href="#null值的比较">NULL值的比较</a></li><!----><!--]--></ul></li><!--]--></ul><div class="vp-toc-marker" style="top:-1.7rem;"></div></div><!----></aside></div><!----><div class="theme-hope-content"><h2 id="查询数据" tabindex="-1"><a class="header-anchor" href="#查询数据"><span>查询数据</span></a></h2><h3 id="跟踪-不跟踪查询" tabindex="-1"><a class="header-anchor" href="#跟踪-不跟踪查询"><span>跟踪/不跟踪查询</span></a></h3><table><thead><tr><th>场景</th><th>推荐选择</th><th>原因</th></tr></thead><tbody><tr><td>需要修改并保存数据</td><td>跟踪查询 (默认)</td><td>DbContext 自动检测变更并生成 UPDATE 语句。</td></tr><tr><td>只读操作 (显示、报告)</td><td>不跟踪查询</td><td>提升性能，减少内存和 CPU 开销，因为无需变更检测。</td></tr><tr><td>加载大量数据</td><td>不跟踪查询</td><td>显著减少内存消耗和变更检测的性能负担。</td></tr><tr><td>查询性能至关重要</td><td>不跟踪查询</td><td>绕过变更跟踪机制，减少开销。</td></tr><tr><td>避免内存中重复对象</td><td>跟踪查询</td><td>DbContext 会确保同一主键的实体只存在一个 C# 实例。</td></tr><tr><td>手动管理实体生命周期</td><td>不跟踪查询</td><td>允许你完全控制实体的创建和状态，而无需 EF Core 干预。</td></tr></tbody></table><table><thead><tr><th>对比点</th><th>跟踪查询</th><th>不跟踪查询</th></tr></thead><tbody><tr><td>是否默认开启</td><td>✅ 是</td><td>❌ 否，需要 <code>.AsNoTracking()</code></td></tr><tr><td>是否记录状态</td><td>✅ 会记录</td><td>❌ 不记录</td></tr><tr><td>是否能更新实体</td><td>✅ <code>SaveChanges()</code> 有效</td><td>❌ 无效，需手动 <code>Attach()</code></td></tr><tr><td>内存性能</td><td>🚨 高</td><td>✅ 低，推荐大数据量使用</td></tr><tr><td>导航属性重复</td><td>✅ 自动去重</td><td>❌ 可能重复（用 WithIdentityResolution）</td></tr></tbody></table><h4 id="跟踪" tabindex="-1"><a class="header-anchor" href="#跟踪"><span>跟踪</span></a></h4><p>在 EF Core 中，当你执行一个查询并加载实体时，这些实体通常会被 <strong><code>DbContext</code> 实例跟踪 (Tracked)</strong>。这意味着：</p><ul><li><strong>状态管理</strong>：<code>DbContext</code> 会为每个加载的实体维护一个内部状态，比如 <code>Unchanged</code>（未更改）、<code>Modified</code>（已修改）、<code>Added</code>（已添加）或 <code>Deleted</code>（已删除）。</li><li><strong>变更检测</strong>：<code>DbContext</code> 会监控这些被跟踪实体属性的任何更改。</li><li><strong>同步数据库</strong>：当你调用 <code>SaveChanges()</code> 或 <code>SaveChangesAsync()</code> 时，<code>DbContext</code> 会利用这些被跟踪实体的状态信息，自动生成相应的 <code>INSERT</code>、<code>UPDATE</code> 或 <code>DELETE</code> 语句来同步数据库。</li></ul><p>简而言之，被跟踪的实体就像是 <code>DbContext</code> 的“受控对象”，<code>DbContext</code> 知道它们是谁，它们从数据库加载时的原始值是什么，以及它们当前被修改成了什么样子。</p><p>示例：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class MyDbContext : DbContext
+{
+    public DbSet&lt;Product&gt; Products { get; set; }
+    // ... 其他 DbSet
+}
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+
+public async Task UpdateProductName(int productId, string newName)
+{
+    using (var context = new MyDbContext())
+    {
+        // 这是一个跟踪查询：Product 实体会被 DbContext 跟踪
+        var product = await context.Products.FirstOrDefaultAsync(p =&gt; p.Id == productId);
+
+        if (product != null)
+        {
+            // 修改 Name 属性
+            product.Name = newName;
+
+            // DbContext 检测到 product.Name 的变化，并将其标记为 Modified
+            // SaveChanges() 会生成 UPDATE 语句更新数据库
+            await context.SaveChangesAsync();
+            Console.WriteLine($&quot;Product {productId} name updated to {newName}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="不跟踪" tabindex="-1"><a class="header-anchor" href="#不跟踪"><span>不跟踪</span></a></h4><p><strong>不跟踪查询 (No-Tracking Queries)</strong> 意味着 EF Core 在加载实体后<strong>不会</strong>将它们添加到 <code>DbContext</code> 的变更跟踪器中。</p><p>通过调用 LINQ 查询的 <code>.AsNoTracking()</code> 扩展方法来明确指定一个查询为不跟踪查询。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore; // 需要此命名空间来使用 AsNoTracking()
+
+public async Task GetProductsAsNoTracking()
+{
+    using (var context = new MyDbContext())
+    {
+        // 这是一个不跟踪查询：加载的 Product 实体不会被 DbContext 跟踪
+        var products = await context.Products.AsNoTracking().ToListAsync();
+
+        Console.WriteLine(&quot;No-Tracking Products:&quot;);
+        foreach (var product in products)
+        {
+            Console.WriteLine($&quot;Id: {product.Id}, Name: {product.Name}&quot;);
+            // 尝试修改 product.Name = &quot;New Name&quot;; 然后调用 SaveChanges() 将无效，
+            // 因为 product 不受跟踪。
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>默认的 <code>.AsNoTracking()</code> 不会尝试去重，因此可能导致导航属性或引用重复。</p><p>使用 <code>.AsNoTrackingWithIdentityResolution()</code> 可以保证即使不跟踪，返回的对象依然不会重复引用相同实体。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var blogs = dbContext.Blogs
+    .Include(b =&gt; b.Posts)
+    .AsNoTrackingWithIdentityResolution()
+    .ToList();
+
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>如果你通过不跟踪查询获取了一个实体，但后来决定需要修改并保存它，你可以使用 <code>DbContext</code> 的 <code>Attach()</code> 方法将其添加到跟踪器中。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task AttachAndSaveProduct(int productId, string newName)
+{
+    using (var context = new MyDbContext())
+    {
+        // 1. 获取一个不跟踪的 Product 实例（可能来自其他层或缓存）
+        var productToUpdate = new Product { Id = productId, Name = &quot;Old Name&quot;, Price = 10.00m };
+
+        // 2. 将此实体附加到 DbContext 的跟踪器中，并标记为 Modified
+        // 如果实体已存在于数据库，Attach() 会将其设置为 Unchanged 状态
+        // 然后你需要手动将状态设置为 Modified
+        context.Attach(productToUpdate).State = EntityState.Modified;
+
+        // 3. 修改属性
+        productToUpdate.Name = newName; // 此时 DbContext 已经知道它被修改
+
+        // 4. 保存更改
+        await context.SaveChangesAsync();
+        Console.WriteLine($&quot;Product {productId} name updated to {newName} via attaching.&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="加载相关数据" tabindex="-1"><a class="header-anchor" href="#加载相关数据"><span>加载相关数据</span></a></h3><p><strong>相关数据 (Related Data)</strong> 指的是通过导航属性连接的实体。例如：</p><ul><li><strong>一对多 (One-to-Many)</strong>：一个 <code>Blog</code> 有一个 <code>ICollection&lt;Post&gt;</code> 导航属性（<code>Posts</code>），而 <code>Post</code> 有一个 <code>Blog</code> 导航属性。</li><li><strong>一对一 (One-to-One)</strong>：一个 <code>Product</code> 可能有一个 <code>ProductDetails</code> 导航属性，而 <code>ProductDetails</code> 也有一个 <code>Product</code> 导航属性。</li><li><strong>多对多 (Many-to-Many)</strong>：一个 <code>Author</code> 可以有多本 <code>Book</code>，一本 <code>Book</code> 可以有多个 <code>Author</code>。</li></ul><p>默认情况下，当你查询一个实体时，EF Core <strong>不会自动加载其相关的实体</strong>。这意味着如果你查询一个 <code>Blog</code>，它的 <code>Posts</code> 集合（导航属性）将是空的或者 <code>null</code>。你需要明确告诉 EF Core 何时以及如何加载这些相关数据。</p><hr><p>EF Core 提供了三种主要的策略来加载相关数据：</p><ol><li><strong>预先加载 (Eager Loading)</strong>：在查询主实体时，立即加载其相关实体。</li><li><strong>显式加载 (Explicit Loading)</strong>：在查询主实体后，根据需要单独加载其相关实体。</li><li><strong>延迟加载 (Lazy Loading)</strong>：在访问导航属性时，按需自动加载相关实体。</li></ol><table><thead><tr><th>策略</th><th>优点</th><th>缺点</th><th>适用场景</th></tr></thead><tbody><tr><td>预先加载 (Eager)</td><td>减少数据库往返次数，通常最高效。</td><td>可能加载过多不需要的数据。</td><td>提前知道所需相关数据，且数据量适中。</td></tr><tr><td>显式加载 (Explicit)</td><td>按需加载，避免不必要的加载。</td><td>可能导致 N+1 查询问题；需要手动编写加载代码。</td><td>主实体已加载，但相关数据仅在特定条件下才需要。</td></tr><tr><td>延迟加载 (Lazy)</td><td>简化代码，自动按需加载。</td><td>最易导致 N+1 查询问题；隐藏数据库访问。</td><td>仅在极少数情况下访问相关数据，或快速原型。 慎用！</td></tr></tbody></table><h4 id="预先加载" tabindex="-1"><a class="header-anchor" href="#预先加载"><span>预先加载</span></a></h4><p>预先加载是指在使用 <code>Include()</code> 和 <code>ThenInclude()</code> 扩展方法时，在<strong>执行主查询时就一并加载相关数据</strong>。这是最常用和推荐的策略，因为它通常能生成最优的 SQL 查询（通常是一个 <code>JOIN</code> 语句），从而减少数据库往返次数。</p><ul><li><strong>使用场景</strong>：你确切知道你需要哪些相关数据，并且这些数据是主查询结果的每个实体都需要或很可能需要时。</li><li><strong>优点</strong>：减少数据库查询次数（N+1 问题）。</li><li><strong>缺点</strong>：如果加载了太多不必要的相关数据，可能会导致查询结果集过大，降低性能。</li></ul><p><strong><code>Include</code>示例：</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+
+public class Blog
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public ICollection&lt;Post&gt; Posts { get; set; } = new List&lt;Post&gt;(); // 导航属性
+}
+
+public class Post
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public int BlogId { get; set; } // 外键
+    public Blog Blog { get; set; } = null!; // 导航属性
+}
+
+public class MyDbContext : DbContext
+{
+    public DbSet&lt;Blog&gt; Blogs { get; set; }
+    public DbSet&lt;Post&gt; Posts { get; set; }
+    // ...
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(&quot;YourConnectionString&quot;);
+    }
+}
+
+public async Task GetBlogsWithPosts()
+{
+    using (var context = new MyDbContext())
+    {
+        // 加载所有 Blog，同时加载每个 Blog 的所有相关 Post
+        var blogs = await context.Blogs
+            .Include(b =&gt; b.Posts) // 预先加载 Posts 集合
+            .ToListAsync();
+
+        foreach (var blog in blogs)
+        {
+            Console.WriteLine($&quot;Blog: {blog.Title}&quot;);
+            foreach (var post in blog.Posts)
+            {
+                Console.WriteLine($&quot;  Post: {post.Title}&quot;);
+            }
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>加载多级关系，<code>ThenInclude</code>示例</strong>：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Order
+{
+    public int Id { get; set; }
+    public DateTime OrderDate { get; set; }
+    public ICollection&lt;OrderItem&gt; OrderItems { get; set; } = new List&lt;OrderItem&gt;();
+}
+
+public class OrderItem
+{
+    public int Id { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public int OrderId { get; set; }
+    public Order Order { get; set; } = null!;
+    public int ProductId { get; set; }
+    public Product Product { get; set; } = null!; // 产品信息
+}
+
+public async Task GetOrdersWithItemsAndProducts()
+{
+    using (var context = new MyDbContext())
+    {
+        // 加载所有 Order，同时加载每个 Order 的 OrderItem，再同时加载每个 OrderItem 的 Product
+        var orders = await context.Orders
+            .Include(o =&gt; o.OrderItems)          // 加载 OrderItem 集合
+                .ThenInclude(oi =&gt; oi.Product)   // 接着加载 OrderItem 的 Product
+            .ToListAsync();
+
+        foreach (var order in orders)
+        {
+            Console.WriteLine($&quot;Order: {order.Id} on {order.OrderDate}&quot;);
+            foreach (var item in order.OrderItems)
+            {
+                Console.WriteLine($&quot;  Item: {item.Quantity} x {item.Product.Name} at {item.UnitPrice}&quot;);
+            }
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>预先加载过滤：<code>Include().Where()</code> 或 <code>ThenInclude().Where()</code></strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task GetBlogsWithPublishedPosts()
+{
+    using (var context = new MyDbContext())
+    {
+        // 加载所有 Blog，但只加载其 Published = true 的 Post
+        var blogs = await context.Blogs
+            .Include(b =&gt; b.Posts.Where(p =&gt; p.IsPublished)) // EF Core 7.0+
+            .ToListAsync();
+
+        // SQL 会在 JOIN 后面添加 ON p.IsPublished = 1
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="显示加载" tabindex="-1"><a class="header-anchor" href="#显示加载"><span>显示加载</span></a></h4><p>显式加载是指<strong>先加载主实体，然后在需要时才单独发出查询来加载其相关实体</strong>。</p><ul><li><strong>使用场景</strong>：你最初不需要相关数据，但在某些条件下（例如，用户点击了一个“查看详情”按钮），才需要加载它们。或者当你只需要加载一个特定实体的一小部分相关数据时。</li><li><strong>优点</strong>：只有在真正需要时才查询相关数据，避免不必要的加载。</li><li><strong>缺点</strong>：可能会导致“N+1 查询问题”——如果你遍历一个集合并为每个元素显式加载相关数据，那么会发出 N+1 次查询（1 次主查询 + N 次相关数据查询）。</li></ul><p>示例：显式加载单个相关实体 (<code>Reference</code>)</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task GetPostAndThenItsBlog(int postId)
+{
+    using (var context = new MyDbContext())
+    {
+        var post = await context.Posts.FirstOrDefaultAsync(p =&gt; p.Id == postId);
+
+        if (post != null)
+        {
+            // 如果 Blog 导航属性为 null (默认未加载)
+            // 显式加载 Post 所属的 Blog
+            await context.Entry(post).Reference(p =&gt; p.Blog).LoadAsync();
+
+            Console.WriteLine($&quot;Post: {post.Title}, Blog: {post.Blog?.Title}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>示例：显式加载相关集合 (<code>Collection</code>)</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task GetBlogAndThenItsPosts(int blogId)
+{
+    using (var context = new MyDbContext())
+    {
+        var blog = await context.Blogs.FirstOrDefaultAsync(b =&gt; b.Id == blogId);
+
+        if (blog != null)
+        {
+            // 如果 Posts 集合为空 (默认未加载)
+            // 显式加载 Blog 的所有 Post
+            await context.Entry(blog).Collection(b =&gt; b.Posts).LoadAsync();
+
+            Console.WriteLine($&quot;Blog: {blog.Title}&quot;);
+            foreach (var post in blog.Posts)
+            {
+                Console.WriteLine($&quot;  Post: {post.Title}&quot;);
+            }
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><hr><p>可以使用 <code>Query()</code> 方法来在显式加载时进行过滤或排序：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task GetBlogAndSpecificPosts(int blogId)
+{
+    using (var context = new MyDbContext())
+    {
+        var blog = await context.Blogs.FirstOrDefaultAsync(b =&gt; b.Id == blogId);
+
+        if (blog != null)
+        {
+            // 显式加载 Blog 的所有 Post，但只包含标题中含有 &quot;EF&quot; 的
+            await context.Entry(blog)
+                .Collection(b =&gt; b.Posts)
+                .Query() // 返回一个 IQueryable&lt;Post&gt;
+                .Where(p =&gt; p.Title.Contains(&quot;EF&quot;))
+                .LoadAsync();
+
+            // 此时 blog.Posts 集合中只会包含标题中含有 &quot;EF&quot; 的 Post
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="延迟加载" tabindex="-1"><a class="header-anchor" href="#延迟加载"><span>延迟加载</span></a></h4><p>延迟加载是指当你<strong>第一次访问导航属性时，EF Core 会自动从数据库加载相关数据</strong>。它提供了一种“按需加载”的便利性，但如果不小心使用，可能会导致严重的性能问题（N+1 查询问题）。</p><ul><li><strong>使用场景</strong>：在开发初期为了快速原型开发，或者在非常明确知道某个导航属性只在极少数情况下被访问时。</li><li><strong>优点</strong>：简化代码，无需手动 <code>Include</code> 或 <code>Load</code>。</li><li><strong>缺点</strong>：<strong>最容易导致 N+1 查询问题</strong>，每次访问未加载的导航属性都会触发一次新的数据库查询。可能导致性能瓶颈和过多的数据库往返。</li><li><strong>实现方式</strong>：需要安装 <code>Microsoft.EntityFrameworkCore.Proxies</code> NuGet 包，并在 <code>DbContext</code> 配置中启用代理，并且导航属性必须是 <code>virtual</code>。</li></ul><p><strong>使用方式：</strong></p><ol><li><strong>安装 NuGet 包</strong>：<code>Microsoft.EntityFrameworkCore.Proxies</code></li><li><strong>配置 <code>DbContext</code></strong>：</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+    optionsBuilder.UseSqlServer(&quot;YourConnectionString&quot;)
+        .UseLazyLoadingProxies(); // 启用延迟加载代理
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="3"><li><strong>导航属性标记为<code>virtual</code></strong></li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Blog
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public virtual ICollection&lt;Post&gt; Posts { get; set; } = new List&lt;Post&gt;(); // 必须是 virtual
+}
+
+public class Post
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public int BlogId { get; set; }
+    public virtual Blog Blog { get; set; } = null!; // 必须是 virtual
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>示例：延迟加载</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task GetBlogsWithLazyLoadedPosts()
+{
+    using (var context = new MyDbContext())
+    {
+        // 第一次查询：只加载 Blog 实体，不加载 Post
+        var blogs = await context.Blogs.ToListAsync();
+
+        Console.WriteLine(&quot;Lazy-Loaded Blogs:&quot;);
+        foreach (var blog in blogs)
+        {
+            Console.WriteLine($&quot;Blog: {blog.Title}&quot;);
+            // **第一次访问 blog.Posts 时，会触发一个新的数据库查询来加载这些 Post**
+            foreach (var post in blog.Posts) // 这里会触发数据库查询
+            {
+                Console.WriteLine($&quot;  Post: {post.Title}&quot;);
+            }
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p>性能陷阱：如果 <code>blogs</code> 集合中有 N 个 <code>Blog</code>，那么上面的代码会产生 N+1 次数据库查询（1 次加载所有 Blog + N 次每次访问 <code>blog.Posts</code> 触发的查询）。这在处理大量数据时是灾难性的。</p></blockquote><h3 id="拆分查询" tabindex="-1"><a class="header-anchor" href="#拆分查询"><span>拆分查询</span></a></h3><h4 id="定义" tabindex="-1"><a class="header-anchor" href="#定义"><span>定义</span></a></h4><p>当你使用 <strong>预先加载 (<code>.Include()</code> 和 <code>.ThenInclude()</code>)</strong> 来加载相关数据时，EF Core 默认会生成一个<strong>单一的 SQL 查询</strong>。这个查询通常使用 <code>JOIN</code> 语句来将主实体和所有相关实体的数据连接起来。这被称为 <strong>“单查询 (Single Query)”</strong> 模式。</p><p>然而，当你的查询涉及到<strong>多个 <code>Include()</code> 调用</strong>，或者相关的集合数据量非常大时，这种单一查询可能会变得：</p><ul><li><strong>非常复杂</strong>：导致生成的 SQL 语句冗长且难以阅读。</li><li><strong>性能低下</strong>：由于 <code>JOIN</code> 操作的性质，结果集中会包含大量的重复数据。例如，一个 <code>Blog</code> 有 100 篇 <code>Post</code>，加载 <code>Blog</code> 和 <code>Post</code> 会导致 <code>Blog</code> 的信息重复 100 次。这种数据膨胀会增加网络传输和内存处理的负担。</li></ul><p><strong>拆分查询 (Split Queries)</strong> 允许 EF Core 将一个复杂的预先加载查询<strong>拆分成多个独立的 SQL 查询</strong>。每个查询负责加载一部分实体及其相关数据，然后 EF Core 会在内存中将这些查询结果<strong>合并</strong>起来，构建完整的对象图。</p><table><thead><tr><th>特性 / 场景</th><th>单查询 (Single Query)</th><th>拆分查询 (Split Query)</th></tr></thead><tbody><tr><td>查询复杂性</td><td>复杂 JOIN 链，可能导致 SQL 语句庞大复杂</td><td>生成多个简单查询，每个查询相对独立</td></tr><tr><td>数据冗余</td><td>结果集中数据冗余高，尤其在多级 Include 时</td><td>显著减少数据冗余，降低网络传输和内存消耗</td></tr><tr><td>数据库往返</td><td>只需要一次数据库往返</td><td>增加数据库往返次数</td></tr><tr><td>数据一致性</td><td>强一致性，所有数据在单个事务中获取</td><td>如果不使用事务，可能存在数据不一致性风险</td></tr><tr><td>性能瓶颈</td><td>CPU 密集型 (数据库和客户端处理重复数据)；网络带宽限制</td><td>网络延迟敏感型 (多次往返)</td></tr><tr><td>适用场景</td><td>相关数据量较小；对数据一致性要求极高；网络延迟高</td><td>相关数据量大；数据冗余是主要性能瓶颈；网络延迟低</td></tr><tr><td>默认行为</td><td>EF Core 的默认行为</td><td>EF Core 5.0+ 可选</td></tr></tbody></table><h4 id="解决的问题" tabindex="-1"><a class="header-anchor" href="#解决的问题"><span>解决的问题</span></a></h4><p>拆分查询主要为了解决单查询模式在特定场景下的<strong>性能问题和数据膨胀问题</strong>。</p><p><strong>单查询 (Single Query) 的问题：</strong></p><p>考虑以下查询，它加载 <code>Blogs</code> 及其 <code>Posts</code> 和每个 <code>Post</code> 的 <code>Tags</code>：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var blogs = await context.Blogs
+    .Include(b =&gt; b.Posts)
+        .ThenInclude(p =&gt; p.Tags)
+    .ToListAsync();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>如果一个 <code>Blog</code> 有 N 篇 <code>Post</code>，每篇 <code>Post</code> 有 M 个 <code>Tag</code>：</p><p><strong>SQL <code>JOIN</code> 结果集</strong>：生成的 SQL 会像这样：</p><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>SELECT b.*, p.*, t.*
+FROM Blogs AS b
+LEFT JOIN Posts AS p ON b.Id = p.BlogId
+LEFT JOIN PostTags AS pt ON p.Id = pt.PostId
+LEFT JOIN Tags AS t ON pt.TagId = t.Id
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>这个查询返回的行数将是 <code>SUM(N * M)</code>。每一行都会重复 <code>Blog</code> 和 <code>Post</code> 的数据。如果 <code>N</code> 和 <code>M</code> 都很大，结果集会非常庞大，导致：</p><ul><li><strong>数据库服务器压力</strong>：需要处理更多的数据。</li><li><strong>网络传输开销</strong>：传输大量重复数据到应用程序。</li><li><strong>内存消耗</strong>：应用程序需要更多内存来接收和处理这些数据。</li></ul><p>通过将上述查询拆分为多个查询，可以显著减少数据重复：</p><ul><li>查询1：加载<code>Blogs</code></li></ul><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>SELECT b.* FROM Blogs AS b
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><ul><li>查询2：加载<code>Posts</code>,过滤出与查询1结果相关的<code>Posts</code></li></ul><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>SELECT p.* FROM Posts AS p WHERE p.BlogId IN (&lt;ids from query 1&gt;)
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><ul><li>查询3：加载<code>Tags</code>,过滤出与查询2结果相关的<code>Tags</code></li></ul><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>SELECT t.* FROM Tags AS t JOIN PostTags AS pt ON t.Id = pt.TagId WHERE pt.PostId IN (&lt;ids from query 2&gt;)
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>在应用程序内存中，EF Core 会根据主键/外键关系将这三个查询的结果<strong>智能地组合</strong>起来，形成完整的对象图。</p><p><strong>优缺点</strong></p><p><strong>优点</strong>：</p><ul><li><strong>减少数据冗余</strong>：显著减少通过网络传输的数据量和客户端内存中重复数据的量。</li><li><strong>提高性能</strong>：在处理大量相关数据时，通常比单查询更高效。</li><li><strong>更简单的 SQL</strong>：生成的每个独立查询都比一个巨大的 <code>JOIN</code> 链更简单，有利于数据库优化器。</li></ul><p><strong>缺点</strong>：</p><ul><li><strong>增加数据库往返次数</strong>：需要执行多个查询，而不是一个。这在网络延迟较高的情况下可能成为性能瓶颈。</li><li><strong>结果一致性问题</strong>：如果多个查询之间数据库发生变化，可能会导致获取到不一致的数据快照（例如，第一个查询执行后，第二个查询执行前，数据被修改了）。在事务中执行可以缓解此问题，但会增加事务开销。</li></ul><h4 id="使用方式" tabindex="-1"><a class="header-anchor" href="#使用方式"><span>使用方式</span></a></h4><h5 id="针对单个查询启用-assplitquery" tabindex="-1"><a class="header-anchor" href="#针对单个查询启用-assplitquery"><span>针对单个查询启用<code>.AsSplitQuery()</code></span></a></h5><p>可以在任何 LINQ 查询上使用 <code>.AsSplitQuery()</code> 扩展方法来将其转换为拆分查询。</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>using Microsoft.EntityFrameworkCore;
+
+public class Blog
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public ICollection&lt;Post&gt; Posts { get; set; } = new List&lt;Post&gt;();
+}
+
+public class Post
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public int BlogId { get; set; }
+    public Blog Blog { get; set; } = null!;
+    public ICollection&lt;Tag&gt; Tags { get; set; } = new List&lt;Tag&gt;(); // 多对多关系简化
+}
+
+public class Tag
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ICollection&lt;Post&gt; Posts { get; set; } = new List&lt;Post&gt;();
+}
+
+public class MyDbContext : DbContext
+{
+    public DbSet&lt;Blog&gt; Blogs { get; set; }
+    public DbSet&lt;Post&gt; Posts { get; set; }
+    public DbSet&lt;Tag&gt; Tags { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 配置多对多关系 (简化，实际需要连接表)
+        modelBuilder.Entity&lt;Post&gt;()
+            .HasMany(p =&gt; p.Tags)
+            .WithMany(t =&gt; t.Posts)
+            .UsingEntity(j =&gt; j.ToTable(&quot;PostTags&quot;));
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(&quot;YourConnectionString&quot;);
+    }
+}
+
+public async Task GetBlogsWithPostsAndTags_SplitQuery()
+{
+    using (var context = new MyDbContext())
+    {
+        var blogs = await context.Blogs
+            .Include(b =&gt; b.Posts)
+                .ThenInclude(p =&gt; p.Tags)
+            .AsSplitQuery() // 在这里启用拆分查询
+            .ToListAsync();
+
+        foreach (var blog in blogs)
+        {
+            Console.WriteLine($&quot;Blog: {blog.Title}&quot;);
+            foreach (var post in blog.Posts)
+            {
+                Console.WriteLine($&quot;  Post: {post.Title}&quot;);
+                foreach (var tag in post.Tags)
+                {
+                    Console.WriteLine($&quot;    Tag: {tag.Name}&quot;);
+                }
+            }
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="全局启用拆分查询-默认行为" tabindex="-1"><a class="header-anchor" href="#全局启用拆分查询-默认行为"><span>全局启用拆分查询（默认行为）</span></a></h5><p>通过 <code>DbContextOptionsBuilder</code> 配置，将所有涉及多个 <code>Include()</code> 的查询<strong>默认</strong>设置为拆分查询。</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>using Microsoft.EntityFrameworkCore;
+
+public class MyDbContext : DbContext
+{
+    // ... DbSet 和 OnModelCreating 配置 ...
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(&quot;YourConnectionString&quot;)
+            // 默认情况下，将所有具有多个 Include() 的查询拆分
+            .UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll) // 保持默认跟踪行为
+            .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery); // 设置默认查询拆分行为
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong><code>UseQuerySplittingBehavior</code> 参数：</strong></p><ul><li><strong><code>QuerySplittingBehavior.SingleQuery</code> (默认)</strong>：所有相关数据都在一个查询中加载（传统的 <code>JOIN</code> 方式）。</li><li><strong><code>QuerySplittingBehavior.SplitQuery</code></strong>：所有相关数据都被拆分成多个查询。</li></ul><p><strong>优先级</strong>：如果在 <code>DbContext</code> 级别设置了全局行为，并且在单个查询上使用了 <code>.AsSingleQuery()</code> 或 <code>.AsSplitQuery()</code>，那么<strong>单个查询上的方法具有更高的优先级</strong>。例如，如果全局设置为 <code>SplitQuery</code>，但你在某个查询上使用了 <code>.AsSingleQuery()</code>，那么该查询将作为单个查询执行。</p><h3 id="复杂查询运算符" tabindex="-1"><a class="header-anchor" href="#复杂查询运算符"><span>复杂查询运算符</span></a></h3><table><thead><tr><th>类别</th><th>运算符</th></tr></thead><tbody><tr><td>聚合</td><td><code>GroupBy</code>、<code>Sum</code>、<code>Count</code>、<code>Average</code>、<code>Min</code>、<code>Max</code></td></tr><tr><td>集合运算</td><td><code>Union</code>、<code>Intersect</code>、<code>Except</code>、<code>Distinct</code></td></tr><tr><td>连接</td><td><code>Join</code>、<code>GroupJoin</code></td></tr><tr><td>多表展平</td><td><code>SelectMany</code></td></tr><tr><td>子查询</td><td><code>Any</code>、<code>All</code>、<code>Contains</code>、<code>First/Single</code> in LINQ</td></tr><tr><td>分页</td><td><code>Skip</code>、<code>Take</code></td></tr><tr><td>判断</td><td><code>DefaultIfEmpty()</code>（左外连接）</td></tr><tr><td>条件</td><td><code>Where()</code> 中嵌套表达式</td></tr></tbody></table><h4 id="聚合" tabindex="-1"><a class="header-anchor" href="#聚合"><span>聚合</span></a></h4><p>聚合运算符用于对数据集合执行计算，并返回一个单一的值。</p><ul><li><strong><code>Count()</code> / <code>LongCount()</code></strong>: 计算序列中的元素数量。</li><li><strong><code>Sum()</code></strong>: 计算序列中数值的总和。</li><li><strong><code>Min()</code></strong>: 获取序列中的最小值。</li><li><strong><code>Max()</code></strong>: 获取序列中的最大值。</li><li><strong><code>Average()</code></strong>: 计算序列中数值的平均值。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>using Microsoft.EntityFrameworkCore;
+using System.Linq; // 确保引用此命名空间
+
+public async Task PerformAggregations()
+{
+    using (var context = new MyDbContext())
+    {
+        // 统计产品总数
+        var productCount = await context.Products.CountAsync();
+        Console.WriteLine($&quot;Total Products: {productCount}&quot;);
+
+        // 计算所有产品的总价格
+        var totalProductPrice = await context.Products.SumAsync(p =&gt; p.Price);
+        Console.WriteLine($&quot;Total Product Price: {totalProductPrice:C}&quot;);
+
+        // 获取最贵产品的价格
+        var maxPrice = await context.Products.MaxAsync(p =&gt; p.Price);
+        Console.WriteLine($&quot;Max Product Price: {maxPrice:C}&quot;);
+
+        // 获取最便宜产品的价格
+        var minPrice = await context.Products.MinAsync(p =&gt; p.Price);
+        Console.WriteLine($&quot;Min Product Price: {minPrice:C}&quot;);
+
+        // 计算产品平均价格
+        var averagePrice = await context.Products.AverageAsync(p =&gt; p.Price);
+        Console.WriteLine($&quot;Average Product Price: {averagePrice:C}&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>这些聚合操作通常会被翻译成 SQL 中的 <code>COUNT()</code>, <code>SUM()</code>, <code>MIN()</code>, <code>MAX()</code>, <code>AVG()</code> 函数。</p><h4 id="分组" tabindex="-1"><a class="header-anchor" href="#分组"><span>分组</span></a></h4><p><strong><code>GroupBy()</code></strong>: 将序列中的元素按照一个或多个键进行分组。这在 SQL 中对应 <code>GROUP BY</code> 子句。</p><p>示例：按类别分组产品</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class Category
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ICollection&lt;Product&gt; Products { get; set; } = new List&lt;Product&gt;();
+}
+
+// Product 类中添加 CategoryId 和 Category 导航属性
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public int CategoryId { get; set; }
+    public Category Category { get; set; } = null!;
+}
+
+public async Task GroupProductsByCategory()
+{
+    using (var context = new MyDbContext())
+    {
+        // 按产品类别名称分组，并计算每个类别的产品数量和平均价格
+        var categorySummaries = await context.Products
+            .GroupBy(p =&gt; p.Category.Name) // 按 Category Name 分组
+            .Select(g =&gt; new
+            {
+                CategoryName = g.Key,
+                ProductCount = g.Count(),
+                AveragePrice = g.Average(p =&gt; p.Price)
+            })
+            .ToListAsync();
+
+        Console.WriteLine(&quot;Product Summaries by Category:&quot;);
+        foreach (var summary in categorySummaries)
+        {
+            Console.WriteLine($&quot;- Category: {summary.CategoryName}, Products: {summary.ProductCount}, Avg Price: {summary.AveragePrice:C}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="连接" tabindex="-1"><a class="header-anchor" href="#连接"><span>连接</span></a></h4><p>连接运算符用于将来自不同数据源的元素组合起来，基于它们之间的匹配键。</p><ul><li><strong><code>Join()</code></strong>: 执行内部连接 (Inner Join)。</li><li><strong><code>GroupJoin()</code></strong>: 执行分组连接 (Group Join)，类似左连接，但结果是外部集合和匹配内部集合的组。</li><li><strong>隐式连接</strong>：在 LINQ to Entities 中，通过<strong>导航属性</strong>访问相关实体通常会自动转换为数据库 <code>JOIN</code>，这是最常见和推荐的连接方式。</li></ul><p>示例：使用导航属性进行隐式连接 (推荐)</p><p>这是最常用和直观的连接方式，EF Core 会自动将其翻译为 <code>JOIN</code>。</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task GetProductsWithCategoryNames()
+{
+    using (var context = new MyDbContext())
+    {
+        // 隐式连接：通过导航属性 Product.Category 访问 Category.Name
+        var productsWithCategories = await context.Products
+            .Select(p =&gt; new
+            {
+                ProductName = p.Name,
+                CategoryName = p.Category.Name // 直接访问导航属性
+            })
+            .ToListAsync();
+
+        foreach (var item in productsWithCategories)
+        {
+            Console.WriteLine($&quot;Product: {item.ProductName}, Category: {item.CategoryName}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>示例：使用<code>Join()</code>(显示内部连接)</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task JoinProductsAndCategoriesExplicitly()
+{
+    using (var context = new MyDbContext())
+    {
+        var productsAndCategories = await context.Products
+            .Join(
+                context.Categories, // 要连接的第二个集合
+                product =&gt; product.CategoryId, // Products 集合的连接键
+                category =&gt; category.Id,       // Categories 集合的连接键
+                (product, category) =&gt; new // 结果选择器
+                {
+                    ProductName = product.Name,
+                    CategoryName = category.Name
+                }
+            )
+            .ToListAsync();
+
+        foreach (var item in productsAndCategories)
+        {
+            Console.WriteLine($&quot;Product: {item.ProductName}, Category: {item.CategoryName}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><code>Join()</code> 显式连接在某些复杂场景下很有用，但在能够使用导航属性的情况下，通常推荐使用导航属性的隐式连接，因为它更简洁且易于维护。</p><h4 id="集合" tabindex="-1"><a class="header-anchor" href="#集合"><span>集合</span></a></h4><p>集合运算符用于组合或比较两个序列。</p><ul><li><strong><code>Concat()</code></strong>: 将两个序列连接起来（保留所有重复项）。</li><li><strong><code>Union()</code></strong>: 返回两个序列的并集（去除重复项）。</li><li><strong><code>Intersect()</code></strong>: 返回两个序列的交集（只包含在两个序列中都存在的元素）。</li><li><strong><code>Except()</code></strong>: 返回在第一个序列中存在但不在第二个序列中存在的元素。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task PerformSetOperations()
+{
+    using (var context = new MyDbContext())
+    {
+        var productsUnder50 = context.Products.Where(p =&gt; p.Price &lt; 50);
+        var productsOver70 = context.Products.Where(p =&gt; p.Price &gt; 70);
+        var productsInTechCategory = context.Products.Where(p =&gt; p.Category.Name == &quot;Electronics&quot;);
+
+        Console.WriteLine(&quot;\nSet Operations:&quot;);
+
+        // Concat: 合并两个结果集，保留所有元素，包括重复
+        var allCheapAndExpensiveProducts = await productsUnder50.Concat(productsOver70).ToListAsync();
+        Console.WriteLine($&quot;Concat Count: {allCheapAndExpensiveProducts.Count}&quot;);
+
+        // Union: 合并两个结果集，去除重复项
+        var unionProducts = await productsUnder50.Union(productsInTechCategory).ToListAsync();
+        Console.WriteLine($&quot;Union Count (Price &lt; 50 OR Category = Electronics): {unionProducts.Count}&quot;);
+
+        // Intersect: 获取同时在两个结果集中的元素
+        var cheapElectronics = await productsUnder50.Intersect(productsInTechCategory).ToListAsync();
+        Console.WriteLine($&quot;Intersect Count (Price &lt; 50 AND Category = Electronics): {cheapElectronics.Count}&quot;);
+
+        // Except: 获取在第一个结果集但不在第二个结果集中的元素
+        var cheapButNotElectronics = await productsUnder50.Except(productsInTechCategory).ToListAsync();
+        Console.WriteLine($&quot;Except Count (Price &lt; 50 AND NOT Category = Electronics): {cheapButNotElectronics.Count}&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>这些操作会被翻译成 SQL 中的 <code>UNION ALL</code>, <code>UNION</code>, <code>INTERSECT</code>, <code>EXCEPT</code> (或 <code>NOT IN</code> 子查询)。</p><h4 id="分页" tabindex="-1"><a class="header-anchor" href="#分页"><span>分页</span></a></h4><p>分页用于从结果集中获取特定范围的元素。</p><ul><li><strong><code>Skip()</code></strong>: 跳过指定数量的元素。</li><li><strong><code>Take()</code></strong>: 获取指定数量的元素。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task GetPagedProducts(int pageNumber, int pageSize)
+{
+    using (var context = new MyDbContext())
+    {
+        // 获取指定页码的产品列表，并按名称排序
+        var pagedProducts = await context.Products
+            .OrderBy(p =&gt; p.Name)
+            .Skip((pageNumber - 1) * pageSize) // 计算要跳过的数量
+            .Take(pageSize)                     // 获取指定数量
+            .ToListAsync();
+
+        Console.WriteLine($&quot;\nPage {pageNumber} of Products (Page Size: {pageSize}):&quot;);
+        foreach (var product in pagedProducts)
+        {
+            Console.WriteLine($&quot;- {product.Name} ({product.Price:C})&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="其他" tabindex="-1"><a class="header-anchor" href="#其他"><span>其他</span></a></h4><ul><li><strong><code>All()</code></strong>: 检查序列中的所有元素是否都满足某个条件。</li><li><strong><code>Any()</code></strong>: 检查序列中是否有任何元素满足某个条件。</li><li><strong><code>Contains()</code></strong>: 检查序列是否包含指定元素。</li><li><strong><code>FirstOrDefault()</code> / <code>SingleOrDefault()</code></strong>: 获取序列的第一个/唯一元素，如果不存在则返回默认值。</li><li><strong><code>GroupBy()</code> 的两次使用</strong>：第一次分组，第二次聚合。</li><li><strong>投影 <code>Select()</code></strong>：创建匿名对象或自定义 DTO (Data Transfer Objects) 来只查询所需的数据，而不是整个实体。这可以显著提升性能。</li></ul><p>示例：Any()和All()</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task CheckProductExistenceAndConditions()
+{
+    using (var context = new MyDbContext())
+    {
+        // 检查是否有任何产品价格低于 10
+        var anyCheapProducts = await context.Products.AnyAsync(p =&gt; p.Price &lt; 10);
+        Console.WriteLine($&quot;Any products cheaper than $10: {anyCheapProducts}&quot;);
+
+        // 检查所有产品价格是否都高于 1
+        var allExpensiveProducts = await context.Products.AllAsync(p =&gt; p.Price &gt; 1);
+        Console.WriteLine($&quot;All products more expensive than $1: {allExpensiveProducts}&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="sql查询" tabindex="-1"><a class="header-anchor" href="#sql查询"><span>SQL查询</span></a></h3><p>尽管 EF Core 提供了强大的 LINQ 查询能力，将 C# 代码翻译成 SQL 语句，但在某些情况下，你可能需要<strong>直接编写和执行原始 SQL 查询</strong>。这在处理特别复杂的、性能敏感的、或者 EF Core 尚不支持的数据库特定功能时尤为有用。</p><h4 id="原始sql使用方法" tabindex="-1"><a class="header-anchor" href="#原始sql使用方法"><span>原始SQL使用方法</span></a></h4><h5 id="查询实体-fromsqlraw-和fromsqlinterpolated" tabindex="-1"><a class="header-anchor" href="#查询实体-fromsqlraw-和fromsqlinterpolated"><span>查询实体(<code>FromSqlRaw()</code>和<code>FromSqlInterpolated</code>)</span></a></h5><p>这两个方法允许你直接编写 SQL 查询，并将结果映射到 EF Core 跟踪的实体类型。它们是 <code>DbSet&lt;TEntity&gt;</code> 上的扩展方法。</p><p><code>FromSqlRaw()</code>：使用参数占位符</p><ul><li><strong>特点</strong>：接受一个字符串形式的 SQL 查询和可选的参数数组。参数使用数据库特定的占位符（例如 SQL Server 的 <code>{0}</code>，PostgreSQL 的 <code>$0</code>，SQLite 的 <code>?</code>）。</li><li><strong>优点</strong>：可以明确控制 SQL 字符串，适用于动态构建 SQL 的场景（但要注意 SQL 注入风险）。</li><li><strong>缺点</strong>：需要手动处理参数化，不当使用可能导致 SQL 注入。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>using Microsoft.EntityFrameworkCore;
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+
+public class MyDbContext : DbContext
+{
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(&quot;YourConnectionString&quot;);
+    }
+}
+
+public async Task GetProductsFromRawSql(string searchTerm)
+{
+    using (var context = new MyDbContext())
+    {
+        // SQL Server 参数占位符为 {0}, {1}, ...
+        // SQLite 和 MySQL 是 ?
+        // PostgreSQL 是 $0, $1, ...
+        var products = await context.Products
+            .FromSqlRaw(&quot;SELECT Id, Name, Price FROM Products WHERE Name LIKE {0}&quot;, $&quot;%{searchTerm}%&quot;)
+            .ToListAsync();
+
+        Console.WriteLine($&quot;Products matching &#39;{searchTerm}&#39;:&quot;);
+        foreach (var product in products)
+        {
+            Console.WriteLine($&quot;- {product.Name} (Price: {product.Price:C})&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><code>FromSqlInterpolated()</code>：使用 C# 字符串插值</p><ul><li><strong>特点</strong>：接受一个使用 C# 字符串插值语法的 SQL 查询。EF Core 会自动将插值参数转换为安全的数据库参数，从而<strong>有效防止 SQL 注入攻击</strong>。</li><li><strong>优点</strong>：更简洁、安全，且易于阅读。<strong>推荐使用此方法</strong>。</li><li><strong>缺点</strong>：不能直接使用非参数化的 SQL 字符串。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task GetProductsFromInterpolatedSql(string searchTerm)
+{
+    using (var context = new MyDbContext())
+    {
+        // 自动将 searchTerm 转换为安全的数据库参数
+        var products = await context.Products
+            .FromSqlInterpolated($&quot;SELECT Id, Name, Price FROM Products WHERE Name LIKE {&quot;%&quot; + searchTerm + &quot;%&quot;}&quot;)
+            .ToListAsync();
+
+        // 与 FromSqlRaw() 类似的结果
+        Console.WriteLine($&quot;Products matching &#39;{searchTerm}&#39; (Interpolated):&quot;);
+        foreach (var product in products)
+        {
+            Console.WriteLine($&quot;- {product.Name} (Price: {product.Price:C})&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>使用 <code>FromSqlRaw()</code> / <code>FromSqlInterpolated()</code> 的重要限制和考虑：</p><ul><li><strong>SQL 必须与实体形状匹配</strong>：查询返回的列名和数据类型必须与 EF Core 映射的实体类型（<code>TEntity</code>）的属性完全匹配，或者可以隐式转换。</li><li><strong>查询必须是可组合的</strong>：<code>FromSqlRaw()</code> 和 <code>FromSqlInterpolated()</code> 返回的是 <code>IQueryable&lt;TEntity&gt;</code>，这意味着你可以在其后追加 LINQ 查询运算符（如 <code>Where()</code>, <code>OrderBy()</code>, <code>Include()</code> 等）。EF Core 会尝试将这些 LINQ 操作组合到原始 SQL 语句中（通常作为子查询或 CTE）。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>var products = await context.Products
+    .FromSqlInterpolated($&quot;SELECT Id, Name, Price FROM Products&quot;)
+    .Where(p =&gt; p.Price &gt; 50) // 这个 Where 会被添加到 SQL 中
+    .OrderBy(p =&gt; p.Name)     // OrderBy 也会被添加到 SQL 中
+    .ToListAsync();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ul><li><strong>限制</strong>：不是所有原始 SQL 都可以被后续 LINQ 操作组合。例如，如果原始 SQL 查询涉及复杂的联接或聚合，后续的 LINQ 操作可能无法正确翻译或导致效率低下。通常，使用 <code>FromSql...</code> 仅用于<strong>提供基础的 SELECT 语句</strong>。</li><li><strong>跟踪行为</strong>：默认情况下，<code>FromSqlRaw()</code> 和 <code>FromSqlInterpolated()</code> 返回的实体是<strong>被跟踪的</strong>，你可以像普通查询一样修改它们并保存更改。如果不需要跟踪，可以使用 <code>.AsNoTracking()</code>。</li></ul><h5 id="不返回实体的任意sql-executesqlraw-和-executesqlinterpolated" tabindex="-1"><a class="header-anchor" href="#不返回实体的任意sql-executesqlraw-和-executesqlinterpolated"><span>不返回实体的任意SQL(<code>ExecuteSqlRaw()</code> 和 <code>ExecuteSqlInterpolated()</code>)</span></a></h5><p>这些方法在 <code>Database</code> 属性上提供，用于执行不返回结果集（例如 <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>）或返回单个标量值的 SQL 命令。它们返回受影响的行数。</p><p><code>ExecuteSqlRaw()</code>：使用参数占位符</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task UpdateProductNameRaw(int productId, string newName)
+{
+    using (var context = new MyDbContext())
+    {
+        var affectedRows = await context.Database.ExecuteSqlRawAsync(
+            &quot;UPDATE Products SET Name = {0} WHERE Id = {1}&quot;,
+            newName, productId
+        );
+        Console.WriteLine($&quot;{affectedRows} row(s) updated using raw SQL.&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><code>ExecuteSqlInterpolated()</code>：使用 C# 字符串插值</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task UpdateProductNameInterpolated(int productId, string newName)
+{
+    using (var context = new MyDbContext())
+    {
+        var affectedRows = await context.Database.ExecuteSqlInterpolatedAsync(
+            $&quot;UPDATE Products SET Name = {newName} WHERE Id = {productId}&quot;
+        );
+        Console.WriteLine($&quot;{affectedRows} row(s) updated using interpolated SQL.&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>使用 <code>ExecuteSqlRaw()</code> / <code>ExecuteSqlInterpolated()</code> 的特点：</p><ul><li><strong>事务</strong>：这些命令不会自动启动事务。如果你需要它们在事务中执行，你需要手动创建和管理事务（例如 <code>context.Database.BeginTransactionAsync()</code>）。</li><li><strong>不影响变更跟踪器</strong>：这些操作直接作用于数据库，不会更新 <code>DbContext</code> 的变更跟踪器。如果你在执行 <code>UPDATE</code> 或 <code>DELETE</code> 后还想继续使用被跟踪的实体，可能需要重新加载它们以确保数据一致性。</li><li><strong>返回受影响的行数</strong>：方法的返回值是执行 SQL 命令所影响的行数。</li></ul><h4 id="从原始sql中获取标量结果或无键实体" tabindex="-1"><a class="header-anchor" href="#从原始sql中获取标量结果或无键实体"><span>从原始SQL中获取标量结果或无键实体</span></a></h4><h5 id="获取标量结果-dbconnection-executescalarasync" tabindex="-1"><a class="header-anchor" href="#获取标量结果-dbconnection-executescalarasync"><span>获取标量结果 (<code>DbConnection.ExecuteScalarAsync()</code>)</span></a></h5><p>如果你只需要从 SQL 查询中获取单个值（例如 <code>COUNT(*)</code>，<code>MAX(Price)</code>），你可以直接访问底层的 <code>DbConnection</code>。</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>using System.Data.Common; // For DbConnection
+
+public async Task GetScalarValueFromSql()
+{
+    using (var context = new MyDbContext())
+    {
+        var connection = context.Database.GetDbConnection();
+        await connection.OpenAsync(); // 确保连接已打开
+
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = &quot;SELECT COUNT(*) FROM Products;&quot;;
+            var count = (int?)(await command.ExecuteScalarAsync());
+            Console.WriteLine($&quot;Total products count from scalar query: {count}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="查询无键实体" tabindex="-1"><a class="header-anchor" href="#查询无键实体"><span>查询无键实体</span></a></h5><p>如果你的 SQL 查询返回的数据结构不对应你的任何主键实体，或者你希望查询一个数据库视图，你可以定义一个<strong>无键实体类型</strong>。</p><ol><li>定义无键实体类</li></ol><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class ProductSummary
+{
+    public string CategoryName { get; set; } = string.Empty;
+    public int ProductCount { get; set; }
+    public decimal AveragePrice { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="2"><li>在 <code>DbContext</code> 中配置为无键实体</li></ol><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class MyDbContext : DbContext
+{
+    public DbSet&lt;ProductSummary&gt; ProductSummaries { get; set; } = null!; // 定义为 DbSet
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 配置 ProductSummary 为无键实体
+        modelBuilder.Entity&lt;ProductSummary&gt;().HasNoKey();
+
+        // 如果 ProductSummary 对应数据库视图，也可以这样映射：
+        // modelBuilder.Entity&lt;ProductSummary&gt;().HasNoKey().ToView(&quot;V_ProductSummary&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="3"><li>使用 <code>FromSqlRaw()</code> / <code>FromSqlInterpolated()</code> 查询</li></ol><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public async Task GetProductSummariesFromSql()
+{
+    using (var context = new MyDbContext())
+    {
+        var summaries = await context.ProductSummaries
+            .FromSqlRaw(@&quot;
+                SELECT c.Name AS CategoryName, COUNT(p.Id) AS ProductCount, AVG(p.Price) AS AveragePrice
+                FROM Products AS p
+                JOIN Categories AS c ON p.CategoryId = c.Id
+                GROUP BY c.Name
+            &quot;)
+            .ToListAsync();
+
+        Console.WriteLine(&quot;\nProduct Summaries from Raw SQL:&quot;);
+        foreach (var summary in summaries)
+        {
+            Console.WriteLine($&quot;- Category: {summary.CategoryName}, Products: {summary.ProductCount}, Avg Price: {summary.AveragePrice:C}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p>无键实体不能被修改或保存。它们是只读的。</p></blockquote><h3 id="查询标记" tabindex="-1"><a class="header-anchor" href="#查询标记"><span>查询标记</span></a></h3><p>查询标记是通过 LINQ 查询的 <code>.TagWith()</code> 扩展方法添加的任意字符串。当 EF Core 将这个 LINQ 查询翻译成 SQL 时，它会把这个标记作为 <strong>SQL 注释</strong>嵌入到生成的 SQL 语句的<strong>开头</strong>。</p><h4 id="使用方法" tabindex="-1"><a class="header-anchor" href="#使用方法"><span>使用方法</span></a></h4><p>在任何 <code>IQueryable</code> 后面链式调用 <code>.TagWith()</code> 方法即可。</p><p>示例：假设有一个获取用户订单的查询</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using System.Linq; // 确保引用此命名空间
+
+public class Order
+{
+    public int Id { get; set; }
+    public DateTime OrderDate { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int CustomerId { get; set; }
+    // ... 其他属性
+}
+
+public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ICollection&lt;Order&gt; Orders { get; set; } = new List&lt;Order&gt;();
+}
+
+public class MyDbContext : DbContext
+{
+    public DbSet&lt;Order&gt; Orders { get; set; }
+    public DbSet&lt;Customer&gt; Customers { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(&quot;YourConnectionString&quot;)
+            // 启用敏感数据日志，以便在控制台看到参数值
+            .EnableSensitiveDataLogging();
+            // 如果你想看更详细的 SQL，可以启用以下选项：
+            // .LogTo(Console.WriteLine, new[] { DbLoggerCategory.Database.Command.Name }, LogLevel.Information);
+    }
+}
+
+public async Task GetCustomerOrdersWithTag(int customerId)
+{
+    using (var context = new MyDbContext())
+    {
+        var customerOrders = await context.Orders
+            .Where(o =&gt; o.CustomerId == customerId)
+            .OrderByDescending(o =&gt; o.OrderDate)
+            .TagWith(&quot;GetCustomerOrdersByCustomerId&quot;) // 添加查询标记
+            .ToListAsync();
+
+        Console.WriteLine($&quot;\nOrders for Customer {customerId}:&quot;);
+        foreach (var order in customerOrders)
+        {
+            Console.WriteLine($&quot;- Order {order.Id} on {order.OrderDate.ToShortDateString()}, Total: {order.TotalAmount:C}&quot;);
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>生成的SQL示例：</p><p>当你运行上述代码并捕获 EF Core 生成的 SQL 时，你会在 SQL 语句的顶部看到类似这样的注释：</p><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>-- GetCustomerOrdersByCustomerId
+SELECT [o].[Id], [o].[OrderDate], [o].[TotalAmount], [o].[CustomerId]
+FROM [Orders] AS [o]
+WHERE [o].[CustomerId] = @__customerId_0
+ORDER BY [o].[OrderDate] DESC;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>链式调用多个标记</strong></p><p>可以链式调用多个 <code>TagWith()</code> 方法。EF Core 会将它们连接起来，通常用换行符分隔。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var customerOrders = await context.Orders
+    .Where(o =&gt; o.CustomerId == customerId)
+    .TagWith(&quot;Query for Customer Orders&quot;)
+    .TagWith(&quot;Called from OrderService.GetCustomerOrdersAsync&quot;)
+    .ToListAsync();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>生成的SQL</p><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>-- Query for Customer Orders
+-- Called from OrderService.GetCustomerOrdersAsync
+SELECT [o].[Id], [o].[OrderDate], [o].[TotalAmount], [o].[CustomerId]
+FROM [Orders] AS [o]
+WHERE [o].[CustomerId] = @__customerId_0
+ORDER BY [o].[OrderDate] DESC;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="null值的比较" tabindex="-1"><a class="header-anchor" href="#null值的比较"><span>NULL值的比较</span></a></h3><p>在 SQL 中：</p><ul><li><code>NULL != NULL</code>（<code>NULL</code> 被认为是未知，不等于任何值）</li><li><code>NULL = NULL</code> 会返回 <code>false</code></li><li>所以：你不能用 <code>=</code> 或 <code>!=</code> 来比较两个 NULL 是否相等，必须用 <code>IS NULL</code> / <code>IS NOT NULL</code></li></ul><p>EF Core 会自动将 LINQ 中的 null 比较翻译为 SQL 的 <code>IS NULL</code> / <code>IS NOT NULL</code>，但<strong>在某些特殊表达式中仍需注意写法</strong>。</p><h4 id="基本null判断" tabindex="-1"><a class="header-anchor" href="#基本null判断"><span>基本NULL判断</span></a></h4><p>示例1：字段等于NULL</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var users = dbContext.Users
+    .Where(u =&gt; u.Nickname == null)
+    .ToList();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>生成sql：</p><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>SELECT * FROM Users WHERE Nickname IS NULL
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><hr><p>示例2：字段不等于NULL</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var users = dbContext.Users
+    .Where(u =&gt; u.Nickname != null)
+    .ToList();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>SELECT * FROM Users WHERE Nickname IS NOT NULL
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>EF Core 会<strong>自动将这些 null 比较转换为 SQL 的 <code>IS NULL</code> / <code>IS NOT NULL</code></strong></p><h4 id="比较2个可能为null的字段" tabindex="-1"><a class="header-anchor" href="#比较2个可能为null的字段"><span>比较2个可能为NULL的字段</span></a></h4><p>比如你想找出两个字段相等的记录：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var orders = dbContext.Orders
+    .Where(o =&gt; o.ShippingAddress == o.BillingAddress)
+    .ToList();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>问题：</p><ul><li>如果两个字段都为 null，上面这句在 C# 中会返回 <code>true</code></li><li>但在 SQL 中，<code>NULL = NULL</code> 会返回 <code>false</code></li><li>结果会 <strong>漏掉两个字段都为 null 的行</strong></li></ul><p>正确写法：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var orders = dbContext.Orders
+    .Where(o =&gt;
+        o.ShippingAddress == o.BillingAddress ||
+        (o.ShippingAddress == null &amp;&amp; o.BillingAddress == null)
+    )
+    .ToList();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>这样才等价于 “值相等 或者 两个都是 NULL”。</p><h4 id="object-equals" tabindex="-1"><a class="header-anchor" href="#object-equals"><span><code>object.Equals()</code></span></a></h4><div class="hint-container tip"><p class="hint-container-title">提示</p><p>推荐使用 <code>object.Equals(a, b)</code> 来比较可能包含 null 的字段。</p></div><p>使用 <code>Equals()</code> 方法，EF Core 会将其翻译为 SQL 中正确的逻辑，包括 NULL 判断</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>var orders = dbContext.Orders
+    .Where(o =&gt; object.Equals(o.ShippingAddress, o.BillingAddress))
+    .ToList();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>EF Core会将其转为：</p><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>WHERE (ShippingAddress = BillingAddress)
+   OR (ShippingAddress IS NULL AND BillingAddress IS NULL)
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="使用-和getvalueordefault-处理空值" tabindex="-1"><a class="header-anchor" href="#使用-和getvalueordefault-处理空值"><span>使用<code>??</code>和<code>GetValueOrDefault()</code>处理空值</span></a></h4><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>.Where(u =&gt; (u.Age ?? 0) &gt; 18)
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>.Where(u =&gt; u.IsActive.GetValueOrDefault())
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>这类空值处理逻辑在 C# 中很好用，EF Core 也能翻译成 SQL 中的 <code>ISNULL()</code>、<code>COALESCE()</code> 等语法</p><h4 id="总结" tabindex="-1"><a class="header-anchor" href="#总结"><span>总结</span></a></h4><table><thead><tr><th>操作</th><th>推荐方式</th><th>SQL 等价</th></tr></thead><tbody><tr><td>判断某字段是否为 null</td><td><code>x == null</code></td><td><code>IS NULL</code></td></tr><tr><td>判断某字段不为 null</td><td><code>x != null</code></td><td><code>IS NOT NULL</code></td></tr><tr><td>比较两个字段可能为 null 的值</td><td><code>object.Equals(x, y)</code></td><td><code>x = y OR (x IS NULL AND y IS NULL)</code></td></tr><tr><td>空值处理</td><td><code>x ?? 替代值</code></td><td><code>ISNULL(x, 替代值)</code></td></tr><tr><td>布尔类型 null 安全访问</td><td><code>x.GetValueOrDefault()</code></td><td><code>ISNULL(x, 0)</code></td></tr></tbody></table></div><!----><footer class="vp-page-meta"><div class="vp-meta-item edit-link"><a class="vp-link vp-external-link-icon vp-meta-label" href="https://github.com/Okita1027/kd//edit/main/dotnet/ef core/query data.md" rel="noopener noreferrer" target="_blank" aria-label="编辑此页"><!--[--><svg xmlns="http://www.w3.org/2000/svg" class="icon edit-icon" viewBox="0 0 1024 1024" fill="currentColor" aria-label="edit icon" name="edit"><path d="M430.818 653.65a60.46 60.46 0 0 1-50.96-93.281l71.69-114.012 7.773-10.365L816.038 80.138A60.46 60.46 0 0 1 859.225 62a60.46 60.46 0 0 1 43.186 18.138l43.186 43.186a60.46 60.46 0 0 1 0 86.373L588.879 565.55l-8.637 8.637-117.466 68.234a60.46 60.46 0 0 1-31.958 11.229z"></path><path d="M728.802 962H252.891A190.883 190.883 0 0 1 62.008 771.98V296.934a190.883 190.883 0 0 1 190.883-192.61h267.754a60.46 60.46 0 0 1 0 120.92H252.891a69.962 69.962 0 0 0-69.098 69.099V771.98a69.962 69.962 0 0 0 69.098 69.098h475.911A69.962 69.962 0 0 0 797.9 771.98V503.363a60.46 60.46 0 1 1 120.922 0V771.98A190.883 190.883 0 0 1 728.802 962z"></path></svg><!--]-->编辑此页<!----></a></div><div class="vp-meta-item git-info"><div class="update-time"><span class="vp-meta-label">上次编辑于: </span><!----></div><div class="contributors"><span class="vp-meta-label">贡献者: </span><!--[--><!--[--><span class="vp-meta-info" title="email: 96156298+Okita1027@users.noreply.github.com">Zhiyun Qin</span><!--]--><!--]--></div></div></footer><nav class="vp-page-nav"><a class="route-link vp-link prev" href="/kd/dotnet/ef%20core/save%20data.html" aria-label="保存数据"><div class="hint"><span class="arrow start"></span>上一页</div><div class="link"><!---->保存数据</div></a><a class="route-link vp-link next" href="/kd/dotnet/ef%20core/change%20track.html" aria-label="更改跟踪"><div class="hint">下一页<span class="arrow end"></span></div><div class="link">更改跟踪<!----></div></a></nav><!----><!----><!--]--></main><!--]--><!----></div><!--]--><!--]--><!--[--><!----><!--]--><!--]--></div>
+    <script type="module" src="/kd/assets/app-BeHCP7Xm.js" defer></script>
+  </body>
+</html>

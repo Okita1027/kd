@@ -1,0 +1,1708 @@
+import{_ as e}from"./plugin-vue_export-helper-DlAUqK2U.js";import{c as n,o as i,b as s}from"./app-BeHCP7Xm.js";const d={},l=s(`<h2 id="创建模型" tabindex="-1"><a class="header-anchor" href="#创建模型"><span>创建模型</span></a></h2><h3 id="概述" tabindex="-1"><a class="header-anchor" href="#概述"><span>概述</span></a></h3><h4 id="定义" tabindex="-1"><a class="header-anchor" href="#定义"><span>定义</span></a></h4><p>EF Core 模型是 EF Core 用于<strong>理解你的实体类（C# 对象）如何与数据库表、列、关系以及约束等对应起来</strong>的映射信息。</p><p>当你用 LINQ 查询数据时，EF Core 就是依据这个模型将你的 C# 代码翻译成 SQL；当你调用 <code>SaveChanges()</code> 时，它也是依据这个模型生成 INSERT/UPDATE/DELETE 语句。</p><p>这个模型包括：</p><ul><li><strong>实体类型 (Entity Types)</strong>：对应数据库中的表。通常是你的 C# 类。</li><li><strong>属性 (Properties)</strong>：对应数据库表中的列。通常是你的 C# 类的属性。</li><li><strong>主键 (Primary Keys)</strong>：用于唯一标识实体。</li><li><strong>外键 (Foreign Keys) 和关系 (Relationships)</strong>：定义实体之间如何关联（例如，一个订单对应多个订单项）。</li><li><strong>索引 (Indexes)</strong>：用于优化查询性能。</li><li><strong>数据类型映射</strong>：C# 类型如何映射到数据库的特定数据类型（例如，<code>string</code> 到 <code>NVARCHAR</code>，<code>decimal</code> 到 <code>DECIMAL(18,2)</code>）。</li><li><strong>约束 (Constraints)</strong>：例如，非空约束、唯一约束等。</li></ul><h4 id="使用方式" tabindex="-1"><a class="header-anchor" href="#使用方式"><span>使用方式</span></a></h4><p><strong>约定：</strong></p><p>这是最基础也是最“隐式”的方式。当你什么都不做时，EF Core 会根据一组<strong>默认约定</strong>来推断你的 C# 类和属性的映射关系。</p><ul><li><strong>约定是如何工作的？</strong> EF Core 会扫描你的 <code>DbContext</code> 中的 <code>DbSet&lt;TEntity&gt;</code> 属性。对于每个 <code>TEntity</code>，它会假设： <ul><li><code>TEntity</code> 类对应一个同名的数据库表（例如，<code>DbSet&lt;Product&gt;</code> 对应 <code>Products</code> 表）。</li><li>类的公共属性对应表的列。</li><li>名为 <code>Id</code> 或 <code>&lt;ClassName&gt;Id</code> 的整数属性会被认为是<strong>主键</strong>。</li><li>一个实体类中包含另一个实体类的导航属性（例如 <code>Order</code> 类包含 <code>Customer Customer</code> 属性），并且有对应的外键属性（例如 <code>CustomerId</code>），EF Core 会尝试推断<strong>关系</strong>。</li></ul></li><li><strong>优点</strong>：简单、快速，无需额外配置，适合简单的实体映射。</li><li><strong>缺点</strong>：灵活性有限，对于不符合约定的场景无能为力。</li></ul><hr><p><strong>数据注解：</strong></p><p>数据注解是通过在实体类和属性上应用 C# <strong>特性 (Attributes)</strong> 来配置模型的。它比约定更具表现力，允许你覆盖某些默认约定。</p><ul><li><strong>如何工作？</strong> 你在类或属性前面加上特定的特性，如 <code>[Key]</code>, <code>[Required]</code>, <code>[MaxLength(100)]</code>, <code>[Table(&quot;MyCustomTable&quot;)]</code>, <code>[Column(&quot;MyColumnName&quot;, TypeName = &quot;decimal(18,2)&quot;)]</code> 等。</li><li><strong>优点</strong>： <ul><li><strong>直观且代码内联</strong>：映射信息直接写在实体类旁边，易于理解。</li><li><strong>对简单配置很方便</strong>：对于常见的约束和命名约定，数据注解非常简洁。</li></ul></li><li><strong>缺点</strong>： <ul><li><strong>污染实体类</strong>：映射细节与业务逻辑混合在一起，可能使实体类变得臃肿。</li><li><strong>限制性</strong>：不能表达所有可能的模型配置（例如复合主键、复杂的索引、多对多关系的中间表等）。</li><li><strong>不易重构</strong>：如果需要重用实体类而又不想带上特定的数据库映射，数据注解就不太方便。</li></ul></li></ul><hr><p><strong>Fluent API：</strong></p><p>这是最强大和最灵活的配置模型的方式。你可以在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用一系列链式调用的 API 来详细配置你的模型。</p><ul><li><strong>如何工作？</strong> 你在 <code>ApplicationDbContext</code> 的 <code>OnModelCreating</code> 方法中，通过 <code>modelBuilder</code> 对象来配置实体。</li></ul><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    // 配置 Product 实体
+    modelBuilder.Entity&lt;Product&gt;(entity =&gt;
+    {
+        // 指定表名
+        entity.ToTable(&quot;Products&quot;);
+
+        // 配置主键
+        entity.HasKey(e =&gt; e.Id);
+
+        // 配置 Name 属性
+        entity.Property(e =&gt; e.Name)
+              .IsRequired()
+              .HasMaxLength(150);
+
+        // 配置 Price 属性
+        entity.Property(e =&gt; e.Price)
+              .HasColumnType(&quot;decimal(18, 2)&quot;);
+
+        // 配置关系 (例如，Product 属于某个 Category)
+        // entity.HasOne(p =&gt; p.Category)
+        //       .WithMany(c =&gt; c.Products)
+        //       .HasForeignKey(p =&gt; p.CategoryId);
+    });
+
+    // 也可以配置其他实体...
+    // modelBuilder.Entity&lt;Order&gt;(entity =&gt; { /* ... */ });
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>优点</strong>：</p><ul><li><strong>强大的灵活性</strong>：可以表达约定和数据注解无法表达的所有模型配置。</li><li><strong>干净的实体类</strong>：将映射细节与实体类的业务逻辑分离，保持实体类简洁。</li><li><strong>易于集中管理</strong>：所有的数据库映射配置都集中在 <code>DbContext</code> 中，便于管理和审查。</li><li><strong>解决重用问题</strong>：同一个实体类可以根据不同的 <code>DbContext</code> 或配置，映射到不同的数据库结构。</li></ul><p><strong>缺点</strong>：</p><ul><li><strong>代码量较大</strong>：对于简单的映射，Fluent API 可能会显得冗余。</li><li><strong>学习曲线</strong>：需要熟悉一系列的 Fluent API 方法。</li></ul><hr><p><strong>三者的结合使用：</strong></p><p>EF Core 允许你同时使用这三种方式，并且它们之间有<strong>优先级</strong>：</p><p><strong>Fluent API &gt; 数据注解 &gt; 约定</strong></p><p>这意味着：</p><ol><li>如果某个配置在<strong>Fluent API</strong> 中指定了，它会覆盖数据注解和约定的设置。</li><li>如果某个配置在<strong>数据注解</strong>中指定了，它会覆盖约定的设置。</li><li>如果某个配置<strong>只通过约定</strong>推断，那就按照约定来。</li></ol><p>这种优先级机制使得你可以根据需求的复杂程度灵活选择配置方式。对于大多数项目，一个常见的策略是：</p><ul><li><strong>让约定做大部分工作</strong>，特别是对于简单的表名和主键。</li><li><strong>使用数据注解</strong>来处理一些简单的覆盖，比如 <code>[Required]</code>、<code>[MaxLength]</code> 等。</li><li><strong>使用 Fluent API</strong>来处理复杂的映射、关系配置，或者当数据注解无法满足需求时。</li></ul><h3 id="实体类型" tabindex="-1"><a class="header-anchor" href="#实体类型"><span>实体类型</span></a></h3><p><strong>实体类型 (Entity Type)</strong> 是指一个普通的 .NET 类，EF Core 知道如何将其<strong>映射</strong>到数据库中的<strong>表</strong>或<strong>视图</strong>。</p><p>当 EF Core 构建模型时，它会识别出这些实体类型，并将它们作为数据库模型中的“表”来对待，然后基于它们的属性来推断出“列”。</p><h4 id="使用方式-1" tabindex="-1"><a class="header-anchor" href="#使用方式-1"><span>使用方式</span></a></h4><h5 id="dbset" tabindex="-1"><a class="header-anchor" href="#dbset"><span>DbSet</span></a></h5><p>只要你在 <code>DbContext</code> 类中包含一个<strong>公共的 <code>DbSet&lt;TEntity&gt;</code> 属性</strong>，EF Core 就会自动将 <code>TEntity</code> 识别为一个实体类型。</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class ApplicationDbContext : DbContext
+{
+    // EF Core 会发现 DbSet&lt;Product&gt;，并将 Product 识别为实体类型
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    // EF Core 也会发现 DbSet&lt;Category&gt;，并将其识别为实体类型
+    public DbSet&lt;Category&gt; Categories { get; set; }
+}
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public int CategoryId { get; set; }
+    public Category Category { get; set; } // 这是导航属性
+}
+
+public class Category
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public List&lt;Product&gt; Products { get; set; } // 这是导航属性
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="fluent-api" tabindex="-1"><a class="header-anchor" href="#fluent-api"><span>Fluent API</span></a></h5><p>通过在 <code>OnModelCreating</code> 方法中使用 Fluent API 来<strong>显式</strong>地将一个类添加到模型中，而无需在 <code>DbContext</code> 中创建 <code>DbSet</code> 属性。</p><p>这在某些高级场景中非常有用，例如：</p><ul><li>你想映射一个<strong>没有主键</strong>的类（这在 EF Core 5.0 之后变得可能，称为<strong>无键实体类型</strong>）。</li><li>你希望将一个类映射到数据库中的<strong>视图</strong>或<strong>存储过程</strong>，而不是表。</li></ul><p>假设你有一个 <code>ProductView</code> 类，你只想将其映射到数据库中的一个只读视图，而不希望它出现在 <code>DbContext</code> 的 <code>DbSet</code> 属性中</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class ApplicationDbContext : DbContext
+{
+    // 这里没有 DbSet&lt;ProductView&gt; 属性
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 显式地将 ProductView 注册为实体类型
+        modelBuilder.Entity&lt;ProductView&gt;(eb =&gt;
+        {
+            // 它是一个“无键实体类型”
+            eb.HasNoKey(); 
+            // 映射到数据库中的一个视图
+            eb.ToView(&quot;AllProductsView&quot;); 
+        });
+
+        // 也可以像这样添加一个普通的实体类型
+        // modelBuilder.Entity&lt;Product&gt;();
+    }
+}
+
+public class ProductView
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; }
+    public string CategoryName { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="实体类型的满足条件" tabindex="-1"><a class="header-anchor" href="#实体类型的满足条件"><span>实体类型的满足条件</span></a></h4><p>为了被 EF Core 识别并映射为实体类型，一个类必须满足一些基本条件：</p><ul><li>它必须是一个<strong>类</strong>（不能是接口或抽象类）。</li><li>它不能是<strong>静态类</strong>。</li><li>它必须有一个<strong>公共的无参构造函数</strong>，或者 EF Core 能够找到一个可以调用的构造函数来创建实例。</li><li>它不能被 <code>[NotMapped]</code> 特性标记，或者在 Fluent API 中被配置为忽略。</li></ul><h3 id="实体属性" tabindex="-1"><a class="header-anchor" href="#实体属性"><span>实体属性</span></a></h3><p>在 EF Core 中，<strong>实体属性 (Entity Property)</strong> 是指一个实体类型（C# 类）的属性，EF Core 知道如何将其<strong>映射</strong>到数据库中的<strong>列</strong>。</p><p>当 EF Core 构建模型时，它会识别出这些实体属性，并将它们作为数据库表中的“列”来对待。</p><h4 id="使用方式-2" tabindex="-1"><a class="header-anchor" href="#使用方式-2"><span>使用方式</span></a></h4><h5 id="约定" tabindex="-1"><a class="header-anchor" href="#约定"><span>约定</span></a></h5><p>这是默认的行为。EF Core 会自动将实体类型中<strong>所有公共的、具有公共 getter 和 setter 的属性</strong>视为实体属性，并将其映射到数据库表中同名的列。</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class Product
+{
+    public int Id { get; set; }        // 将映射到名为 &#39;Id&#39; 的列
+    public string Name { get; set; }   // 将映射到名为 &#39;Name&#39; 的列
+    public decimal Price { get; set; } // 将映射到名为 &#39;Price&#39; 的列
+    public DateTime CreatedDate { get; set; } // 将映射到名为 &#39;CreatedDate&#39; 的列
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>默认映射约定：</strong></p><ul><li><strong>列名</strong>：通常与属性名相同。</li><li><strong>数据类型</strong>：EF Core 会根据 C# 类型推断最合适的数据库数据类型（例如，<code>int</code> 到 <code>INT</code>，<code>string</code> 到 <code>NVARCHAR(MAX)</code>，<code>decimal</code> 到 <code>DECIMAL</code>）。</li><li><strong>可空性</strong>： <ul><li>C# <strong>值类型</strong>（<code>int</code>, <code>decimal</code>, <code>DateTime</code> 等）<strong>默认是非空的</strong>（<code>NOT NULL</code>），除非它们是可空类型（<code>int?</code>, <code>decimal?</code>, <code>DateTime?</code>）。</li><li>C# <strong>引用类型</strong>（<code>string</code>, <code>byte[]</code>, 复杂对象等）<strong>默认是可空的</strong>（<code>NULL</code>）。</li></ul></li></ul><h5 id="字段发现" tabindex="-1"><a class="header-anchor" href="#字段发现"><span>字段发现</span></a></h5><p>EF Core 能够发现没有公共 getter 或 setter 的<strong>字段</strong>，并将它们映射到数据库列。这在实现<strong>封装</strong>或<strong>值对象</strong>模式时非常有用。</p><ul><li><strong>约定</strong>：EF Core 会按优先级顺序查找与属性同名的私有字段、受保护字段等。</li><li><strong><code>[BackingField]</code> 特性</strong>：可以显式指定一个属性使用哪个后备字段。</li><li><strong><code>UsePropertyAccessMode</code> (Fluent API)</strong>：配置访问属性或字段的方式。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class Product
+{
+    private string _name; // 私有字段作为 Name 属性的后备字段
+
+    public int Id { get; set; }
+
+    public string Name // 公共属性，但没有 setter
+    {
+        get =&gt; _name;
+        set =&gt; _name = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    public void UpdateName(string newName)
+    {
+        Name = newName; // 只能通过方法修改名称
+    }
+
+    // 也可以直接映射字段（不推荐直接映射私有字段，通常通过属性映射）
+    // [Column(&quot;Description&quot;)]
+    // private string _description;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="配置实体属性" tabindex="-1"><a class="header-anchor" href="#配置实体属性"><span>配置实体属性</span></a></h4><p>当默认约定不满足需求时，你可以使用<strong>数据注解</strong>或 <strong>Fluent API</strong> 来详细配置实体属性的映射。</p><h5 id="数据注解" tabindex="-1"><a class="header-anchor" href="#数据注解"><span>数据注解</span></a></h5><p>在属性上添加特性来配置。</p><ul><li><strong><code>[Key]</code></strong>：标记为主键（如果属性名不是 <code>Id</code> 或 <code>&lt;ClassName&gt;Id</code>）。</li><li><strong><code>[Required]</code></strong>：标记为非空列（针对引用类型，如 <code>string</code>）。</li><li><strong><code>[MaxLength(length)]</code> / <code>[StringLength(length)]</code></strong>：指定字符串列的最大长度。<code>MaxLength</code> 不会在数据库中创建检查约束，而 <code>StringLength</code> 会。<code>MaxLength</code> 更常用。</li><li><strong><code>[Column(&quot;ColumnName&quot;, TypeName = &quot;DbDataType&quot;)]</code></strong>： <ul><li><code>&quot;ColumnName&quot;</code>：指定数据库列的名称，覆盖默认的属性名。</li><li><code>TypeName = &quot;DbDataType&quot;</code>：指定数据库的精确数据类型（例如 <code>decimal(18,2)</code>, <code>varchar(255)</code>）。</li></ul></li><li><strong><code>[NotMapped]</code></strong>：告诉 EF Core <strong>不要</strong>将该属性映射到数据库列。</li><li><strong><code>[DatabaseGenerated(DatabaseGeneratedOption.Identity/Computed/None)]</code></strong>： <ul><li><code>Identity</code>：数据库自动生成值（如自增 ID）。</li><li><code>Computed</code>：数据库在每次更新时计算值（如 SQL Server 的计算列）。</li><li><code>None</code>：应用程序提供值，数据库不自动生成。</li></ul></li><li><strong><code>[ConcurrencyCheck]</code></strong>：用于乐观并发控制。当实体被修改时，该列的值会被检查。</li></ul><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class Product
+{
+    [Key] // 将 Id 标记为主键
+    public int ProductId { get; set; } // 约定不会自动发现它为主键，需要 [Key]
+
+    [Required] // 映射为 NOT NULL
+    [MaxLength(200)] // 映射为 NVARCHAR(200)
+    [Column(&quot;ProductName&quot;)] // 映射为数据库中的 &#39;ProductName&#39; 列
+    public string Name { get; set; } = string.Empty;
+
+    [Column(TypeName = &quot;decimal(10, 2)&quot;)] // 映射为 DECIMAL(10, 2)
+    public decimal Price { get; set; }
+
+    [NotMapped] // 不映射到数据库列
+    public string DisplayInfo { get; set; } = string.Empty;
+
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // 假设这是个计算列
+    public DateTime LastModified { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="fluent-api-1" tabindex="-1"><a class="header-anchor" href="#fluent-api-1"><span>Fluent API</span></a></h5><p>在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用链式调用的 API 来配置。Fluent API 提供了比数据注解更细粒度的控制，并且不会“污染”你的实体类。</p><ul><li><strong><code>HasColumnName(&quot;ColumnName&quot;)</code></strong>：指定列名。</li><li><strong><code>HasColumnType(&quot;DbDataType&quot;)</code></strong>：指定数据库的精确数据类型。</li><li><strong><code>IsRequired()</code></strong>：标记为非空。</li><li><strong><code>HasMaxLength(length)</code></strong>：指定字符串最大长度。</li><li><strong><code>IsConcurrencyToken()</code></strong>：标记为并发令牌。</li><li><strong><code>HasDefaultValue(value)</code> / <code>HasDefaultValueSql(&quot;SQL_EXPRESSION&quot;)</code></strong>：设置列的默认值。</li><li><strong><code>ValueGeneratedOnAdd()</code> / <code>ValueGeneratedOnUpdate()</code> / <code>ValueGeneratedNever()</code></strong>：与 <code>DatabaseGenerated</code> 特性类似，控制值生成行为。</li><li><strong><code>Ignore(p =&gt; p.Property)</code></strong>：告诉 EF Core 忽略该属性，不映射到数据库列。</li></ul><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Product&gt;(entity =&gt;
+        {
+            // 配置主键
+            entity.HasKey(e =&gt; e.ProductId); // 如果主键名为 ProductId 而不是 Id
+
+            // 配置 Name 属性
+            entity.Property(e =&gt; e.Name)
+                  .HasColumnName(&quot;ProductName&quot;) // 列名为 ProductName
+                  .HasMaxLength(200)           // 最大长度 200
+                  .IsRequired();               // 非空
+
+            // 配置 Price 属性
+            entity.Property(e =&gt; e.Price)
+                  .HasColumnType(&quot;decimal(10, 2)&quot;); // 精确数据类型
+
+            // 忽略 DisplayInfo 属性
+            entity.Ignore(e =&gt; e.DisplayInfo);
+
+            // 配置 CreatedDate 属性，使其在添加时自动生成值
+            entity.Property(e =&gt; e.CreatedDate)
+                  .HasDefaultValueSql(&quot;CURRENT_TIMESTAMP&quot;); // 使用数据库的当前时间函数
+                                                              // 对于MySQL，可能需要 NOW() 或 CURRENT_TIMESTAMP()
+                                                              // 对于SQL Server，是 GETDATE()
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="值的转换" tabindex="-1"><a class="header-anchor" href="#值的转换"><span>值的转换</span></a></h4><p>有时，C# 类型和数据库类型之间没有直接的映射，或者你需要以不同的方式存储数据。<strong>值转换</strong>允许你在属性值进出数据库时进行转换。</p><p><strong>示例场景</strong>：</p><ul><li>将 C# 枚举 (<code>enum</code>) 存储为数据库中的字符串。</li><li>将复杂的 C# 对象（例如 <code>List&lt;string&gt;</code>）序列化为 JSON 字符串存储在数据库的单个文本列中。</li><li>将 <code>DateTime</code> 存储为 UTC 时间。</li></ul><p><strong>配置方式</strong>：通常通过 Fluent API <code>HasConversion()</code> 方法。</p><p>示例：枚举到字符串</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public enum ProductStatus { OutOfStock, InStock, Discontinued }
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public ProductStatus Status { get; set; } // 枚举类型
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Product&gt;()
+            .Property(e =&gt; e.Status)
+            .HasConversion&lt;string&gt;(); // 将 ProductStatus 枚举存储为字符串
+            // 也可以使用 .HasConversion(
+            //    v =&gt; v.ToString(),
+            //    v =&gt; (ProductStatus)Enum.Parse(typeof(ProductStatus), v)
+            // );
+    }
+}	
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="主键" tabindex="-1"><a class="header-anchor" href="#主键"><span>主键</span></a></h3><h4 id="默认约定" tabindex="-1"><a class="header-anchor" href="#默认约定"><span>默认约定</span></a></h4><p>EF Core 遵循以下约定来推断主键：</p><ul><li><strong><code>Id</code> 属性</strong>：如果实体类中有一个名为 <code>Id</code> 的属性（不区分大小写，例如 <code>id</code>, <code>ID</code>），并且其类型是数值类型（<code>int</code>, <code>long</code>, <code>Guid</code> 等），EF Core 会将其约定为主键。</li><li><strong><code>&lt;ClassName&gt;Id</code> 属性</strong>：如果实体类中有一个名为 <code>&lt;ClassName&gt;Id</code> 的属性（例如，<code>Product</code> 类中有 <code>ProductId</code>），并且其类型是数值类型，EF Core 也会将其约定为主键。</li></ul><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    // EF Core 会约定 Id 为主键
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
+
+public class Order
+{
+    // EF Core 会约定 OrderId 为主键
+    public int OrderId { get; set; }
+    public DateTime OrderDate { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="手动配置" tabindex="-1"><a class="header-anchor" href="#手动配置"><span>手动配置</span></a></h4><p>当默认约定不适用时（例如，你的主键不叫 <code>Id</code> 或 <code>&lt;ClassName&gt;Id</code>，或者你想使用复合主键），你可以使用<strong>数据注解</strong>或 <strong>Fluent API</strong> 来显式配置键。</p><h5 id="数据注解-1" tabindex="-1"><a class="header-anchor" href="#数据注解-1"><span>数据注解</span></a></h5><p>使用 <code>[Key]</code> 特性来标记一个或多个属性为主键。</p><p><strong>单个主键</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Customer
+{
+    [Key] // 明确指定 CustomerId 为主键
+    public int CustomerId { get; set; }
+    public string Name { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>复合主键</strong>：如果主键由多个属性组成，你需要将 <code>[Key]</code> 特性应用于所有构成复合主键的属性。EF Core 会按照属性名的字母顺序来确定这些键的顺序。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class OrderItem
+{
+    [Key] // 构成复合主键的第一部分
+    public int OrderId { get; set; }
+
+    [Key] // 构成复合主键的第二部分
+    public int ProductId { get; set; }
+
+    public int Quantity { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><div class="hint-container tip"><p class="hint-container-title">提示</p><p>使用数据注解定义复合主键时，<code>[Key]</code> 的顺序并不重要，EF Core 会根据约定来处理。但通常建议保持一致性，例如按照字母顺序。</p></div><h5 id="fluent-api-2" tabindex="-1"><a class="header-anchor" href="#fluent-api-2"><span>Fluent API</span></a></h5><p>在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用 <code>HasKey()</code> 方法来配置键。Fluent API 是定义键，特别是复合主键，最清晰和灵活的方式。</p><p><strong>单个主键</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Customer&gt; Customers { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Customer&gt;()
+            .HasKey(c =&gt; c.CustomerId); // 明确指定 CustomerId 为主键
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>复合主键</strong>：使用 <code>HasKey()</code> 方法，并传入一个匿名对象，其中包含所有构成复合主键的属性。属性的顺序在匿名对象中<strong>决定了复合主键的列顺序</strong>。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;OrderItem&gt; OrderItems { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;OrderItem&gt;()
+            // 明确指定 OrderId 和 ProductId 共同构成复合主键
+            // 这里的顺序很重要，它决定了数据库中复合主键的列顺序
+            .HasKey(oi =&gt; new { oi.OrderId, oi.ProductId });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="主键类型和值生成" tabindex="-1"><a class="header-anchor" href="#主键类型和值生成"><span>主键类型和值生成</span></a></h4><p>主键的类型会影响其值的生成方式。</p><ul><li><p><strong>整数类型 (<code>int</code>, <code>long</code>)</strong>：</p><ul><li><strong>默认</strong>：EF Core 默认将整数主键配置为<strong>数据库自动生成</strong>（例如 SQL Server 的 <code>IDENTITY</code>，MySQL 的 <code>AUTO_INCREMENT</code>）。这意味着当你 <code>Add()</code> 一个新实体并 <code>SaveChanges()</code> 时，数据库会自动分配 ID。</li><li><strong>覆盖</strong>：你可以通过数据注解 <code>[DatabaseGenerated(DatabaseGeneratedOption.None)]</code> 或 Fluent API <code>ValueGeneratedNever()</code> 来告诉 EF Core，主键值应由应用程序提供，而不是数据库生成。</li></ul><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class MyEntity
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)] // 值由应用程序提供
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
+// 或者 Fluent API
+// modelBuilder.Entity&lt;MyEntity&gt;().Property(e =&gt; e.Id).ValueGeneratedNever();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><h4 id="替代键" tabindex="-1"><a class="header-anchor" href="#替代键"><span>替代键</span></a></h4><p>除了主键之外，你还可以定义<strong>替代键 (Alternate Keys)</strong>。替代键是一个或一组属性，它们的值也<strong>必须是唯一的</strong>，但它们<strong>不是主键</strong>。在数据库中，替代键通常通过<strong>唯一索引 (Unique Index)</strong> 来实现。</p><p>替代键主要用于：</p><ul><li><strong>强制唯一性</strong>：确保某个列或某些列的组合是唯一的。</li><li><strong>作为外键的目标</strong>：有时候，外键可能不是指向另一个表的主键，而是指向其替代键。</li></ul><p><strong>配置方式（仅能使用Fluent API）</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;User&gt; Users { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;User&gt;(entity =&gt;
+        {
+            entity.HasKey(u =&gt; u.Id); // 定义主键
+
+            // 定义替代键：Email 地址必须是唯一的
+            entity.HasAlternateKey(u =&gt; u.Email)
+                  .HasName(&quot;AK_User_Email&quot;); // 可以给替代键命名（可选）
+
+            // 也可以定义复合替代键
+            // entity.HasAlternateKey(u =&gt; new { u.FirstName, u.LastName });
+        });
+    }
+}
+
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; }
+    public string Email { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="生成的值" tabindex="-1"><a class="header-anchor" href="#生成的值"><span>生成的值</span></a></h3><h4 id="定义-1" tabindex="-1"><a class="header-anchor" href="#定义-1"><span>定义</span></a></h4><p><strong>生成的值</strong>是指在实体保存到数据库时，<strong>数据库系统自身</strong>负责为某个属性（对应数据库列）生成其值。应用程序不需要在发送数据之前显式地提供这个值。</p><p>这主要分为两种情况：</p><ol><li><strong>添加时生成 (Value Generated On Add)</strong>：值只在实体<strong>第一次插入</strong>数据库时生成。最常见的例子是<strong>自增主键 (Identity)</strong>，或者数据库生成的 GUID。</li><li><strong>更新时生成 (Value Generated On Update)</strong>：值在实体<strong>每次更新</strong>时都会重新生成。常见的例子是<strong>时间戳 (Timestamp)</strong> 或 <strong>最后修改时间</strong>列，它们会在每次更新行时自动更新为当前时间。</li><li><strong>始终生成 (Value Generated On Add Or Update)</strong>：值在实体<strong>添加和更新</strong>时都会生成。这通常也是时间戳/修改时间列。</li></ol><h4 id="默认约定-1" tabindex="-1"><a class="header-anchor" href="#默认约定-1"><span>默认约定</span></a></h4><p>EF Core 会根据某些约定来推断值的生成方式：</p><ul><li><strong>整数类型的主键 (<code>int</code>, <code>long</code>)</strong>：默认约定为 <code>ValueGeneratedOnAdd</code>，映射到数据库的自增列（例如 SQL Server 的 <code>IDENTITY</code>，MySQL 的 <code>AUTO_INCREMENT</code>）。</li><li><strong>GUID 类型的主键 (<code>Guid</code>)</strong>：默认约定为 <code>ValueGeneratedNever</code>，即值由应用程序生成（通常是 <code>Guid.NewGuid()</code>）。如果你想让数据库生成 GUID，需要显式配置。</li><li><strong>具有 <code>byte[]</code> 类型且名为 <code>RowVersion</code> 或 <code>Timestamp</code> 的属性</strong>：默认约定为 <code>ValueGeneratedOnAddOrUpdate</code>，并标记为<strong>并发令牌 (Concurrency Token)</strong>，映射到数据库的 <code>TIMESTAMP</code> 或 <code>ROWVERSION</code> 类型，用于乐观并发控制。</li></ul><h4 id="手动配置-1" tabindex="-1"><a class="header-anchor" href="#手动配置-1"><span>手动配置</span></a></h4><p>当默认约定不符合你的需求时，你可以使用<strong>数据注解</strong>或 <strong>Fluent API</strong> 来显式配置属性的值生成行为。</p><h5 id="数据注解-2" tabindex="-1"><a class="header-anchor" href="#数据注解-2"><span>数据注解</span></a></h5><p>使用 <code>[DatabaseGenerated]</code> 特性来控制值的生成。</p><ul><li><p><strong><code>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</code></strong>：</p><ul><li><p>表示值在<strong>添加时</strong>由数据库生成。</p></li><li><p>最常用于整数主键。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // 数据库自增ID
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>[DatabaseGenerated(DatabaseGeneratedOption.Computed)]</code></strong>：</p><ul><li><p>表示值在<strong>添加或更新时</strong>由数据库计算生成。</p></li><li><p>适用于 SQL Server 的计算列、数据库的默认值函数等。</p></li><li><p>EF Core 不会尝试在插入或更新时为这些列发送值。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Order
+{
+    public int Id { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // 假设这是数据库中的计算列 (Quantity * UnitPrice)
+    public decimal TotalPrice { get; set; }
+
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // 数据库的 NOW() 或 GETDATE() 函数
+    public DateTime LastUpdated { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>[DatabaseGenerated(DatabaseGeneratedOption.None)]</code></strong>：</p><ul><li><p>表示值<strong>从不</strong>由数据库生成。</p></li><li><p>值必须始终由<strong>应用程序</strong>提供。</p></li><li><p>常用于 GUID 主键（当你希望在客户端生成 GUID）或非自增的自定义 ID。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class User
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)] // Id 由应用程序生成，不自增
+    public int Id { get; set; }
+    public string Username { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li></ul><h5 id="fluent-api-3" tabindex="-1"><a class="header-anchor" href="#fluent-api-3"><span>Fluent API</span></a></h5><p>在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用链式调用的方法来配置。Fluent API 提供了更细粒度的控制，并且可以指定数据库的默认值或计算逻辑。</p><ul><li><p><strong><code>ValueGeneratedOnAdd()</code></strong>：</p><ul><li><p>表示值在<strong>添加时</strong>生成</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Product&gt;()
+    .Property(p =&gt; p.Id)
+    .ValueGeneratedOnAdd(); // 对应 DatabaseGeneratedOption.Identity
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>ValueGeneratedOnUpdate()</code></strong>：</p><ul><li><p>表示值在<strong>更新时</strong>生成</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Order&gt;()
+    .Property(o =&gt; o.LastUpdated)
+    .ValueGeneratedOnUpdate(); // 对应 DatabaseGeneratedOption.Computed，当仅需更新时
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>ValueGeneratedOnAddOrUpdate()</code></strong>：</p><ul><li><p>表示值在<strong>添加和更新时</strong>都生成（这是 <code>DatabaseGeneratedOption.Computed</code> 的默认行为）</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Order&gt;()
+    .Property(o =&gt; o.TotalPrice)
+    .ValueGeneratedOnAddOrUpdate(); // 对应 DatabaseGeneratedOption.Computed
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>ValueGeneratedNever()</code></strong>：</p><ul><li><p>表示值<strong>从不</strong>由数据库生成，始终由应用程序提供</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;User&gt;()
+    .Property(u =&gt; u.Id)
+    .ValueGeneratedNever(); // 对应 DatabaseGeneratedOption.None
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>HasDefaultValue(value)</code></strong>：</p><ul><li><p>设置列的<strong>默认值</strong>。EF Core 会在应用程序不提供值时使用此默认值</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Product&gt;()
+    .Property(p =&gt; p.IsAvailable)
+    .HasDefaultValue(true); // 如果不提供 IsAvailable，默认为 true
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>HasDefaultValueSql(&quot;SQL_EXPRESSION&quot;)</code></strong>：</p><ul><li><p>设置列的<strong>默认值</strong>，使用<strong>原始 SQL 表达式</strong>。这是最强大的方式，可以利用数据库的内置函数</p><div class="language-c# line-numbers-mode" data-ext="c#" data-title="c#"><pre class="language-c#"><code>modelBuilder.Entity&lt;Product&gt;()
+    .Property(p =&gt; p.CreatedDate)
+    .HasDefaultValueSql(&quot;CURRENT_TIMESTAMP&quot;); // MySQL: CURRENT_TIMESTAMP, SQL Server: GETDATE()
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul></li><li><p><strong><code>HasComputedColumnSql(&quot;SQL_EXPRESSION&quot;)</code></strong>：</p><ul><li><p>将列配置为数据库中的<strong>计算列</strong>，并提供计算列的 SQL 表达式。</p></li><li><p>这个属性会自动被标记为 <code>ValueGeneratedOnAddOrUpdate</code></p><div class="language-c# line-numbers-mode" data-ext="c#" data-title="c#"><pre class="language-c#"><code>modelBuilder.Entity&lt;Order&gt;()
+    .Property(o =&gt; o.TotalPrice)
+    .HasComputedColumnSql(&quot;Quantity * UnitPrice&quot;); // 数据库计算 TotalPrice
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>还可以添加 <code>(bool stored)</code> 参数，例如 <code>HasComputedColumnSql(&quot;...&quot;, true)</code> 表示存储计算列（提高查询性能，但增加存储空间和写操作开销）。</p></li></ul></li></ul><h4 id="并发令牌" tabindex="-1"><a class="header-anchor" href="#并发令牌"><span>并发令牌</span></a></h4><p>EF Core 使用<strong>并发令牌</strong>来实现<strong>乐观并发控制</strong>。当多个用户同时尝试修改同一条数据时，可以防止“丢失更新”的问题。</p><p><strong>工作原理</strong>：</p><ol><li>当一个实体被从数据库读取时，其并发令牌的值也会被读取。</li><li>当尝试更新或删除该实体时，EF Core 会在 WHERE 子句中包含并发令牌的原始值。</li><li>如果更新成功，数据库会为并发令牌生成一个新值。</li><li>如果并发令牌的原始值与数据库中的当前值不匹配（说明在读取后有其他用户修改了数据），更新或删除操作将失败，并抛出 <code>DbUpdateConcurrencyException</code> 异常。应用程序可以捕获此异常并处理冲突。</li></ol><p><strong>配置方式</strong>：</p><ul><li><strong>约定</strong>：<code>byte[]</code> 类型的属性，如果命名为 <code>RowVersion</code> 或 <code>Timestamp</code>，会被自动配置为并发令牌和 <code>ValueGeneratedOnAddOrUpdate</code>。</li><li><strong>数据注解</strong>：使用 <code>[ConcurrencyCheck]</code> 特性。</li><li><strong>Fluent API</strong>：使用 <code>IsConcurrencyToken()</code> 方法。</li></ul><div class="language-c# line-numbers-mode" data-ext="c#" data-title="c#"><pre class="language-c#"><code>public class Item
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+
+    // 约定会将其配置为并发令牌
+    public byte[] RowVersion { get; set; } = null!; // 必须是非空且字节数组
+
+    // 或者使用数据注解
+    // [ConcurrencyCheck]
+    // public DateTime LastUpdated { get; set; } // 可以是任何类型，但需要自行管理更新
+
+    // 或者 Fluent API
+    // modelBuilder.Entity&lt;Item&gt;()
+    //     .Property(i =&gt; i.LastUpdated)
+    //     .IsConcurrencyToken()
+    //     .ValueGeneratedOnAddOrUpdate(); // 确保值在每次更新时生成
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="阴影和索引器属性" tabindex="-1"><a class="header-anchor" href="#阴影和索引器属性"><span>阴影和索引器属性</span></a></h3><p>这两类属性是 EF Core 中相对高级但非常有用的概念，它们让你能够处理传统 C# 类中不直接存在，但在数据库层面又需要映射的属性。</p><h4 id="阴影属性" tabindex="-1"><a class="header-anchor" href="#阴影属性"><span>阴影属性</span></a></h4><p><strong>阴影属性</strong>是一种特殊的实体属性，它<strong>不</strong>在你的 C# 实体类中定义。相反，它只存在于 EF Core 的<strong>模型</strong>中，并对应数据库表中的一列。</p><p><strong>使用场景：</strong></p><ul><li><strong>数据库需要但 C# 实体不需要的属性</strong>：有些数据库列可能只是为了内部操作或审计目的而存在，并不直接对应到 C# 实体类的业务逻辑属性。例如，<code>LastUpdatedUtc</code> 或 <code>CreatedByUserId</code>，你可能不希望它们出现在每个实体类中，但希望 EF Core 能够管理它们。</li><li><strong>不希望污染实体类</strong>：你希望保持 C# 实体类的简洁，只包含核心业务逻辑属性，而将一些数据库持久化相关的属性隐藏起来。</li><li><strong>通用属性</strong>：你可能想为多个实体类型添加相同的行为（如审计字段），而无需在每个 C# 类中都声明这些属性。</li><li><strong>并发令牌</strong>：在某些情况下，阴影属性也可以用作并发令牌。</li></ul><p><strong>配置方式：</strong></p><p>阴影属性只能通过 <strong>Fluent API</strong> 来配置，因为它们不在 C# 类中。</p><p>示例：假设你希望 <code>Product</code> 表有一个 <code>LastUpdated</code> 列，记录产品最后更新的时间，但你不想在 <code>Product</code> 类中暴露这个属性。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Product&gt;()
+            // 定义一个名为 &quot;LastUpdated&quot; 的阴影属性
+            .Property&lt;DateTime&gt;(&quot;LastUpdated&quot;) // 属性名和类型
+            .HasColumnType(&quot;datetime&quot;)         // 可以指定数据库类型
+            .HasDefaultValueSql(&quot;CURRENT_TIMESTAMP&quot;) // 例如，添加时默认当前时间
+            .ValueGeneratedOnAddOrUpdate(); // 并在添加或更新时由数据库生成值
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p>在上面的配置示例中，我们使用了 <code>HasDefaultValueSql</code> 和 <code>ValueGeneratedOnAddOrUpdate</code>，这意味着数据库会为你管理 <code>LastUpdated</code> 的值，你通常不需要手动设置。手动设置适用于<strong>不</strong>希望数据库自动生成值的阴影属性。</p></blockquote><p><strong>使用方式：</strong></p><p>由于阴影属性不在 C# 实体类中，你不能直接通过 <code>product.LastUpdated</code> 来访问它。你需要通过 EF Core 的 <code>Entry</code> API 来访问</p><ul><li><p>设置值（在添加、更新前）</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task AddProductWithShadowProperty(Product product)
+{
+    // 在保存前，手动为阴影属性赋值
+    _context.Entry(product).Property(&quot;LastUpdated&quot;).CurrentValue = DateTime.UtcNow;
+    _context.Products.Add(product);
+    await _context.SaveChangesAsync();
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>读取值</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task&lt;DateTime&gt; GetProductLastUpdated(int productId)
+{
+    var product = await _context.Products.FindAsync(productId);
+    if (product != null)
+    {
+        // 从 EF Core Entry 获取阴影属性的值
+        var lastUpdated = _context.Entry(product).Property(&quot;LastUpdated&quot;).CurrentValue;
+        return (DateTime)lastUpdated;
+    }
+    return DateTime.MinValue; // 或抛出异常
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>在LINQ查询中使用：使用 <code>EF.Property</code> 静态方法在 LINQ 查询中引用阴影属性。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+
+public async Task&lt;List&lt;Product&gt;&gt; GetRecentlyUpdatedProducts(DateTime threshold)
+{
+    return await _context.Products
+        .Where(p =&gt; EF.Property&lt;DateTime&gt;(p, &quot;LastUpdated&quot;) &gt; threshold)
+        .OrderByDescending(p =&gt; EF.Property&lt;DateTime&gt;(p, &quot;LastUpdated&quot;))
+        .ToListAsync();
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><h4 id="索引器属性" tabindex="-1"><a class="header-anchor" href="#索引器属性"><span>索引器属性</span></a></h4><div class="hint-container tip"><p class="hint-container-title">提示</p><p>可以在<a href="https://kd.zhiyun.space/dotnet/C_/basic.html#%E7%B4%A2%E5%BC%95%E5%99%A8" target="_blank" rel="noopener noreferrer">C#语法 | 沖田さんの知識ベース</a>查看相关知识</p></div><p><strong>索引器属性</strong>是一种特殊的实体属性，它允许你的实体类作为<strong>属性包 (Property Bag)</strong> 使用，而不是定义固定的属性列表。它的数据以键值对的形式存储，并通过索引器 <code>[key]</code> 进行访问。</p><p>主要使用场景：</p><ul><li><strong>灵活的、动态的或半结构化的数据</strong>：当你的实体数据模型不完全固定，或者有些属性是动态添加的，无法在编译时确定所有列名时。例如，一个“设置”或“配置”实体，其键值对内容可能经常变化。</li><li><strong>不确定的列名</strong>：当数据库表中的列名可能经常变化，或者你不想硬编码到 C# 类中时。</li><li><strong>映射到现有非固定模式的数据库</strong>：当你需要与一个模式不严格的现有数据库交互时。</li></ul><p><strong>配置方式：</strong></p><p>索引器属性也只能通过 <strong>Fluent API</strong> 来配置。</p><p>首先，你的 C# 实体类需要定义一个<strong>索引器</strong>。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Settings
+{
+    public int Id { get; set; } // 主键
+
+    // 定义一个索引器，允许通过字符串键访问属性
+    public object? this[string name]
+    {
+        get =&gt; _settings.GetValueOrDefault(name);
+        set =&gt; _settings[name] = value;
+    }
+
+    private readonly Dictionary&lt;string, object?&gt; _settings = new();
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Settings&gt; Settings { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Settings&gt;()
+            .HasKey(s =&gt; s.Id);
+
+        // 告诉 EF Core 这是一个索引器实体类型
+        modelBuilder.Entity&lt;Settings&gt;()
+            .HasIndexerProperty&lt;string&gt;(&quot;Theme&quot;); // 定义一个名为 &quot;Theme&quot; 的索引器属性（列）
+        
+        modelBuilder.Entity&lt;Settings&gt;()
+            .HasIndexerProperty&lt;int&gt;(&quot;PageSize&quot;); // 定义一个名为 &quot;PageSize&quot; 的索引器属性（列）
+
+        // 可以继续添加更多索引器属性...
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>在这个例子中，<code>Settings</code> 类并不直接有 <code>Theme</code> 或 <code>PageSize</code> 属性，但通过索引器和 Fluent API 的配置，EF Core 知道如何将 <code>settings[&quot;Theme&quot;]</code> 映射到数据库的 <code>Theme</code> 列。</p><p><strong>使用方式：</strong></p><p>可以像使用普通属性一样使用索引器语法 <code>entity[&quot;key&quot;]</code> 来读取和设置值，EF Core 会负责映射。</p><ul><li><p>创建和设置值</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task AddSettings()
+{
+    var settings = new Settings();
+    settings.Id = 1;
+    settings[&quot;Theme&quot;] = &quot;Dark&quot;; // 通过索引器设置值
+    settings[&quot;PageSize&quot;] = 20;
+
+    _context.Settings.Add(settings);
+    await _context.SaveChangesAsync();
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>读取值</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task&lt;string?&gt; GetThemeSetting(int settingsId)
+{
+    var settings = await _context.Settings.FindAsync(settingsId);
+    if (settings != null)
+    {
+        return settings[&quot;Theme&quot;] as string; // 通过索引器读取值
+    }
+    return null;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>在LINQ查询中使用:<code>EF.Property</code></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+
+public async Task&lt;List&lt;Settings&gt;&gt; GetDarkThemeSettings()
+{
+    return await _context.Settings
+        .Where(s =&gt; EF.Property&lt;string&gt;(s, &quot;Theme&quot;) == &quot;Dark&quot;)
+        .ToListAsync();
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><h3 id="关系" tabindex="-1"><a class="header-anchor" href="#关系"><span>关系</span></a></h3><p>在 EF Core 中，<strong>关系</strong>是指两个实体类型之间逻辑上的关联，它映射到数据库中表与表之间的关联，通常通过<strong>外键 (Foreign Key)</strong> 实现。</p><p>一个关系通常由以下几个部分组成：</p><ol><li><strong>导航属性 (Navigation Properties)</strong>：在 C# 实体类中，它们是引用相关实体或相关实体集合的属性。它们使得你可以从一个实体轻松访问其相关的实体。</li><li><strong>外键属性 (Foreign Key Property)</strong>：在 C# 实体类中，它是一个普通属性，其值存储了相关实体的主键值。在数据库中，它对应外键列。</li><li><strong>主体 (Principal) 和依赖 (Dependent) 端</strong>： <ul><li><strong>主体端 (Principal End)</strong>：拥有主键（PK）的实体。</li><li><strong>依赖端 (Dependent End)</strong>：拥有外键（FK）的实体，该外键指向主体端的主键。</li></ul></li></ol><h4 id="多对多" tabindex="-1"><a class="header-anchor" href="#多对多"><span>多对多</span></a></h4><p>从 EF Core 5.0 开始，你不再需要显式定义联结实体类和 <code>DbSet</code>。你可以在两个实体类型中各有一个 <code>ICollection&lt;T&gt;</code> 导航属性。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Student // 主体端之一
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    // 导航属性：一个学生可以有多个课程
+    public ICollection&lt;Course&gt; Courses { get; set; } = new List&lt;Course&gt;();
+}
+
+public class Course // 主体端之二
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+
+    // 导航属性：一个课程可以被多个学生选修
+    public ICollection&lt;Student&gt; Students { get; set; } = new List&lt;Student&gt;();
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>EF Core 会自动为你创建并管理一个名为 <code>CourseStudent</code>（或类似名称）的联结表。</p><p><strong>如果联结表需要额外的属性 (例如 <code>EnrollmentDate</code>)，你仍然需要显式定义联结实体类：</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Student
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ICollection&lt;Enrollment&gt; Enrollments { get; set; } = new List&lt;Enrollment&gt;();
+}
+
+public class Course
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public ICollection&lt;Enrollment&gt; Enrollments { get; set; } = new List&lt;Enrollment&gt;();
+}
+
+public class Enrollment // 联结实体类
+{
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    public int CourseId { get; set; }
+    public Course Course { get; set; } = null!;
+
+    public DateTime EnrollmentDate { get; set; } // 联结表的额外属性
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="关系发现约定" tabindex="-1"><a class="header-anchor" href="#关系发现约定"><span>关系发现约定</span></a></h4><p>EF Core 会通过<strong>约定</strong>来尝试自动发现和配置关系：</p><ol><li><strong>导航属性</strong>：EF Core 会查找实体类型中的导航属性（引用其他实体类型）。</li><li><strong>外键属性名约定</strong>： <ul><li><strong><code>&lt;导航属性名&gt;Id</code></strong>：例如，<code>Product</code> 中的 <code>CategoryId</code> 会被约定为 <code>Category</code> 导航属性的外键。</li><li><strong><code>&lt;相关实体主键名&gt;</code></strong>：例如，<code>Product</code> 中的 <code>Category</code> 导航属性的默认外键将是 <code>Category.Id</code>。</li></ul></li><li><strong>类型匹配</strong>：外键属性的类型应与主体实体主键的类型匹配。</li></ol><p><strong>外键的可空性</strong>：</p><ul><li>如果外键属性是<strong>非空</strong>的（例如 <code>int CategoryId</code>），则该关系被视为<strong>必需的 (Required)</strong>。这意味着 <code>Product</code> 实例必须始终关联一个 <code>Category</code>。</li><li>如果外键属性是<strong>可空</strong>的（例如 <code>int? CategoryId</code>），则该关系被视为<strong>可选的 (Optional)</strong>。这意味着 <code>Product</code> 实例可以不关联任何 <code>Category</code>。</li></ul><h4 id="手动配置-2" tabindex="-1"><a class="header-anchor" href="#手动配置-2"><span>手动配置</span></a></h4><p>当默认约定不满足需求时，你可以使用<strong>数据注解</strong>或 <strong>Fluent API</strong> 来显式配置关系。Fluent API 是配置复杂关系的推荐方式。</p><h5 id="数据注解-3" tabindex="-1"><a class="header-anchor" href="#数据注解-3"><span>数据注解</span></a></h5><ul><li><p><strong><code>[ForeignKey(&quot;ForeignKeyName&quot;)]</code></strong>：应用于导航属性，指定外键属性的名称。</p></li><li><p><strong><code>[Required]</code></strong>：应用于导航属性，表示关系是必需的。</p></li><li><p><strong><code>[InverseProperty(&quot;NavigationPropertyName&quot;)]</code></strong>：在多对一或一对一关系中，如果两个实体有多个导航属性指向对方，此特性用于消除歧义，告诉 EF Core 哪个导航属性与哪个外键对应。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Category
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ICollection&lt;Product&gt; Products { get; set; } = new List&lt;Product&gt;();
+}
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+
+    // 外键属性，被约定发现
+    public int CategoryId { get; set; }
+
+    // 导航属性，被约定发现
+    [Required] // 可选注解：如果希望 Product 必须有 Category
+    public Category Category { get; set; } = null!;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><h5 id="fluent-api-4" tabindex="-1"><a class="header-anchor" href="#fluent-api-4"><span>Fluent API</span></a></h5><p>Fluent API 提供了最强大和清晰的方式来配置关系，尤其是在处理复杂关系、复合外键、或者需要精确控制级联删除行为时。</p><p>主要方法链：<code>HasOne / HasMany / WithOne / WithMany / HasForeignKey / HasPrincipalKey / OnDelete</code>。</p><p><em>当你配置关系时，需要从关系的一端开始，然后描述它与另一端的关系:</em></p><ul><li><code>modelBuilder.Entity&lt;DependentEntity&gt;()</code>：从依赖端开始配置。</li><li><code>HasOne(d =&gt; d.PrincipalNavigation)</code>：依赖端有一个主体导航属性（一对一或一对多中的“一”）。</li><li><code>HasMany(d =&gt; d.DependentCollectionNavigation)</code>：依赖端有一个集合导航属性（多对多）。</li><li><code>modelBuilder.Entity&lt;PrincipalEntity&gt;()</code>：从主体端开始配置。</li><li><code>HasOne(p =&gt; p.DependentNavigation)</code>：主体端有一个依赖导航属性（一对一或多对一中的“一”）。</li><li><code>HasMany(p =&gt; p.DependentCollectionNavigation)</code>：主体端有一个集合导航属性（一对多或多对多）。</li></ul><p><em>然后，使用 <code>With...</code> 方法来描述另一端：</em></p><ul><li><code>WithOne(p =&gt; p.DependentNavigation)</code>：主体端有一个导航属性指向当前依赖端。</li><li><code>WithMany(p =&gt; p.pCollectionNavigation)</code>：主体端有一个集合导航属性指向当前依赖端。</li></ul><p><em>最后，配置外键和级联删除：</em></p><ul><li><code>HasForeignKey(d =&gt; d.ForeignKeyProperty)</code>：指定外键属性。</li><li><code>HasPrincipalKey(p =&gt; p.PrincipalKeyProperty)</code>：如果外键不引用主键，而是引用替代键，则使用此方法。</li><li><code>IsRequired()</code>：使外键非空，关系必需。</li><li><code>OnDelete(DeleteBehavior)</code>：配置级联删除行为。 <ul><li><code>DeleteBehavior.NoAction</code> (或 <code>ClientNoAction</code>)：不执行任何操作。</li><li><code>DeleteBehavior.Restrict</code> (或 <code>ClientSetNull</code>): 阻止删除主体，如果存在依赖项。</li><li><code>DeleteBehavior.SetNull</code>：删除主体时，将依赖项的外键设置为 NULL。</li><li><code>DeleteBehavior.Cascade</code>：删除主体时，也删除依赖项。<strong>（默认行为，也是最危险的）</strong></li></ul></li></ul><p>一对多 示例：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Category&gt; Categories { get; set; }
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Product&gt;() // 从依赖端 Product 开始
+            .HasOne(p =&gt; p.Category)      // Product 有一个 Category
+            .WithMany(c =&gt; c.Products)    // Category 有多个 Products
+            .HasForeignKey(p =&gt; p.CategoryId) // Product 的 CategoryId 是外键
+            .IsRequired()                 // Category 是必需的 (ProductId 不能为 NULL)
+            .OnDelete(DeleteBehavior.Restrict); // 如果删除 Category，阻止删除，防止 Product 变为孤立
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>一对一 示例：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Person&gt; People { get; set; }
+    public DbSet&lt;Passport&gt; Passports { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Person&gt;()
+            .HasOne(p =&gt; p.Passport) // Person 有一个 Passport (Passport 是依赖端)
+            .WithOne(ps =&gt; ps.Person) // Passport 也有一个 Person
+            .HasForeignKey&lt;Passport&gt;(ps =&gt; ps.PersonId) // Passport 的 PersonId 是外键
+            .IsRequired() // 关系是必需的 (Passport 必须有 Person)
+            .OnDelete(DeleteBehavior.Cascade); // 删除 Person，也删除其 Passport
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>多对多 示例(带联结实体)：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Student&gt; Students { get; set; }
+    public DbSet&lt;Course&gt; Courses { get; set; }
+    public DbSet&lt;Enrollment&gt; Enrollments { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 配置 Enrollment 联结实体的主键
+        modelBuilder.Entity&lt;Enrollment&gt;()
+            .HasKey(e =&gt; new { e.StudentId, e.CourseId });
+
+        // 配置 Student 和 Enrollment 的关系
+        modelBuilder.Entity&lt;Enrollment&gt;()
+            .HasOne(e =&gt; e.Student)
+            .WithMany(s =&gt; s.Enrollments)
+            .HasForeignKey(e =&gt; e.StudentId);
+
+        // 配置 Course 和 Enrollment 的关系
+        modelBuilder.Entity&lt;Enrollment&gt;()
+            .HasOne(e =&gt; e.Course)
+            .WithMany(c =&gt; c.Enrollments)
+            .HasForeignKey(e =&gt; e.CourseId);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="级联删除行为" tabindex="-1"><a class="header-anchor" href="#级联删除行为"><span>级联删除行为</span></a></h4><p>它决定了当主体端实体被删除时，依赖端实体会发生什么。默认行为通常是 <code>Cascade</code>，这在生产环境中可能是危险的。</p><ul><li><strong><code>Cascade</code> (级联删除)</strong>：删除主体时，所有相关的依赖实体也会被删除。<strong>（默认行为）</strong></li><li><strong><code>Restrict</code> (限制删除)</strong>：如果存在相关的依赖实体，则<strong>阻止</strong>主体实体的删除。<strong>（推荐在无法确定级联行为时使用）</strong></li><li><strong><code>SetNull</code> (设置为空)</strong>：删除主体时，将依赖实体中对应的外键设置为 NULL。<strong>（仅适用于可选关系，即外键属性是可空的）</strong></li><li><strong><code>NoAction</code> / <code>ClientNoAction</code> (无操作)</strong>：数据库层不执行任何操作。EF Core 客户端也不会执行任何操作。通常用于需要手动管理删除依赖项的复杂场景。</li></ul><p>你可以在 Fluent API 中使用 <code>OnDelete()</code> 方法来配置：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>.OnDelete(DeleteBehavior.Restrict); // 或 SetNull, Cascade, NoAction
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><h3 id="索引和约束" tabindex="-1"><a class="header-anchor" href="#索引和约束"><span>索引和约束</span></a></h3><h4 id="默认约定-2" tabindex="-1"><a class="header-anchor" href="#默认约定-2"><span>默认约定</span></a></h4><p><strong>主键</strong>：EF Core 会自动为主键创建<strong>聚集索引</strong>（通常，如果数据库支持且没有明确指定其他聚集索引）。聚集索引决定了数据在磁盘上的物理存储顺序。</p><p><strong>外键</strong>：EF Core 默认会为关系中的<strong>外键</strong>创建<strong>非聚集索引</strong>。这是因为外键经常用于连接操作，索引可以提高连接性能。</p><h4 id="手动配置-3" tabindex="-1"><a class="header-anchor" href="#手动配置-3"><span>手动配置</span></a></h4><p>当默认约定不满足需求时，你可以使用<strong>数据注解</strong>或 <strong>Fluent API</strong> 来显式配置索引。</p><h5 id="数据注解-4" tabindex="-1"><a class="header-anchor" href="#数据注解-4"><span>数据注解</span></a></h5><p>使用 <code>[Index]</code> 特性来创建索引。</p><ul><li><p>单个列索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore; // 需要引用这个命名空间
+
+[Index(nameof(Email))] // 为 Email 列创建索引
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>唯一索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>[Index(nameof(Email), IsUnique = true)] // 为 Email 列创建唯一索引
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty; // 邮箱不能重复
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>复合索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>[Index(nameof(FirstName), nameof(LastName))] // 为 FirstName 和 LastName 创建复合索引
+public class Employee
+{
+    public int Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>命名索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>[Index(nameof(Code), Name = &quot;IX_Product_Code&quot;)] // 为索引指定一个名称
+public class Product
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><h5 id="fluent-api-5" tabindex="-1"><a class="header-anchor" href="#fluent-api-5"><span>Fluent API</span></a></h5><p>在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用 <code>HasIndex()</code> 方法来配置索引。Fluent API 允许你配置更复杂的索引，例如包含列、过滤器等。</p><ul><li><p>单个列索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;User&gt;(entity =&gt;
+{
+    entity.HasIndex(u =&gt; u.Email); // 为 Email 列创建索引
+});
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>唯一索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;User&gt;(entity =&gt;
+{
+    entity.HasIndex(u =&gt; u.Email)
+          .IsUnique(); // 为 Email 列创建唯一索引
+});
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>复合索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Employee&gt;(entity =&gt;
+{
+    entity.HasIndex(e =&gt; new { e.FirstName, e.LastName }); // 为 FirstName 和 LastName 创建复合索引
+});
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>命名索引</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Product&gt;(entity =&gt;
+{
+    entity.HasIndex(p =&gt; p.Code)
+          .HasName(&quot;IX_Product_Code&quot;); // 为索引指定一个名称
+});
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><h4 id="约束" tabindex="-1"><a class="header-anchor" href="#约束"><span>约束</span></a></h4><p>除了主键和外键约束（在“键”和“关系”章节中已讨论），EF Core 还允许你配置其他类型的数据库约束，以确保数据完整性。</p><p><strong>检查约束</strong></p><p>用于强制列中的值满足特定条件。例如，年龄必须大于 0，价格必须大于或等于 0。</p><ul><li><strong>配置方式 (只能通过 Fluent API)</strong>：使用 <code>HasCheckConstraint()</code> 方法。</li></ul><p>DEMO:价格必须大于0</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Product&gt;(entity =&gt;
+        {
+            // 定义一个检查约束，确保 Price 大于 0
+            entity.HasCheckConstraint(&quot;CK_Product_PricePositive&quot;, &quot;[Price] &gt; 0&quot;);
+            // 也可以给约束命名
+            // entity.HasCheckConstraint(&quot;CK_Product_PricePositive&quot;, &quot;[Price] &gt; 0&quot;, &quot;ProductPriceCheck&quot;);
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p><code>[Price] &gt; 0</code> 是原始 SQL 表达式，所以你需要根据你使用的数据库（SQL Server、MySQL 等）的语法来编写。</p></blockquote><p><strong>默认值</strong></p><p><strong>配置方式</strong>：</p><ul><li><strong>Fluent API <code>HasDefaultValue(value)</code></strong>：指定 C# 值。</li><li><strong>Fluent API <code>HasDefaultValueSql(&quot;SQL_EXPRESSION&quot;)</code></strong>：指定原始 SQL 表达式。</li></ul><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Product&gt;()
+    .Property(p =&gt; p.IsActive)
+    .HasDefaultValue(true); // 如果不提供 IsActive，默认为 true
+
+modelBuilder.Entity&lt;Product&gt;()
+    .Property(p =&gt; p.CreatedDate)
+    .HasDefaultValueSql(&quot;CURRENT_TIMESTAMP()&quot;); // MySQL 语法，默认当前时间
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="继承" tabindex="-1"><a class="header-anchor" href="#继承"><span>继承</span></a></h3><h4 id="概览" tabindex="-1"><a class="header-anchor" href="#概览"><span>概览</span></a></h4><p>当你的 C# 代码中存在继承层次结构（例如 <code>Person</code> 是基类，<code>Student</code> 和 <code>Instructor</code> 是派生类），EF Core 允许你将这些相关的实体映射到数据库中，而不是为每个类都创建独立的、不相关的表。</p><p>EF Core 目前主要支持以下三种继承映射策略（重点支持第 1 种）：</p><table><thead><tr><th>策略名称</th><th>英文缩写</th><th>支持情况</th><th>说明</th></tr></thead><tbody><tr><td>1. 表-每个层次结构</td><td>TPH (Table per Hierarchy)</td><td>✅ 默认支持</td><td>所有类用 <strong>一个表</strong> 存储</td></tr><tr><td>2. 表-每个类型</td><td>TPT (Table per Type)</td><td>✅ EF Core 5.0+ 支持</td><td>每个类用 <strong>一个独立的表</strong></td></tr><tr><td>3. 表-每个具体类型</td><td>TPC (Table per Concrete Type)</td><td>✅ EF Core 7.0+ 支持</td><td>每个具体类一个表，<strong>不共享字段</strong></td></tr></tbody></table><table><thead><tr><th>特性</th><th>TPH（默认）</th><th>TPT</th><th>TPC</th></tr></thead><tbody><tr><td>表结构</td><td>一个表存所有类</td><td>每类一个表，主键连接</td><td>每类一个表，字段重复</td></tr><tr><td>鉴别字段</td><td>✅ 有</td><td>❌ 无</td><td>❌ 无</td></tr><tr><td>查询性能</td><td>✅ 好（无 JOIN）</td><td>较差（JOIN）</td><td>✅ 非常好（无 JOIN）</td></tr><tr><td>存储冗余</td><td>少</td><td>少</td><td>✅ 多（字段重复）</td></tr><tr><td>配置复杂度</td><td>简单（默认）</td><td>需要显式配置</td><td>需要 EF Core 7+ 配置</td></tr><tr><td>推荐场景</td><td>默认推荐</td><td>数据范式要求高的场景</td><td>高并发高性能查询</td></tr></tbody></table><h4 id="tph" tabindex="-1"><a class="header-anchor" href="#tph"><span>TPH</span></a></h4><p>这是 EF Core 的默认策略，<strong>所有子类的数据都存在同一个表中</strong>，并通过一个“鉴别列（Discriminator）”区分不同类型。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public abstract class Animal
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
+
+public class Cat : Animal
+{
+    public int LivesLeft { get; set; }
+}
+
+public class Dog : Animal
+{
+    public bool IsGoodBoy { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>生成的表结构如下：</p><table><thead><tr><th>Id</th><th>Name</th><th>LivesLeft</th><th>IsGoodBoy</th><th>Discriminator</th></tr></thead><tbody><tr><td>1</td><td>喵喵</td><td>7</td><td>NULL</td><td>Cat</td></tr><tr><td>2</td><td>汪汪</td><td>NULL</td><td>true</td><td>Dog</td></tr></tbody></table><h5 id="鉴别器列的配置" tabindex="-1"><a class="header-anchor" href="#鉴别器列的配置"><span>鉴别器列的配置</span></a></h5><ul><li><p>配置名称</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Person&gt;()
+    .HasDiscriminator&lt;string&gt;(&quot;PersonType&quot;) // 鉴别器列名为 &quot;PersonType&quot;
+    .HasValue&lt;Student&gt;(&quot;Student&quot;)          // Student 类型的鉴别器值为 &quot;Student&quot;
+    .HasValue&lt;Instructor&gt;(&quot;Instructor&quot;);   // Instructor 类型的鉴别器值为 &quot;Instructor&quot;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>配置类型：鉴别器列可以是 <code>string</code>, <code>int</code>, <code>Guid</code> 等类型。</p></li><li><p>默认值：如果未配置 <code>HasValue</code>，EF Core 会使用类型全名作为鉴别器值。</p></li></ul><h4 id="tpt" tabindex="-1"><a class="header-anchor" href="#tpt"><span>TPT</span></a></h4><p>TPT 会为每个类单独建表，并通过主键关联。</p><p><strong>配置方式</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Animal&gt; Animals { get; set; } // 通常只暴露基类的 DbSet
+    public DbSet&lt;Cat&gt; Cats { get; set; } // 也可以暴露派生类的 DbSet
+    public DbSet&lt;Dog&gt; Dogs { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Cat&gt;().ToTable(&quot;Cats&quot;);
+        modelBuilder.Entity&lt;Dog&gt;().ToTable(&quot;Dogs&quot;);
+        // 基类 Animal 默认会映射到 Animals 表
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="tpc" tabindex="-1"><a class="header-anchor" href="#tpc"><span>TPC</span></a></h4><p>继承层次结构中的<strong>每个具体（非抽象）类</strong>都映射到<strong>独立的数据库表</strong>中。这些表包含基类和其自身的所有属性。基类不对应数据库中的任何表。</p><p><strong>配置方式</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Cat&gt;().UseTpcMappingStrategy();
+modelBuilder.Entity&lt;Dog&gt;().UseTpcMappingStrategy();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="序列" tabindex="-1"><a class="header-anchor" href="#序列"><span>序列</span></a></h3><table><thead><tr><th>数据库</th><th>是否支持序列</th><th>说明</th></tr></thead><tbody><tr><td>✅ SQL Server</td><td>支持</td><td>有内建的 <code>SEQUENCE</code> 对象</td></tr><tr><td>✅ PostgreSQL</td><td>支持</td><td>使用 <code>nextval(&#39;...&#39;)</code></td></tr><tr><td>❌ MySQL</td><td>不支持</td><td>没有原生 <code>SEQUENCE</code> 对象</td></tr><tr><td>✅ Oracle</td><td>支持</td><td>有 <code>SEQUENCE</code> 概念</td></tr></tbody></table><h3 id="支持字段" tabindex="-1"><a class="header-anchor" href="#支持字段"><span>支持字段</span></a></h3><h4 id="定义-2" tabindex="-1"><a class="header-anchor" href="#定义-2"><span>定义</span></a></h4><p>“支持字段”允许你将数据库列映射到 C# 实体类中的<strong>字段 (field)</strong>，而不是通常的<strong>属性 (property)</strong></p><p>在 C# 中，一个<strong>属性 (Property)</strong> 通常由一个公共的 <code>get</code> 和 <code>set</code> 访问器组成，它们内部操作的是一个私有的<strong>字段 (Field)</strong>。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    private string _name; // 这是私有字段
+
+    public string Name // 这是公共属性
+    {
+        get { return _name; }
+        set { _name = value; }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>默认情况下，EF Core 会将你的<strong>属性</strong>映射到数据库列。但“支持字段”的特性允许你告诉 EF Core：<strong>“嘿，这个属性背后的数据其实是存储在这个私有字段里的，你直接读写这个字段就行了。”</strong></p><h4 id="作用" tabindex="-1"><a class="header-anchor" href="#作用"><span>作用</span></a></h4><p>支持字段的主要使用场景是为了更好地实现<strong>封装 (Encapsulation)</strong> 和<strong>不变性 (Immutability)</strong>，同时还能让 EF Core 正确地将数据持久化到数据库。</p><ol><li><strong>封装业务逻辑</strong>：你可能希望通过<strong>方法</strong>来控制属性的修改，而不是直接暴露公共的 <code>set</code> 访问器。</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Order
+{
+    private OrderStatus _status; // 私有字段
+
+    public OrderStatus Status // 只读属性
+    {
+        get =&gt; _status;
+    }
+
+    public void ShipOrder() // 通过方法修改状态
+    {
+        if (_status == OrderStatus.Pending)
+        {
+            _status = OrderStatus.Shipped;
+        }
+        // ... 其他业务逻辑
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>在这种情况下，<code>Status</code> 属性没有公共 <code>set</code>，EF Core 默认无法将其映射。但通过支持字段，EF Core 可以直接访问和更新 <code>_status</code> 字段。</p><ol start="2"><li><strong>强制不可变性 (Immutable Objects)</strong>：你可能希望对象在创建后某些属性就不能再被修改，但 EF Core 仍然需要从数据库加载这些值。</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Address
+{
+    private string _street;
+    public string Street =&gt; _street; // 只读属性 (表达式体)
+
+    public Address(string street) // 构造函数初始化字段
+    {
+        _street = street;
+    }
+    // EF Core 仍然需要一种方式来设置 _street
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="3"><li><p><strong>隐藏复杂的内部实现</strong>：有些属性的 getter/setter 可能包含复杂的逻辑，但你只希望数据库直接读写其底层数据。</p></li><li><p><strong>优化构造函数</strong>：EF Core 可以在加载实体时，通过调用构造函数并传入支持字段的值来初始化对象，而不是依赖属性的公共 setter。</p></li></ol><h4 id="默认支持字段规则" tabindex="-1"><a class="header-anchor" href="#默认支持字段规则"><span>默认支持字段规则</span></a></h4><p>EF Core 能够通过约定来自动发现支持字段。它会查找与属性名匹配的私有或受保护字段。</p><p>EF Core 查找支持字段的约定优先级顺序（如果属性没有公共 setter）：</p><ol><li><code>_&lt;propertyName&gt;</code> (例如 <code>_name</code> 支持 <code>Name</code> 属性)</li><li><code>&lt;propertyName&gt;</code> (例如 <code>name</code> 支持 <code>Name</code> 属性)</li><li><code>m_&lt;propertyName&gt;</code></li><li><code>_</code> + <code>&lt;propertyName&gt;</code> (小写开头)</li></ol><h4 id="手动配置-4" tabindex="-1"><a class="header-anchor" href="#手动配置-4"><span>手动配置</span></a></h4><p><strong>注解</strong></p><p>使用 <code>[BackingField]</code> 特性来指定一个属性应该使用哪个字段作为其支持字段。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore; // 需要引用此命名空间
+
+public class Blog
+{
+    public int Id { get; set; }
+
+    private string _title; // 这是一个私有字段
+
+    [BackingField(nameof(_title))] // 告诉 EF Core，Title 属性使用 _title 字段
+    public string Title // 这个属性没有公共 setter
+    {
+        get =&gt; _title;
+        // set { _title = value; } // 可以有私有 setter 或没有 setter
+    }
+
+    public void ChangeTitle(string newTitle)
+    {
+        if (string.IsNullOrWhiteSpace(newTitle))
+        {
+            throw new ArgumentException(&quot;Title cannot be empty.&quot;, nameof(newTitle));
+        }
+        _title = newTitle; // 只能通过方法修改
+    }
+}	
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p><code>nameof(_title)</code> 确保了字段名称的类型安全。</p></blockquote><p><strong>Fluent API</strong></p><p>在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用 <code>HasField()</code> 方法来指定支持字段。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Blog&gt; Blogs { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Blog&gt;()
+            .Property(b =&gt; b.Title) // 配置 Title 属性
+            .HasField(&quot;_title&quot;);    // 明确指定使用 _title 字段作为支持字段
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="访问模式" tabindex="-1"><a class="header-anchor" href="#访问模式"><span>访问模式</span></a></h4><p>除了指定支持字段外，可以配置 EF Core 在读写数据时是使用属性的访问器还是直接访问支持字段。这通过<code>UsePropertyAccessMode()</code> 方法完成。</p><p><code>UsePropertyAccessMode()</code> 方法可以应用于整个模型、某个实体类型或某个特定属性。</p><p><strong>可用的访问模式：</strong></p><ul><li><strong><code>PropertyAccessMode.PreferField</code> (默认值，如果发现支持字段)</strong>：如果找到支持字段，优先使用字段。否则，使用属性访问器。这是最常见的行为。</li><li><strong><code>PropertyAccessMode.PreferProperty</code></strong>：如果属性具有可访问的 getter/setter，优先使用属性。否则，使用字段。</li><li><strong><code>PropertyAccessMode.Field</code></strong>：<strong>始终使用字段</strong>，即使属性有公共 getter/setter。如果属性没有支持字段，EF Core 将无法使用此模式。</li><li><strong><code>PropertyAccessMode.Property</code></strong>：<strong>始终使用属性访问器</strong>，即使有支持字段。如果属性没有可访问的 getter/setter，EF Core 将无法使用此模式。</li><li><strong><code>PropertyAccessMode.Mixed</code></strong>：对于读取（getter），使用属性；对于写入（setter），使用字段。</li><li><strong><code>PropertyAccessMode.NoField</code></strong>：不使用任何支持字段。</li></ul><p><strong>配置访问模式：</strong></p><ul><li><p>全局配置（针对实体类型和属性）</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+    optionsBuilder.UseSqlServer(&quot;...&quot;)
+                  .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                  .UsePropertyAccessMode(PropertyAccessMode.Field); // 全局强制使用字段
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>针对特定实体类型</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Blog&gt;()
+    .UsePropertyAccessMode(PropertyAccessMode.Field); // Blog 实体强制使用字段
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div></div></div></li><li><p>针对特定属性</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Blog&gt;()
+    .Property(b =&gt; b.Title)
+    .HasField(&quot;_title&quot;) // 指定支持字段
+    .UsePropertyAccessMode(PropertyAccessMode.Field); // 强制 Title 属性使用字段访问
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div></li></ul><p><strong>选择策略</strong></p><ul><li><strong>默认 (<code>PreferField</code>) 够用</strong>：对于大多数情况，你不需要显式配置 <code>UsePropertyAccessMode()</code>，因为 EF Core 的默认行为 (<code>PreferField</code>) 已经足够智能，可以自动处理。</li><li><strong>需要严格封装</strong>：如果你希望属性始终通过私有字段来持久化，即使属性有公共 setter，可以使用 <code>PropertyAccessMode.Field</code>。</li><li><strong>确保属性逻辑被执行</strong>：如果你希望在读取或写入数据时，属性的 getter/setter 逻辑（例如验证、转换）<strong>始终</strong>被执行，那么可以使用 <code>PropertyAccessMode.Property</code>。</li></ul><h3 id="值转换" tabindex="-1"><a class="header-anchor" href="#值转换"><span>值转换</span></a></h3><p>值转换允许你在 C# 实体属性的类型和数据库列的类型之间进行<strong>自定义的转换</strong>。这意味着你可以用一个方便的 C# 类型来处理数据，而 EF Core 会在保存到数据库和从数据库加载时，自动将其转换为数据库支持的类型。</p><p>通常，EF Core 会自动将 C# 类型映射到兼容的数据库类型（例如，<code>string</code> 到 <code>NVARCHAR</code>，<code>int</code> 到 <code>INT</code>）。但有些情况下，这种默认映射不满足需求：</p><ul><li><strong>数据库不支持 C# 类型</strong>：例如，你可能想在 C# 中使用枚举 (<code>enum</code>)，但数据库只存储整数或字符串。</li><li><strong>希望以不同方式存储数据</strong>：你可能想将 C# 中的一个复杂对象序列化为 JSON 字符串存储在一个 <code>NVARCHAR</code> 列中。</li><li><strong>数据格式转换</strong>：例如，始终将 <code>DateTime</code> 存储为 UTC 时间，或将 IP 地址存储为 <code>long</code>。</li><li><strong>值对象</strong>：如果你在 C# 中定义了值对象（Value Object），你可能希望它们被映射到数据库的单个或多个基本类型列。</li></ul><p><strong>值转换</strong>就是定义了如何在 C# 属性值（<code>ModelClrType</code>）和数据库列值（<code>ProviderClrType</code>）之间进行转换的逻辑。</p><h4 id="使用场景" tabindex="-1"><a class="header-anchor" href="#使用场景"><span>使用场景</span></a></h4><ul><li><strong>处理枚举</strong>：将 C# 枚举存储为数据库中的整数或字符串。</li><li><strong>值对象</strong>：如果你有表示单一概念的值对象（例如 <code>Money</code>、<code>Address</code>），但希望它们映射到数据库的原始列，而不是单独的复杂类型或拥有的实体。</li><li><strong>日期/时间格式化</strong>：确保 <code>DateTime</code> 始终以 UTC 格式存储在数据库中。</li><li><strong>JSON 序列化</strong>：将 C# 中的列表、字典或复杂对象序列化为 JSON 字符串存储在单个数据库列中（EF Core 7.0+ <code>ToJson()</code> 更方便）。</li><li><strong>IP 地址/URL 存储</strong>：将 <code>IPAddress</code> 或 <code>Uri</code> 对象转换为字符串或 <code>byte[]</code> 存储。</li><li><strong>自定义数据类型</strong>：将自定义的 C# 类型映射到数据库中可支持的原始类型。</li></ul><h4 id="配置方式" tabindex="-1"><a class="header-anchor" href="#配置方式"><span>配置方式</span></a></h4><h5 id="hasconversion-tconverter" tabindex="-1"><a class="header-anchor" href="#hasconversion-tconverter"><span><code>HasConversion&lt;TConverter&gt;()</code></span></a></h5><p>这是最常用的方法，你只需提供一个继承自 <code>ValueConverter</code> 的自定义转换器类，或者使用 EF Core 内置的转换器。</p><p>示例：假设你有一个 <code>OrderStatus</code> 枚举，但希望在数据库中以字符串形式存储：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public enum OrderStatus
+{
+    Pending,
+    Processing,
+    Shipped,
+    Delivered,
+    Cancelled
+}
+
+public class Order
+{
+    public int Id { get; set; }
+    public OrderStatus Status { get; set; }
+    public string Description { get; set; } = string.Empty;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Order&gt; Orders { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Order&gt;()
+            .Property(o =&gt; o.Status)
+            // 告诉 EF Core，将 OrderStatus 枚举转换为字符串存储在数据库中
+            .HasConversion&lt;string&gt;(); // EF Core 知道如何将枚举与字符串互相转换
+            // 数据库中会存储 &quot;Pending&quot;, &quot;Processing&quot; 等字符串
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="hasconversion-valueconverter-converter" tabindex="-1"><a class="header-anchor" href="#hasconversion-valueconverter-converter"><span><code>HasConversion(ValueConverter converter)</code></span></a></h5><p>可以直接传入一个 <code>ValueConverter</code> 实例。这通常用于更复杂的转换，或者当没有合适的内置转换器时。</p><p><code>ValueConverter</code> 的构造函数需要两个 <code>Expression</code>：一个从模型类型到提供者类型，另一个从提供者类型到模型类型。</p><p>示例：在 C# 中使用 <code>DateTimeOffset</code>，但只想在数据库中存储 UTC <code>DateTime</code>：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Event
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public DateTimeOffset EventDateTime { get; set; } // C# 使用 DateTimeOffset
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Event&gt; Events { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 定义一个从 DateTimeOffset 到 DateTime (UTC) 的转换器
+        var dateTimeOffsetConverter = new ValueConverter&lt;DateTimeOffset, DateTime&gt;(
+            v =&gt; v.ToUniversalTime().DateTime, // 模型到提供者：DateTimeOffset 转 UTC DateTime
+            v =&gt; new DateTimeOffset(v, TimeSpan.Zero) // 提供者到模型：UTC DateTime 转 DateTimeOffset
+        );
+
+        modelBuilder.Entity&lt;Event&gt;()
+            .Property(e =&gt; e.EventDateTime)
+            .HasConversion(dateTimeOffsetConverter);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="hasconversion-expression-modeltoprovider-expression-providertomodel" tabindex="-1"><a class="header-anchor" href="#hasconversion-expression-modeltoprovider-expression-providertomodel"><span><code>HasConversion(Expression modelToProvider, Expression providerToModel)</code></span></a></h5><p>直接在 Fluent API 中定义转换表达式。这对于简单的转换非常方便，无需单独创建 <code>ValueConverter</code> 实例。</p><p>示例：将 <code>List&lt;string&gt;</code> 存储为数据库中的一个逗号分隔字符串：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class TaggedArticle
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public List&lt;string&gt; Tags { get; set; } = new List&lt;string&gt;(); // C# 是 List&lt;string&gt;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;TaggedArticle&gt; TaggedArticles { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;TaggedArticle&gt;()
+            .Property(a =&gt; a.Tags)
+            .HasConversion(
+                // 模型到提供者：List&lt;string&gt; 转 string
+                v =&gt; string.Join(&quot;,&quot;, v),
+                // 提供者到模型：string 转 List&lt;string&gt;
+                v =&gt; v.Split(&#39;,&#39;, StringSplitOptions.RemoveEmptyEntries).ToList()
+            );
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="集合类型的序列化" tabindex="-1"><a class="header-anchor" href="#集合类型的序列化"><span>集合类型的序列化</span></a></h5><p>从 EF Core 7.0 开始，对于像 <code>List&lt;string&gt;</code> 这样的集合类型，你可以使用 <code>ToJson()</code> 方法将其自动序列化为 JSON 字符串存储在数据库中，这比手动编写 <code>HasConversion</code> 更方便。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class User
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public List&lt;string&gt; Roles { get; set; } = new List&lt;string&gt;(); // List&lt;string&gt;
+
+    public Dictionary&lt;string, string&gt; Settings { get; set; } = new Dictionary&lt;string, string&gt;(); // Dictionary&lt;string, string&gt;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;User&gt; Users { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;User&gt;()
+            .Property(u =&gt; u.Roles)
+            .ToJson(); // 自动序列化为 JSON 字符串
+
+        modelBuilder.Entity&lt;User&gt;()
+            .Property(u =&gt; u.Settings)
+            .ToJson(); // 自动序列化为 JSON 字符串
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="内置转换器" tabindex="-1"><a class="header-anchor" href="#内置转换器"><span>内置转换器</span></a></h4><p>EF Core 提供了一些常用的内置 <code>ValueConverter</code> 类，你可以在 <code>Microsoft.EntityFrameworkCore.Storage.ValueConversion</code> 命名空间中找到它们。例如：</p><ul><li><code>EnumToStringConverter&lt;TEnum&gt;</code>：将枚举转换为字符串。</li><li><code>DateTimeOffsetToBinaryConverter</code>：将 <code>DateTimeOffset</code> 转换为 <code>long</code>。</li><li><code>BoolToZeroOneConverter&lt;T&gt;</code>：将 <code>bool</code> 转换为 0/1。</li></ul><p>你可以通过 <code>HasConversion&lt;TConverter&gt;()</code> 来使用它们，或者自己创建实例。</p><h3 id="值比较器" tabindex="-1"><a class="header-anchor" href="#值比较器"><span>值比较器</span></a></h3><h4 id="语法" tabindex="-1"><a class="header-anchor" href="#语法"><span>语法</span></a></h4><div class="language-text line-numbers-mode" data-ext="text" data-title="text"><pre class="language-text"><code>ValueComparer&lt;T&gt;(Func&lt;T, T, bool&gt; equals, Func&lt;T, int&gt; hashCode, Func&lt;T, T&gt; snapshot)
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><ul><li><code>equals</code>：一个 <code>Func</code>，用于比较两个 <code>T</code> 类型的实例是否相等。</li><li><code>hashCode</code>：一个 <code>Func</code>，用于为 <code>T</code> 类型的实例生成哈希码。</li><li><code>snapshot</code>：一个 <code>Func</code>，用于创建 <code>T</code> 类型的实例的快照（深拷贝），以便 EF Core 进行变更跟踪。</li></ul><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>new ValueComparer&lt;int[]&gt;(
+    (a, b) =&gt; a.SequenceEqual(b),          // 是否相等
+    a =&gt; a.Aggregate(0, (x, y) =&gt; x ^ y),  // 生成哈希
+    a =&gt; a.ToArray()                       // 克隆副本
+)
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><table><thead><tr><th>参数位置</th><th>用途说明</th></tr></thead><tbody><tr><td>第 1 个</td><td><code>Equals(a, b)</code>：判断值是否相等</td></tr><tr><td>第 2 个</td><td><code>GetHashCode(a)</code>：生成哈希值，用于字典、变更检测等</td></tr><tr><td>第 3 个</td><td><code>Snapshot(a)</code>：创建副本，避免引用共享造成误判</td></tr></tbody></table><h4 id="使用方法" tabindex="-1"><a class="header-anchor" href="#使用方法"><span>使用方法</span></a></h4><h5 id="hasconversion-valueconverter-和-valuecomparer" tabindex="-1"><a class="header-anchor" href="#hasconversion-valueconverter-和-valuecomparer"><span><code>HasConversion(ValueConverter)</code> 和 <code>ValueComparer</code></span></a></h5><p>通常，<strong>值转换器 (ValueConverter)</strong> 和 <strong>值比较器 (ValueComparer)</strong> 会一起使用。当你使用 <code>ValueConverter</code> 将复杂类型转换为基本类型存储时，你可能还需要提供一个 <code>ValueComparer</code> 来处理 C# 端复杂类型的比较。</p><p>示例：<code>List&lt;string&gt;</code>属性的比较</p><p>在“值转换”章节中，我们把 <code>List&lt;string&gt;</code> 转换成了逗号分隔的字符串。但如果你在 C# 代码中修改了 <code>List&lt;string&gt;</code> 内部的元素，EF Core 默认可能无法跟踪到这个变化。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+
+public class TaggedArticle
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public List&lt;string&gt; Tags { get; set; } = new List&lt;string&gt;();
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;TaggedArticle&gt; TaggedArticles { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;TaggedArticle&gt;()
+            .Property(a =&gt; a.Tags)
+            .HasConversion(
+                // 值转换器：List&lt;string&gt; -&gt; string (逗号分隔)
+                v =&gt; string.Join(&quot;,&quot;, v),
+                v =&gt; v.Split(&#39;,&#39;, StringSplitOptions.RemoveEmptyEntries).ToList()
+            )
+            // 2. 值比较器：如何比较 List&lt;string&gt;
+            .Metadata.SetValueComparer(new ValueComparer&lt;List&lt;string&gt;&gt;(
+                // 相等性比较：检查两个列表的元素是否相同（忽略顺序）
+                (c1, c2) =&gt; c1!.SequenceEqual(c2!), // 或 c1.OrderBy(x=&gt;x).SequenceEqual(c2.OrderBy(x=&gt;x)) 如果顺序不重要
+                // 哈希码生成：基于列表中所有元素的哈希
+                c =&gt; c.Aggregate(0, (a, v) =&gt; HashCode.Combine(a, v.GetHashCode())),
+                // 克隆：创建一个新的 List&lt;string&gt; 副本
+                c =&gt; c.ToList()
+            ));
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="针对值对象-不可变类型" tabindex="-1"><a class="header-anchor" href="#针对值对象-不可变类型"><span>针对值对象/不可变类型</span></a></h5><p>如果你有一个重写了 <code>Equals</code> 和 <code>GetHashCode</code> 的<strong>值对象</strong>，EF Core 通常能够通过约定发现这些方法并使用它们进行比较。然而，对于快照（克隆），你可能仍需提供一个值比较器，尤其当你的值对象是引用类型时，你需要确保在快照时进行深拷贝。</p><p>示例：<code>Address</code>值对象的比较和快照</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>// Address 类如前面所述，重写了 Equals 和 GetHashCode
+
+public class Customer
+{
+    public int Id { get; set; }
+    public Address ShippingAddress { get; set; } = new Address();
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Customer&gt; Customers { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Customer&gt;()
+            .Property(c =&gt; c.ShippingAddress)
+            .HasConversion(
+                // 假设 Address 是作为 JSON 存储在数据库中的
+                v =&gt; JsonSerializer.Serialize(v, typeof(Address), new JsonSerializerOptions()),
+                v =&gt; JsonSerializer.Deserialize&lt;Address&gt;(v, new JsonSerializerOptions())!
+            )
+            .Metadata.SetValueComparer(new ValueComparer&lt;Address&gt;(
+                (c1, c2) =&gt; c1!.Equals(c2), // 使用 Address 类自己的 Equals 方法
+                c =&gt; c.GetHashCode(),     // 使用 Address 类自己的 GetHashCode 方法
+                c =&gt; new Address(c.Street, c.City) // 提供一个自定义的克隆方法，确保深拷贝
+            ));
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="针对集合属性的内置-valuecomparer" tabindex="-1"><a class="header-anchor" href="#针对集合属性的内置-valuecomparer"><span>针对集合属性的内置 <code>ValueComparer</code></span></a></h5><p>从 EF Core 7.0 开始，当你使用 <code>ToJson()</code> 配置集合类型属性时，EF Core 会自动为你处理值转换和值比较器，无需你手动编写。它会使用一个内置的比较器，比较 JSON 字符串的相等性。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;User&gt;()
+    .Property(u =&gt; u.Roles)
+    .ToJson(); // EF Core 自动处理了转换和比较
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="数据种子设定" tabindex="-1"><a class="header-anchor" href="#数据种子设定"><span>数据种子设定</span></a></h3><p>EF Core 支持在模型配置阶段通过 Fluent API 指定实体的种子数据，EF 会在执行 <code>migration</code> 和 <code>update-database</code> 时将这些数据插入数据库。</p><h4 id="执行流程" tabindex="-1"><a class="header-anchor" href="#执行流程"><span>执行流程</span></a></h4><ol><li>EF Core 在执行 <code>Add-Migration</code> 时，会将种子数据作为 <code>InsertData()</code> 写入迁移文件中</li><li>执行 <code>Update-Database</code> 时，EF Core 会插入这些数据（如果不存在）</li><li>EF 会根据主键进行比对，不会重复插入（不会执行 DELETE 或 UPDATE）</li></ol><blockquote><p>EF Core 的种子数据是<strong>不可变的</strong>。如果你更改了种子数据中的某条记录，EF Core 会尝试先删除旧记录再插入新记录，这有可能失败（比如存在外键约束）。</p></blockquote><h4 id="使用方法-1" tabindex="-1"><a class="header-anchor" href="#使用方法-1"><span>使用方法</span></a></h4><p>数据种子设定是通过重写 <code>DbContext</code> 中的 <code>OnModelCreating</code> 方法来完成。你使用 <code>HasData()</code> 方法来指定要插入的数据。</p><h5 id="基础的hashdata" tabindex="-1"><a class="header-anchor" href="#基础的hashdata"><span>基础的<code>HashData()</code></span></a></h5><p><code>HasData()</code> 方法应用于你的实体类型配置上，它接受实体实例的集合。</p><p>示例：为<code>Category</code>和<code>Product</code>实体添加种子数据</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Category
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public int CategoryId { get; set; } // 外键
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Category&gt; Categories { get; set; }
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 1. 为 Category 实体添加种子数据
+        modelBuilder.Entity&lt;Category&gt;().HasData(
+            new Category { Id = 1, Name = &quot;Electronics&quot; },
+            new Category { Id = 2, Name = &quot;Books&quot; }
+        );
+
+        // 2. 为 Product 实体添加种子数据
+        // 注意：这里需要指定外键值，以关联到上面的 Category
+        modelBuilder.Entity&lt;Product&gt;().HasData(
+            new Product { Id = 1, Name = &quot;Laptop&quot;, Price = 1200.00m, CategoryId = 1 },
+            new Product { Id = 2, Name = &quot;Smartphone&quot;, Price = 800.00m, CategoryId = 1 },
+            new Product { Id = 3, Name = &quot;C# Programming&quot;, Price = 50.00m, CategoryId = 2 }
+        );
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="包含关系的数据种子设定" tabindex="-1"><a class="header-anchor" href="#包含关系的数据种子设定"><span>包含关系的数据种子设定</span></a></h5><p>当实体之间存在关系时，种子数据也必须反映这些关系。你需要确保外键属性被正确赋值，以匹配主体实体的主键值。</p><p>在上面的例子中，<code>Product</code> 的 <code>CategoryId</code> 被设置为 1 或 2，以匹配 <code>Category</code> 实体中的 <code>Id</code>。</p><h5 id="匿名类型与hasdata" tabindex="-1"><a class="header-anchor" href="#匿名类型与hasdata"><span>匿名类型与<code>HasData()</code></span></a></h5><p>为了简洁，你可以使用匿名类型来为 <code>HasData()</code> 提供数据，前提是所有必需的属性都被包含</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;Category&gt;().HasData(
+    new { Id = 1, Name = &quot;Electronics&quot; }, // 使用匿名类型
+    new { Id = 2, Name = &quot;Books&quot; }
+);
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="主键值处理" tabindex="-1"><a class="header-anchor" href="#主键值处理"><span>主键值处理</span></a></h4><div class="hint-container important"><p class="hint-container-title">重要</p><p>为种子数据提供的<strong>主键值</strong>（例如 <code>Id = 1</code>, <code>Id = 2</code>）必须是<strong>唯一的</strong>，并且在每次迁移中都<strong>保持不变</strong>。</p><ul><li>EF Core 使用这些主键值来识别种子数据行。</li><li>当你在未来的迁移中修改种子数据时，EF Core 会根据主键来判断是更新现有行还是插入新行。</li><li>如果种子数据的 ID 与真实数据冲突，EF Core 会抛出错误或产生意想不到的行为。</li></ul></div><p>如果你的实体主键是<strong>自增</strong>的（例如 <code>int Id</code> 默认的 <code>Identity</code>），并且你希望数据库自动生成这些 ID，那么在种子数据中<strong>不应该</strong>指定主键值。然而，这会带来一个问题：<strong>EF Core 无法追踪和更新这些种子数据，因为它不知道它们的标识。</strong></p><p><strong>解决方案：</strong></p><ol><li><p><strong>手动指定主键 (推荐用于种子数据)</strong>：对于种子数据，即使主键在数据库中是自增的，也<strong>强烈建议你手动为种子数据指定主键值</strong>。这样 EF Core 才能在后续的迁移中识别和更新这些种子数据。</p><p>在迁移脚本中，EF Core 会显式地为这些插入的行指定主键值，绕过数据库的自增机制。</p></li><li><p><strong>避免在种子数据中使用自增主键</strong>：如果你的主键必须由数据库自增，并且你不想手动指定，那么不适合使用 <code>HasData()</code>。你可能需要考虑在应用程序启动时，使用 <code>DbContext.Database.EnsureCreated()</code> 后的代码或自定义初始化脚本来填充数据。</p></li><li><p><strong>使用 Guid 主键并在代码中生成 Guid</strong>：对于 <code>Guid</code> 主键，你可以简单地在种子数据中生成 <code>Guid.NewGuid()</code>。</p></li></ol><h4 id="逻辑删除与并发令牌" tabindex="-1"><a class="header-anchor" href="#逻辑删除与并发令牌"><span>逻辑删除与并发令牌</span></a></h4><p><strong>软删除</strong>：如果你的实体有软删除机制（例如 <code>IsDeleted</code> 属性），请确保在种子数据中也正确设置此属性。</p><p><strong>并发令牌 (RowVersion/Timestamp)</strong>：种子数据中的并发令牌属性通常应该设置为默认值或 <code>null</code>（对于 <code>byte[]</code>），让数据库在插入时自动生成。EF Core 会忽略你在种子数据中为并发令牌指定的值，并让数据库负责生成。</p><h4 id="外部文件或配置中的种子数据" tabindex="-1"><a class="header-anchor" href="#外部文件或配置中的种子数据"><span>外部文件或配置中的种子数据</span></a></h4><p>对于大量或复杂的数据，将所有种子数据直接写在 <code>OnModelCreating</code> 方法中可能会导致代码臃肿。你可以考虑：</p><ul><li><strong>从 JSON/XML 文件加载数据</strong>：在 <code>OnModelCreating</code> 中读取这些文件并反序列化为实体对象，然后传递给 <code>HasData()</code>。</li><li><strong>从其他配置源加载数据</strong>：例如，从 <code>appsettings.json</code> 或环境变量中读取配置数据。</li></ul><h4 id="迁移与数据种子设定" tabindex="-1"><a class="header-anchor" href="#迁移与数据种子设定"><span>迁移与数据种子设定</span></a></h4><p>当你添加或修改了 <code>HasData()</code> 中的内容后：</p><ol><li><strong>添加迁移</strong>：运行 <code>Add-Migration &lt;MigrationName&gt;</code> 命令。EF Core 会检测到 <code>HasData()</code> 方法的变化，并生成相应的 <code>InsertData()</code>, <code>UpdateData()</code>, <code>DeleteData()</code> 调用到迁移文件中。</li><li><strong>更新数据库</strong>：运行 <code>Update-Database</code> 命令。EF Core 会执行迁移脚本，将种子数据插入或更新到数据库中。</li></ol><div class="hint-container important"><p class="hint-container-title">重要</p><p>每次修改 <code>HasData()</code>，都应该创建一个新的迁移。</p><p><code>HasData()</code> 会生成 <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> 语句到迁移脚本中。这意味着如果你修改了某个种子数据行，下一次迁移会生成一个 <code>UPDATE</code> 语句来修改它。如果你删除了一个种子数据行，它会生成一个 <code>DELETE</code> 语句来删除它。</p></div><h3 id="实体类型构造函数" tabindex="-1"><a class="header-anchor" href="#实体类型构造函数"><span>实体类型构造函数</span></a></h3><p>EF Core 中，实体类型是普通的 C# 类。当你从数据库加载实体或者创建新实体时，EF Core 需要能够创建这些类的实例。这就涉及到实体类型的<strong>构造函数</strong>。</p><h4 id="使用时机" tabindex="-1"><a class="header-anchor" href="#使用时机"><span>使用时机</span></a></h4><p>EF Core 使用构造函数来：</p><ol><li><strong>加载实体 (Materialization)</strong>：当你执行查询（例如 <code>_context.Products.ToList()</code>）时，EF Core 从数据库获取数据，然后需要将这些数据转换成 C# 实体类的实例。这时，EF Core 会调用实体类的构造函数来创建对象。</li><li><strong>创建新实体 (Instantiation)</strong>：当你通过 <code>new Product()</code> 在代码中创建实体，然后将其添加到 <code>DbContext</code> (<code>_context.Products.Add(newProduct)</code>) 时，EF Core 也会与你的构造函数交互。</li></ol><h4 id="要求和约定" tabindex="-1"><a class="header-anchor" href="#要求和约定"><span>要求和约定</span></a></h4><h5 id="无参构造函数" tabindex="-1"><a class="header-anchor" href="#无参构造函数"><span>无参构造函数</span></a></h5><p><strong>默认和推荐</strong>：如果你的实体类有一个<strong>公共的无参构造函数</strong>，EF Core 将默认使用它来创建实体实例。这是最简单、最常见的情况。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+
+    // EF Core 默认使用这个构造函数
+    public Product()
+    {
+        // 可以在这里进行一些默认初始化
+        Console.WriteLine(&quot;Product parameterless constructor called.&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="带参构造函数" tabindex="-1"><a class="header-anchor" href="#带参构造函数"><span>带参构造函数</span></a></h5><h6 id="ef-core如何选择带参构造函数" tabindex="-1"><a class="header-anchor" href="#ef-core如何选择带参构造函数"><span>EF Core如何选择带参构造函数</span></a></h6><ol><li><strong>单个构造函数</strong>：如果实体类只有一个构造函数，EF Core 将尝试使用它，无论是无参还是带参。</li><li><strong>多个构造函数时的约定</strong>：如果实体类有多个构造函数，EF Core 会优先选择： <ul><li><strong>带参数的构造函数</strong>，其参数可以被 EF Core 模型中的<strong>属性</strong>（包括支持字段和阴影属性）或<strong>服务</strong>（例如 <code>ILogger</code>）填充。</li><li><strong>最重要的：所有参数都必须能被 EF Core 解析</strong>。如果一个参数不能映射到数据库列，也不能作为服务注入，那么 EF Core 将无法使用该构造函数。</li></ul></li></ol><h6 id="构造函数参数与属性的匹配" tabindex="-1"><a class="header-anchor" href="#构造函数参数与属性的匹配"><span>构造函数参数与属性的匹配</span></a></h6><p>EF Core 会尝试将构造函数的参数名与实体类型的属性名（包括支持字段和阴影属性）进行匹配（不区分大小写）。</p><p>示例：使用带参构造函数初始化属性</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Order
+{
+    public int Id { get; set; }
+    public DateTime OrderDate { get; private set; } // 私有 set
+    public decimal TotalAmount { get; private set; } // 私有 set
+
+    // EF Core 可以使用这个构造函数来加载数据
+    public Order(DateTime orderDate, decimal totalAmount)
+    {
+        OrderDate = orderDate;
+        TotalAmount = totalAmount;
+        Console.WriteLine(&quot;Order parameterized constructor called.&quot;);
+    }
+
+    // 如果不希望公开无参构造函数，EF Core 2.1+ 可以支持此模式
+    // 但如果你有其他公开的无参构造函数，EF Core 仍然会优先选择它
+    private Order() // 私有无参构造函数，用于外部创建实例
+    {
+        Console.WriteLine(&quot;Order private parameterless constructor called.&quot;);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>当 EF Core 加载一个 <code>Order</code> 实体时，它会从数据库中读取 <code>OrderDate</code> 和 <code>TotalAmount</code> 的值，然后将这些值作为参数传递给 <code>Order(DateTime orderDate, decimal totalAmount)</code> 构造函数来创建实例。</p><h6 id="构造函数参数与支持字段的匹配" tabindex="-1"><a class="header-anchor" href="#构造函数参数与支持字段的匹配"><span>构造函数参数与支持字段的匹配</span></a></h6><p>如果你在实体中使用了支持字段，构造函数参数也可以直接匹配这些字段。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class User
+{
+    public int Id { get; set; }
+
+    private string _username; // 支持字段
+
+    public string Username =&gt; _username; // 只读属性
+
+    // EF Core 可以通过此构造函数填充 _username 字段
+    public User(string username)
+    {
+        _username = username;
+        Console.WriteLine(&quot;User parameterized constructor called with username.&quot;);
+    }
+
+    private User() { } // 私有无参构造函数，如果需要
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>为了让 EF Core 知道 <code>Username</code> 属性的底层是 <code>_username</code> 字段，你可能还需要在 <code>OnModelCreating</code> 中进行配置：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>modelBuilder.Entity&lt;User&gt;()
+    .Property(u =&gt; u.Username)
+    .HasField(&quot;_username&quot;);
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h6 id="构造函数参数与服务注入" tabindex="-1"><a class="header-anchor" href="#构造函数参数与服务注入"><span>构造函数参数与服务注入</span></a></h6><p>构造函数参数也可以接收通过 EF Core <strong>服务提供程序</strong>解析的服务。这对于在实体创建时注入日志记录器或其他依赖项很有用。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.Extensions.Logging;
+
+public class AuditEntry
+{
+    public int Id { get; set; }
+    public DateTime Timestamp { get; set; }
+    public string Message { get; set; } = string.Empty;
+
+    // EF Core 可以注入 ILogger 实例
+    public AuditEntry(ILogger&lt;AuditEntry&gt; logger)
+    {
+        logger.LogInformation(&quot;AuditEntry instance created.&quot;);
+        Timestamp = DateTime.UtcNow; // 构造函数中初始化
+    }
+
+    // 如果你想在代码中手动创建实例，可能需要无参构造函数或不同的构造函数
+    public AuditEntry(string message) : this(new LoggerFactory().CreateLogger&lt;AuditEntry&gt;())
+    {
+        Message = message;
+    }
+
+    private AuditEntry() { } // EF Core 也可能需要这个来处理某些查询
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p>这种服务注入仅限于 EF Core 内部的实体实例化过程。如果你在代码中直接 <code>new AuditEntry(&quot;...&quot;)</code>，则需要确保你手动处理 <code>ILogger</code> 的创建或传递。</p></blockquote><h5 id="私有或受保护的构造函数" tabindex="-1"><a class="header-anchor" href="#私有或受保护的构造函数"><span>私有或受保护的构造函数</span></a></h5><p>EF Core 也可以使用<strong>私有或受保护的构造函数</strong>。这对于那些你希望在外部强制通过工厂方法或特定方法创建，但仍然让 EF Core 能够加载的实体非常有用。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Report
+{
+    public int Id { get; set; }
+    public string Title { get; private set; } // 私有 set
+
+    // 私有构造函数，EF Core 仍然可以使用它
+    private Report(string title)
+    {
+        Title = title;
+    }
+
+    // 工厂方法，用于在应用程序代码中创建 Report 实例
+    public static Report Create(string title)
+    {
+        // 可以在这里添加业务规则
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            throw new ArgumentException(&quot;Title cannot be empty.&quot;, nameof(title));
+        }
+        return new Report(title);
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>EF Core 会尝试找到最合适的构造函数，包括非公共的构造函数。如果你有多个构造函数，并且 EF Core 无法根据参数类型和名称明确选择一个，那么你可能需要显式地告诉 EF Core 使用哪个构造函数。</p><h5 id="手动指定构造函数" tabindex="-1"><a class="header-anchor" href="#手动指定构造函数"><span>手动指定构造函数</span></a></h5><p>可以使用 <code>HasAnnotation()</code> 或 <code>UseConstructor()</code> 来明确指定要使用的构造函数。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>// 实体类有多个构造函数
+public class ComplexEntity
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public int Age { get; set; }
+
+    public ComplexEntity() { } // 公开无参
+
+    public ComplexEntity(string name) { Name = name; } // 公开带一个参数
+
+    public ComplexEntity(int id, string name, int age) // 公开带所有参数
+    {
+        Id = id;
+        Name = name;
+        Age = age;
+    }
+}
+
+// 在 OnModelCreating 中显式指定
+modelBuilder.Entity&lt;ComplexEntity&gt;()
+    .HasAnnotation(
+        RelationalAnnotationNames.ConstructorBinding,
+        ConstructorBinding.Create&lt;ComplexEntity&gt;(
+            typeof(int), typeof(string), typeof(int) // 参数类型
+        )
+    );
+
+// 或者更简洁的 UseConstructor (EF Core 6.0+)
+modelBuilder.Entity&lt;ComplexEntity&gt;()
+    .UseConstructor(typeof(int), typeof(string), typeof(int)); // 指定使用带 id, name, age 的构造函数
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h3 id="高级表映射" tabindex="-1"><a class="header-anchor" href="#高级表映射"><span>高级表映射</span></a></h3><h4 id="多个实体类型映射到同一张表" tabindex="-1"><a class="header-anchor" href="#多个实体类型映射到同一张表"><span>多个实体类型映射到同一张表</span></a></h4><p><strong>表拆分 (Table Splitting)<strong>通常指的是</strong>垂直拆分实体</strong>，即将一个实体的数据存储在多张表中，这里我们指的是<em>多个实体共享一张表</em>。</p><p>这种场景通常发生在以下情况：</p><ul><li><strong>继承映射 (Inheritance Mapping)</strong>：我们已经在“继承”章节中详细讨论了 TPH (Table-per-Hierarchy) 策略，它就是将整个继承层次结构映射到一张表中。</li><li><strong>拥有实体类型 (Owned Entity Types)</strong>：当你有一个值对象（Value Object）或聚合根的一部分，并且你希望它与拥有它的实体一起存储在同一张表中，而不是单独的表。</li></ul><h5 id="拥有实体类型" tabindex="-1"><a class="header-anchor" href="#拥有实体类型"><span>拥有实体类型</span></a></h5><p>拥有实体类型（在 EF Core 2.0 引入）允许你在模型中包含复杂对象，并将它们的属性映射到拥有实体的主表中，而不是单独的表。它们没有自己的主键，也不能被 <code>DbSet</code> 直接访问，它们的存在依赖于拥有它们的实体。</p><p><strong>场景</strong>：<code>Order</code> 实体包含一个 <code>ShippingAddress</code>，你希望 <code>ShippingAddress</code> 的所有属性（<code>Street</code>, <code>City</code>, <code>PostalCode</code>）都作为 <code>Order</code> 表的列，而不是一个单独的 <code>Addresses</code> 表。</p><p><strong>配置方式</strong>：使用 <strong>Fluent API <code>OwnsOne()</code></strong> (用于一对一拥有) 或 <strong><code>OwnsMany()</code></strong> (用于一对多拥有)</p><p><strong>示例：一对一拥有实体</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Order
+{
+    public int Id { get; set; }
+    public decimal TotalAmount { get; set; }
+    public OrderAddress ShippingAddress { get; set; } = null!; // 拥有实体属性
+}
+
+// OrderAddress 类没有 Id 属性，它是一个值对象
+public class OrderAddress
+{
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Order&gt; Orders { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Order&gt;(entity =&gt;
+        {
+            entity.OwnsOne(o =&gt; o.ShippingAddress, address =&gt;
+            {
+                address.Property(a =&gt; a.Street).HasColumnName(&quot;ShippingStreet&quot;);
+                address.Property(a =&gt; a.City).HasColumnName(&quot;ShippingCity&quot;);
+                address.Property(a =&gt; a.PostalCode).HasColumnName(&quot;ShippingPostalCode&quot;);
+                // 也可以进一步配置 ShippingAddress 的属性
+            });
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="共享相同数据库表" tabindex="-1"><a class="header-anchor" href="#共享相同数据库表"><span>共享相同数据库表</span></a></h5><p>虽然不常见，但理论上可以将两个不相关的实体类型映射到<strong>完全相同的表</strong>。这需要你非常小心，并确保两个实体类型的主键和列集是兼容的。通常通过 <code>ToTable()</code> 和 <code>HasKey()</code> 配合实现。</p><h4 id="一个实体类型映射到多张表" tabindex="-1"><a class="header-anchor" href="#一个实体类型映射到多张表"><span>一个实体类型映射到多张表</span></a></h4><p><strong>表拆分 (Table Splitting)</strong> 指的是将<strong>一个 C# 实体类型</strong>的数据分散存储在<strong>多张数据库表</strong>中。每张表都共享相同的主键，从而通过主键关联这些拆分的表。</p><ul><li><strong>场景</strong>：当一个实体包含大量属性，并且某些属性不经常使用时，你可以将其拆分到单独的表中，从而提高常用属性的查询性能。</li><li><strong>配置方式</strong>：使用 <strong>Fluent API <code>ToTable()</code></strong> 结合 <code>HasOne().WithOne().HasForeignKey()</code> 来建立两个实体类型之间的“假”一对一关系，并让它们共享相同的主键。</li></ul><p><strong>示例：将 <code>Blog</code> 实体拆分为 <code>Blogs</code> 和 <code>BlogDetails</code> 表</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Blog
+{
+    public int Id { get; set; } // 主键
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty; // 主要内容
+
+    // 导航属性指向 BlogDetails 实体
+    public BlogDetails Details { get; set; } = null!;
+}
+
+public class BlogDetails
+{
+    // BlogDetails 的主键同时也是外键，引用 Blog 的 Id
+    public int Id { get; set; }
+    public string HeaderImage { get; set; } = string.Empty;
+    public string AuthorNotes { get; set; } = string.Empty;
+    public int ViewsCount { get; set; }
+
+    // 导航属性指向 Blog 实体
+    public Blog Blog { get; set; } = null!;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Blog&gt; Blogs { get; set; }
+    // 注意：通常你不需要为 BlogDetails 定义 DbSet，因为它只是 Blog 的一部分
+    // public DbSet&lt;BlogDetails&gt; BlogDetails { get; set; } // 这样做也可以，但不是标准模式
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Blog&gt;(entity =&gt;
+        {
+            // Blog 映射到 Blogs 表
+            entity.ToTable(&quot;Blogs&quot;);
+        });
+
+        modelBuilder.Entity&lt;BlogDetails&gt;(entity =&gt;
+        {
+            // BlogDetails 也映射到 Blogs 表 (默认)，或者可以指定另一个表
+            entity.ToTable(&quot;BlogDetails&quot;); // 确保 BlogDetails 映射到自己的表
+
+            // 建立 Blog 和 BlogDetails 之间的关系
+            entity.HasOne(d =&gt; d.Blog)          // BlogDetails 有一个 Blog
+                  .WithOne(b =&gt; b.Details)      // Blog 也有一个 Details
+                  .HasForeignKey&lt;BlogDetails&gt;(d =&gt; d.Id); // BlogDetails 的 Id 既是主键也是外键
+
+            // 确保 Id 属性不会被认为是从数据库生成的，因为它是共享的主键
+            entity.Property(d =&gt; d.Id).ValueGeneratedNever();
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>**使用方式：**当你查询 <code>Blog</code> 实体时，EF Core 会自动 <code>JOIN</code> <code>Blogs</code> 和 <code>BlogDetails</code> 表来填充 <code>Blog</code> 及其 <code>Details</code> 属性。</p><h4 id="无键实体类型" tabindex="-1"><a class="header-anchor" href="#无键实体类型"><span>无键实体类型</span></a></h4><p><strong>概念</strong>：一种没有定义<strong>主键</strong>的实体类型。EF Core 不会跟踪其变化，也不会执行插入、更新或删除操作。它主要用于<strong>读取数据</strong>。</p><p><strong>场景</strong>：</p><ul><li><strong>数据库视图 (Database Views)</strong>：将一个实体映射到数据库视图，用于复杂的只读查询结果。</li><li><strong>存储过程结果</strong>：映射存储过程的返回结果。</li><li><strong>自定义 SQL 查询结果</strong>：映射 <code>FromSqlRaw()</code> 或 <code>FromSqlInterpolated()</code> 查询的结果。</li><li><strong>没有主键的表</strong>：有些遗留数据库可能存在没有主键的表（尽管这通常不是好的数据库设计）。</li></ul><p><strong>配置方式</strong>：</p><ul><li><strong>数据注解</strong>：在类上使用 <code>[Keyless]</code> 特性。</li><li><strong>Fluent API</strong>：使用 <code>HasNoKey()</code> 方法。</li><li>需要一个 <code>DbSet</code> 属性来表示它。</li></ul><p><strong>示例：映射到数据库视图</strong></p><p>假设你的数据库中有一个名为 <code>ProductSalesView</code> 的视图：</p><div class="language-SQL line-numbers-mode" data-ext="SQL" data-title="SQL"><pre class="language-SQL"><code>CREATE VIEW ProductSalesView AS
+SELECT
+    p.Id AS ProductId,
+    p.Name AS ProductName,
+    SUM(oi.Quantity * oi.UnitPrice) AS TotalSales,
+    COUNT(DISTINCT o.Id) AS OrderCount
+FROM Products AS p
+JOIN OrderItems AS oi ON p.Id = oi.ProductId
+JOIN Orders AS o ON oi.OrderId = o.Id
+GROUP BY p.Id, p.Name;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>在C#中定义一个对应的无键实体类型：</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore; // 需要引用此命名空间
+
+[Keyless] // 标记为无键实体类型
+public class ProductSalesView
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public decimal TotalSales { get; set; }
+    public int OrderCount { get; set; }
+}
+
+public class ApplicationDbContext : DbContext
+{
+    // 必须有 DbSet 来表示无键实体类型
+    public DbSet&lt;ProductSalesView&gt; ProductSales { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;ProductSalesView&gt;()
+            .ToView(&quot;ProductSalesView&quot;); // 映射到数据库视图
+            // 或者 .ToFunction(&quot;GetProductSales&quot;) 映射到存储过程
+            // 或者不指定，直接用于 FromSqlRaw/Interpolated
+            // .HasNoKey(); // 如果不使用 [Keyless] 特性，可以在这里配置
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>使用方式：</strong></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>// 查询无键实体类型
+var salesData = await _context.ProductSales.ToListAsync();
+
+// 也可以用于自定义 SQL 查询
+var customSalesData = await _context.ProductSales
+    .FromSqlRaw(&quot;SELECT ProductId, ProductName, TotalSales, OrderCount FROM ProductSalesView WHERE ProductId = {0}&quot;, 1)
+    .ToListAsync();
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>重要限制</strong>：</p><ul><li><strong>只读</strong>：不能对无键实体类型执行 <code>Add()</code>, <code>Update()</code>, <code>Remove()</code> 操作。</li><li><strong>无变更跟踪</strong>：EF Core 不会跟踪其变化。</li><li><strong>无主键</strong>：不能用作关系中的主体端。</li></ul><h3 id="从属实体类型" tabindex="-1"><a class="header-anchor" href="#从属实体类型"><span>从属实体类型</span></a></h3><h4 id="定义-3" tabindex="-1"><a class="header-anchor" href="#定义-3"><span>定义</span></a></h4><p>从属实体类型是一种特殊类型的实体，它的核心特征是：</p><ol><li><strong>没有自己的主键</strong>：它没有自己的主键属性，其主键由拥有它的实体的主键（或其一部分）构成。</li><li><strong>生命周期依赖</strong>：它不能独立存在于数据库中。当拥有它的主体实体被添加、更新或删除时，从属实体的数据也会随之被处理。</li><li><strong>不通过 <code>DbSet</code> 暴露</strong>：你通常不会为从属实体类型创建 <code>DbSet&lt;T&gt;</code> 属性。你通过拥有它的主体实体来访问和操作从属实体的数据。</li><li><strong>映射到同一张表或单独的表</strong>：从属实体可以映射到拥有它的主体实体所在的同一张表（默认行为），也可以映射到一张单独的表。</li></ol><p>从属实体类型主要用于以下场景：</p><ul><li><strong>值对象 (Value Objects)</strong>：当你的领域模型中存在值对象时，这些对象通常没有独立的标识，其相等性基于其属性的值。例如，一个 <code>Address</code> 对象，它只作为 <code>Customer</code> 的一部分存在，没有独立的 <code>AddressId</code>。</li><li><strong>复杂类型 (Complex Types)</strong>：当你希望将 C# 中的复杂对象作为某个实体的一部分进行持久化，而不想为它创建单独的表关系时。</li><li><strong>更好的封装和领域驱动设计 (DDD)</strong>：允许你更好地建模聚合，将相关的数据和行为封装在一起，同时保持数据库的规范化或反规范化。</li></ul><h4 id="配置方式-1" tabindex="-1"><a class="header-anchor" href="#配置方式-1"><span>配置方式</span></a></h4><p>从属实体类型主要通过 <strong>Fluent API</strong> 来配置。EF Core 会识别两种主要的拥有关系：<strong>一对一拥有</strong> 和 <strong>一对多拥有</strong>。</p><h5 id="一对一拥有" tabindex="-1"><a class="header-anchor" href="#一对一拥有"><span>一对一拥有</span></a></h5><p>这是最常见的从属实体场景，一个主体实体拥有一个从属实体。从属实体的属性将默认映射到主体实体的同一张表中。</p><p><strong>配置方式</strong>：在主体实体类型配置上使用 <code>OwnsOne()</code> 方法。</p><p>示例：<code>Order</code> 拥有 <code>ShippingAddress</code></p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Order
+{
+    public int Id { get; set; }
+    public decimal TotalAmount { get; set; }
+
+    // 导航属性指向从属实体
+    public OrderAddress ShippingAddress { get; set; } = null!; // 注意：通常是非空的
+}
+
+// OrderAddress 是一个值对象，没有自己的 Id
+public class OrderAddress
+{
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Order&gt; Orders { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Order&gt;(entity =&gt;
+        {
+            // 配置 Order 实体拥有 OrderAddress
+            entity.OwnsOne(o =&gt; o.ShippingAddress, address =&gt;
+            {
+                // 默认情况下，OrderAddress 的属性会直接映射到 Order 表的列
+                // 你也可以显式指定列名，避免冲突或使名称更清晰
+                address.Property(a =&gt; a.Street).HasColumnName(&quot;ShippingStreet&quot;);
+                address.Property(a =&gt; a.City).HasColumnName(&quot;ShippingCity&quot;);
+                address.Property(a =&gt; a.PostalCode).HasColumnName(&quot;ShippingPostalCode&quot;);
+
+                // 如果 OrderAddress 是可选的，可以配置为可空
+                // address.WithOwner().IsRequired(false);
+            });
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="一对多拥有" tabindex="-1"><a class="header-anchor" href="#一对多拥有"><span>一对多拥有</span></a></h5><p>一个主体实体可以拥有多个从属实体。这种情况下，从属实体的数据会映射到一张<strong>单独的表</strong>，该表的外键指向主体实体。</p><p><strong>配置方式</strong>：在主体实体类型配置上使用 <code>OwnsMany()</code> 方法。</p><p>示例：<code>Customer</code> 拥有多个 <code>Contact</code> (电话号码/邮箱)</p><div class="language-CS line-numbers-mode" data-ext="CS" data-title="CS"><pre class="language-CS"><code>public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    // 导航属性指向从属实体集合
+    public List&lt;Contact&gt; Contacts { get; set; } = new List&lt;Contact&gt;();
+}
+
+// Contact 是一个值对象，它没有自己的 Id，它的唯一性由 CustomerId 和 ContactType 决定
+public class Contact
+{
+    public string Type { get; set; } = string.Empty; // e.g., &quot;Phone&quot;, &quot;Email&quot;
+    public string Value { get; set; } = string.Empty; // e.g., &quot;123-456-7890&quot;, &quot;test@example.com&quot;
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;Customer&gt; Customers { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Customer&gt;(entity =&gt;
+        {
+            // 配置 Customer 拥有 Contact 集合
+            entity.OwnsMany(c =&gt; c.Contacts, contact =&gt;
+            {
+                // 从属实体将映射到单独的表 &quot;Contact&quot;
+                contact.ToTable(&quot;CustomerContacts&quot;);
+
+                // 默认情况下，EF Core 会为从属实体创建一个影子主键
+                // 如果你需要自定义键，特别是复合键，可以这样配置：
+                contact.HasKey(&quot;Id&quot;); // 这是一个影子属性 Id，作为 Contact 表的主键
+                // 或者使用复合主键，如果 Type 和 Value 在 Customer 内是唯一的
+                // contact.HasKey(c =&gt; new { c.CustomerId, c.Type }); // CustomerId 是外键，Type 是 Contact 自身的属性
+                // 对于 OwnedMany，通常会有一个自动生成的影子主键，或你可以自定义复合键
+
+                // 可以在这里配置 Contact 属性的映射
+                contact.Property(p =&gt; p.Type).HasMaxLength(50);
+                contact.Property(p =&gt; p.Value).HasMaxLength(255);
+            });
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="特性与行为" tabindex="-1"><a class="header-anchor" href="#特性与行为"><span>特性与行为</span></a></h4><p><strong>主键</strong>：从属实体没有自己的主键属性。对于一对一拥有，其主键由拥有实体的主键决定。对于一对多拥有，EF Core 会为从属实体自动创建一个影子主键（通常是一个隐藏的 <code>int</code> 或 <code>Guid</code>），并使用它与拥有实体的主键（外键）共同构成从属表的唯一标识。你也可以在 <code>OwnsMany</code> 配置中自定义从属实体的主键（例如，使用复合键）。</p><p><strong>外键</strong>：从属实体（如果映射到单独的表）会有一个外键，指向拥有实体的主键。</p><p><strong>不作为独立实体访问</strong>：你不能直接通过 <code>_context.OrderAddresses</code> 访问 <code>OrderAddress</code>，只能通过 <code>_context.Orders.Select(o =&gt; o.ShippingAddress)</code> 或 <code>_context.Orders.Include(o =&gt; o.ShippingAddress)</code>。</p><p><strong>级联删除</strong>：当拥有实体被删除时，其关联的从属实体数据也会被自动删除。</p><p><strong>查询</strong>：从属实体的数据会作为拥有实体的一部分被加载。你可以使用 <code>Include()</code> 来显式加载它们。</p><p><strong><code>null</code> 值处理</strong>：</p><ul><li><strong>一对一拥有</strong>：如果从属导航属性是可空的 (<code>OrderAddress? ShippingAddress</code>) 并且你没有配置为 <code>IsRequired() = true</code>，那么当从属实体所有列都为 <code>NULL</code> 时，EF Core 会将其视为 <code>null</code>。</li><li><strong>一对多拥有</strong>：从属集合可以是空的。</li></ul><h3 id="无键实体类型-1" tabindex="-1"><a class="header-anchor" href="#无键实体类型-1"><span>无键实体类型</span></a></h3><h4 id="定义-4" tabindex="-1"><a class="header-anchor" href="#定义-4"><span>定义</span></a></h4><p><strong>无键实体类型</strong>，顾名思义，就是<strong>没有主键</strong>的实体类型。在 EF Core 中，这意味着：</p><ol><li><strong>没有主键</strong>：EF Core 不会为它生成主键，也不会在数据库中强制执行主键约束。</li><li><strong>只读</strong>：EF Core 不会跟踪其状态变化。你不能使用 <code>Add()</code>, <code>Update()</code>, <code>Remove()</code> 方法对无键实体进行操作，也不能通过 <code>SaveChanges()</code> 将其持久化回数据库。</li><li><strong>不参与关系</strong>：由于没有主键，无键实体类型不能作为关系中的“主体”端（即不能被其他实体通过外键引用）。它当然可以包含对其他实体类型（有键）的引用，但不能是其他实体类型依赖的主体。</li><li><strong>通常映射到非表数据源</strong>：它们最常用于映射到数据库<strong>视图 (Views)</strong>、<strong>存储过程 (Stored Procedures)</strong> 的返回结果，或者<strong>直接的 SQL 查询结果</strong>。在某些罕见情况下，也可以映射到没有主键的数据库表。</li></ol><p><strong>为什么需要该类型</strong></p><p>在传统的 ORM 中，每个实体通常都假定有一个主键并对应一个可读写的表。但现实世界中存在多种只读数据源，它们没有传统意义上的主键，或者你只关心查询它们的数据而不需要修改。无键实体类型就是为这些场景设计的：</p><ul><li><strong>数据库视图</strong>：你可能创建了一个复杂的数据库视图来聚合或转换数据，你希望在应用程序中将其视为一个 C# 对象集合来查询。</li><li><strong>存储过程的结果集</strong>：有些存储过程返回结果集，你希望将其映射为 C# 对象。</li><li><strong>原始 SQL 查询结果</strong>：当你使用 <code>FromSqlRaw()</code> 或 <code>FromSqlInterpolated()</code> 方法执行自定义 SQL 查询时，返回的结果集可能不对应任何具有主键的表。</li><li><strong>反范式化数据</strong>：在某些性能优化的场景下，数据库表可能故意设计为没有主键，或者你只需要查询其部分数据。</li><li><strong>报表和仪表板</strong>：当你只需要显示数据，而不涉及修改时，无键实体类型非常合适。</li></ul><h4 id="配置方法" tabindex="-1"><a class="header-anchor" href="#配置方法"><span>配置方法</span></a></h4><p>无键实体类型可以通过 <strong>数据注解</strong> 或 <strong>Fluent API</strong> 来配置。它们必须通过一个 <code>DbSet</code> 属性暴露在 <code>DbContext</code> 中，以便 EF Core 能够发现它们。</p><p><strong>数据注解</strong></p><p>在实体类上使用 <code>[Keyless]</code> 特性。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore; // 需要引用此命名空间
+
+// 假设你的数据库中有一个视图名为 ProductSalesSummaryView
+[Keyless] // 标记这个类是一个无键实体类型
+public class ProductSalesSummary
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = null!;
+    public decimal TotalSales { get; set; }
+    public int OrderCount { get; set; }
+}
+
+public class ApplicationDbContext : DbContext
+{
+    // 必须通过 DbSet 暴露无键实体类型
+    public DbSet&lt;ProductSalesSummary&gt; ProductSalesSummaries { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 可选：如果无键实体映射到特定的视图或函数，可以在这里指定
+        modelBuilder.Entity&lt;ProductSalesSummary&gt;()
+            .ToView(&quot;ProductSalesSummaryView&quot;); // 映射到名为 ProductSalesSummaryView 的视图
+            // 或者 .ToFunction(&quot;GetProductSalesSummary&quot;); // 映射到存储函数
+            // 如果用于 FromSqlRaw/Interpolated，可以不指定 ToView/ToFunction
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>Fluent API</strong></p><p>在 <code>DbContext</code> 的 <code>OnModelCreating</code> 方法中使用 <code>HasNoKey()</code> 方法。这提供了更灵活的配置，例如映射到视图或函数。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ProductSalesSummary
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = null!;
+    public decimal TotalSales { get; set; }
+    public int OrderCount { get; set; }
+}
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;ProductSalesSummary&gt; ProductSalesSummaries { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;ProductSalesSummary&gt;(entity =&gt;
+        {
+            entity.HasNoKey(); // 明确声明此实体没有主键
+
+            // 映射到数据库视图 (常用)
+            entity.ToView(&quot;ProductSalesSummaryView&quot;);
+
+            // 或者映射到数据库函数 (常用)
+            // entity.ToFunction(&quot;GetProductSalesSummary&quot;);
+
+            // 或者映射到没有主键的表 (不常见且不推荐)
+            // entity.ToTable(&quot;MyLegacyTableWithoutPK&quot;);
+        });
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>映射到特定数据库对象</strong></p><ul><li><strong><code>ToView(&quot;ViewName&quot;)</code></strong>：将无键实体映射到数据库中的一个<strong>视图</strong>。EF Core 会生成对该视图的 <code>SELECT</code> 查询。</li><li><strong><code>ToFunction(&quot;FunctionName&quot;)</code></strong>：将无键实体映射到数据库中的一个<strong>函数</strong>（通常是表值函数）。EF Core 会生成对该函数的 <code>SELECT</code> 查询。</li><li><strong><code>ToTable(&quot;TableName&quot;)</code></strong>：也可以映射到没有主键的表。</li></ul><h4 id="使用无键实体类型进行查询" tabindex="-1"><a class="header-anchor" href="#使用无键实体类型进行查询"><span>使用无键实体类型进行查询</span></a></h4><p>一旦配置好无键实体类型，你就可以像查询普通实体一样查询它们，但请记住它们是只读的。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public async Task&lt;List&lt;ProductSalesSummary&gt;&gt; GetProductSalesSummaries()
+{
+    // 直接查询 DbSet
+    var summaries = await _context.ProductSalesSummaries.ToListAsync();
+    return summaries;
+}
+
+public async Task&lt;List&lt;ProductSalesSummary&gt;&gt; GetProductSalesByProduct(int productId)
+{
+    // 在 LINQ 查询中使用，EF Core 会将其转换为 SQL
+    var summary = await _context.ProductSalesSummaries
+        .Where(s =&gt; s.ProductId == productId)
+        .ToListAsync();
+    return summary;
+}
+
+// 结合 FromSqlRaw/FromSqlInterpolated 使用
+public async Task&lt;List&lt;ProductSalesSummary&gt;&gt; GetCustomSalesData(int minSales)
+{
+    // 如果没有 ToView/ToFunction 映射，或者需要自定义 SQL，则使用 FromSqlRaw
+    var customData = await _context.ProductSalesSummaries
+        .FromSqlRaw(&quot;SELECT ProductId, ProductName, TotalSales, OrderCount FROM ProductSalesSummaryView WHERE TotalSales &gt; {0}&quot;, minSales)
+        .ToListAsync();
+    return customData;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong>注意事项</strong></p><ul><li><strong>没有变更跟踪</strong>：对 <code>ProductSalesSummary</code> 实例进行的任何更改都不会被 EF Core 跟踪，也不会保存到数据库。</li><li><strong>没有主键，所以不能 <code>Find()</code></strong>：你不能使用 <code>_context.ProductSalesSummaries.Find(id)</code> 方法，因为它需要主键。</li><li><strong>LINQ 查询限制</strong>：虽然你可以对无键实体类型执行 LINQ 查询，但某些操作（如 <code>Include()</code>、<code>ThenInclude()</code>）可能不适用，因为它们通常依赖于关系和变更跟踪。</li></ul><h4 id="与有键实体的区别" tabindex="-1"><a class="header-anchor" href="#与有键实体的区别"><span>与有键实体的区别</span></a></h4><table><thead><tr><th>特性</th><th>有键实体类型 (Entity Types)</th><th>无键实体类型 (Keyless Entity Types)</th></tr></thead><tbody><tr><td>主键</td><td>必须有主键</td><td>没有主键</td></tr><tr><td>读写</td><td>可读写 (CRUD 操作)</td><td>只读 (只能查询)</td></tr><tr><td>变更跟踪</td><td>EF Core 会跟踪状态变化</td><td>EF Core 不跟踪状态变化</td></tr><tr><td>映射到</td><td>通常映射到表</td><td>通常映射到视图、函数或没有主键的表</td></tr><tr><td>DbSet</td><td>必须通过 <code>DbSet&lt;T&gt;</code> 暴露</td><td>必须通过 <code>DbSet&lt;T&gt;</code> 暴露</td></tr><tr><td>Find() 方法</td><td>支持通过主键查找</td><td>不支持</td></tr><tr><td>关系中的主体</td><td>可以作为关系中的主体（被外键引用）</td><td>不能作为关系中的主体</td></tr><tr><td>迁移生成</td><td>EF Core 会在迁移中生成表创建、修改、删除语句</td><td>EF Core 不会在迁移中管理其底层数据库对象 (视图/函数)</td></tr></tbody></table><h4 id="与从属实体类型的区别" tabindex="-1"><a class="header-anchor" href="#与从属实体类型的区别"><span>与从属实体类型的区别</span></a></h4><table><thead><tr><th>特性</th><th>从属实体（Owned）</th><th>无键实体（Keyless）</th></tr></thead><tbody><tr><td>是否有主键</td><td>❌（由主实体决定）</td><td>❌（显式声明 <code>.HasNoKey()</code>）</td></tr><tr><td>是否有独立表</td><td>❌（默认共用主表）</td><td>✅/❌（通常映射到视图或表）</td></tr><tr><td>生命周期是否独立</td><td>❌</td><td>✅（数据可独立于主表）</td></tr><tr><td>是否参与迁移</td><td>✅</td><td>❌（不参与）</td></tr><tr><td>是否可写入数据库</td><td>✅</td><td>❌ 只读</td></tr><tr><td>是否支持导航属性</td><td>✅（仅从属使用）</td><td>❌</td></tr><tr><td>使用场景</td><td>值对象、嵌套结构</td><td>报表、视图、SQL结果集</td></tr></tbody></table><h3 id="空间数据" tabindex="-1"><a class="header-anchor" href="#空间数据"><span>空间数据</span></a></h3><h4 id="定义-5" tabindex="-1"><a class="header-anchor" href="#定义-5"><span>定义</span></a></h4><p>空间数据通常指的是几何对象，例如：</p><ul><li><strong>点 (Point)</strong>：表示一个单一的位置，如一个商店的经纬度。</li><li><strong>线 (LineString)</strong>：表示一系列连接点的线段，如一条道路或河流。</li><li><strong>多边形 (Polygon)</strong>：表示一个封闭的区域，如一个国家的边界或一块土地。</li><li><strong>多点 (MultiPoint)</strong>：多个点的集合。</li><li><strong>多线 (MultiLineString)</strong>：多条线的集合。</li><li><strong>多多边形 (MultiPolygon)</strong>：多个多边形的集合。</li><li><strong>几何集合 (GeometryCollection)</strong>：包含任意几何对象的集合。</li></ul><p>这些几何对象可以通过它们的坐标（通常是经度和纬度）来定义。</p><h4 id="空间数据类型和提供程序" tabindex="-1"><a class="header-anchor" href="#空间数据类型和提供程序"><span>空间数据类型和提供程序</span></a></h4><p>EF Core 通过集成第三方库来支持空间数据：</p><ol><li><strong><code>NetTopologySuite</code> (NTS)</strong>：这是 .NET 中处理几何对象的标准库。EF Core 的空间扩展会使用 NTS 类型来表示 C# 实体中的几何数据。例如，NTS 中的 <code>Point</code>、<code>LineString</code>、<code>Polygon</code> 等。</li><li><strong>数据库空间扩展包</strong>：你需要为你使用的数据库安装相应的 EF Core 空间数据提供程序包。这些包负责将 NTS 类型转换为数据库的原生空间类型，并将数据库的空间类型转换回 NTS 类型。 <ul><li><strong>SQL Server</strong>：<code>Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite</code></li><li><strong>PostgreSQL (Npgsql)</strong>：<code>Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite</code></li><li><strong>SQLite</strong>：<code>Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite</code></li><li><strong>MySQL (Pomelo.EntityFrameworkCore.MySql)</strong>：<code>Pomelo.EntityFrameworkCore.MySql.NetTopologySuite</code></li></ul></li></ol><p><strong>安装必要的 NuGet 包</strong>:</p><p>在使用空间数据之前，你需要安装核心 EF Core 包以及对应数据库的空间扩展包。</p><div class="language-BASH line-numbers-mode" data-ext="BASH" data-title="BASH"><pre class="language-BASH"><code># 核心 EF Core
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer # 或 Npgsql, Sqlite, MySql
+
+# SQL Server 空间数据扩展
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite
+
+# 或者 PostgreSQL
+dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite
+
+# 或者 SQLite
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="配置空间数据" tabindex="-1"><a class="header-anchor" href="#配置空间数据"><span>配置空间数据</span></a></h4><p>一旦安装了必要的包，你需要在 <code>DbContext</code> 中配置数据库提供程序使用 NTS</p><div class="language-csharp line-numbers-mode" data-ext="cs" data-title="cs"><pre class="language-csharp"><code><span class="token keyword">using</span> <span class="token namespace">Microsoft<span class="token punctuation">.</span>EntityFrameworkCore</span><span class="token punctuation">;</span>
+<span class="token keyword">using</span> <span class="token namespace">NetTopologySuite<span class="token punctuation">.</span>Geometries</span><span class="token punctuation">;</span> <span class="token comment">// NTS 几何类型命名空间</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Location</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token return-type class-name"><span class="token keyword">int</span></span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token return-type class-name"><span class="token keyword">string</span></span> Name <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword">string</span><span class="token punctuation">.</span>Empty<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token return-type class-name">Point<span class="token punctuation">?</span></span> GeoLocation <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token comment">// 使用 NTS 的 Point 类型</span>
+    <span class="token keyword">public</span> <span class="token return-type class-name">Polygon<span class="token punctuation">?</span></span> Area <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>     <span class="token comment">// 使用 NTS 的 Polygon 类型</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ApplicationDbContext</span> <span class="token punctuation">:</span> <span class="token type-list"><span class="token class-name">DbContext</span></span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token return-type class-name">DbSet<span class="token punctuation">&lt;</span>Location<span class="token punctuation">&gt;</span></span> Locations <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+    <span class="token keyword">protected</span> <span class="token keyword">override</span> <span class="token return-type class-name"><span class="token keyword">void</span></span> <span class="token function">OnModelCreating</span><span class="token punctuation">(</span><span class="token class-name">ModelBuilder</span> modelBuilder<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token comment">// 告诉 EF Core 几何属性映射到 SQL Server 的 geography 类型</span>
+        <span class="token comment">// 如果是 PostGIS，通常会映射到 geometry 类型</span>
+        modelBuilder<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Entity</span><span class="token generic class-name"><span class="token punctuation">&lt;</span>Location<span class="token punctuation">&gt;</span></span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">Property</span><span class="token punctuation">(</span>l <span class="token operator">=&gt;</span> l<span class="token punctuation">.</span>GeoLocation<span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">HasColumnType</span><span class="token punctuation">(</span><span class="token string">&quot;geography&quot;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// SQL Server 通常使用 geography 或 geometry</span>
+
+        modelBuilder<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Entity</span><span class="token generic class-name"><span class="token punctuation">&lt;</span>Location<span class="token punctuation">&gt;</span></span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">Property</span><span class="token punctuation">(</span>l <span class="token operator">=&gt;</span> l<span class="token punctuation">.</span>Area<span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">HasColumnType</span><span class="token punctuation">(</span><span class="token string">&quot;geography&quot;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">protected</span> <span class="token keyword">override</span> <span class="token return-type class-name"><span class="token keyword">void</span></span> <span class="token function">OnConfiguring</span><span class="token punctuation">(</span><span class="token class-name">DbContextOptionsBuilder</span> optionsBuilder<span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token comment">// 关键一步：在配置数据库提供程序时，启用空间数据支持</span>
+        <span class="token comment">// 对于 SQL Server</span>
+        optionsBuilder<span class="token punctuation">.</span><span class="token function">UseSqlServer</span><span class="token punctuation">(</span><span class="token string">&quot;Data Source=.;Initial Catalog=SpatialDb;Integrated Security=True;TrustServerCertificate=True&quot;</span><span class="token punctuation">,</span>
+            x <span class="token operator">=&gt;</span> x<span class="token punctuation">.</span><span class="token function">UseNetTopologySuite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 启用 NTS 支持</span>
+
+        <span class="token comment">// 对于 PostgreSQL</span>
+        <span class="token comment">// optionsBuilder.UseNpgsql(&quot;Host=localhost;Database=SpatialDb;Username=postgres;Password=your_password&quot;,</span>
+        <span class="token comment">//    x =&gt; x.UseNetTopologySuite());</span>
+
+        <span class="token comment">// 对于 SQLite</span>
+        <span class="token comment">// optionsBuilder.UseSqlite(&quot;Data Source=spatial.db&quot;,</span>
+        <span class="token comment">//    x =&gt; x.UseNetTopologySuite());</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><strong><code>HasColumnType(&quot;geography&quot;)</code> 或 <code>HasColumnType(&quot;geometry&quot;)</code></strong>：</p><ul><li><strong><code>geography</code></strong>：适用于经纬度坐标，通常用于表示地球表面的数据，考虑了地球的曲率。</li><li><strong><code>geometry</code></strong>：适用于平面坐标系统，通常用于表示相对较小的区域或在二维平面上的数据。</li><li>具体选择哪个取决于你的数据源和数据库提供程序的需求。</li></ul><h4 id="空间数据的操作和查询" tabindex="-1"><a class="header-anchor" href="#空间数据的操作和查询"><span>空间数据的操作和查询</span></a></h4><h5 id="创建和保存" tabindex="-1"><a class="header-anchor" href="#创建和保存"><span>创建和保存</span></a></h5><p>使用 <code>NetTopologySuite.Geometries.GeometryFactory</code> 来创建几何对象实例</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using NetTopologySuite.Geometries;
+
+// 创建一个 GeometryFactory 实例，用于创建几何对象
+// 参数 1：SRID (Spatial Reference ID)，默认为 0，表示未指定或通用
+// 对于地理坐标系 (WGS84)，SRID 通常是 4326
+// 对于大多数数据库，你可以在 HasColumnType(&quot;geography&quot;) 时省略 SRID，或者在几何对象创建时指定
+var geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); // SRID 4326 for WGS84
+
+public async Task AddLocation()
+{
+    var newLocation = new Location
+    {
+        Name = &quot;Eiffel Tower&quot;,
+        // 创建一个点：经度 2.2945, 纬度 48.8584
+        GeoLocation = geometryFactory.CreatePoint(new Coordinate(2.2945, 48.8584))
+    };
+
+    _context.Locations.Add(newLocation);
+    await _context.SaveChangesAsync();
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="查询" tabindex="-1"><a class="header-anchor" href="#查询"><span>查询</span></a></h5><p>EF Core 允许你在 LINQ 查询中使用 NTS 几何对象的方法，EF Core 会将其转换为相应的数据库空间函数。</p><p><strong>常用空间函数示例 (NTS 方法名 -&gt; 数据库函数名)</strong>：</p><ul><li><code>.Distance(otherGeometry)</code>：计算两个几何对象之间的距离。</li><li><code>.Intersects(otherGeometry)</code>：检查两个几何对象是否相交。</li><li><code>.Contains(otherGeometry)</code>：检查一个几何对象是否包含另一个几何对象。</li><li><code>.Within(otherGeometry)</code>：检查一个几何对象是否在另一个几何对象内部。</li><li><code>.Buffer(distance)</code>：创建一个几何对象周围的缓冲区（多边形）。</li><li><code>.Area</code>：计算多边形的面积。</li><li><code>.Length</code>：计算线串的长度。</li></ul><p>示例：查询特定距离内的地点</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
+
+public async Task&lt;List&lt;Location&gt;&gt; GetNearbyLocations(double latitude, double longitude, double distanceInMeters)
+{
+    var geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); // SRID 4326
+    var searchPoint = geometryFactory.CreatePoint(new Coordinate(longitude, latitude));
+
+    // 查询距离搜索点指定距离内的所有地点
+    var nearbyLocations = await _context.Locations
+        .Where(l =&gt; l.GeoLocation != null &amp;&amp; l.GeoLocation.Distance(searchPoint) &lt;= distanceInMeters)
+        .ToListAsync();
+
+    return nearbyLocations;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>示例：查询指定区域内的地点</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
+
+public async Task&lt;List&lt;Location&gt;&gt; GetLocationsInPolygon(Polygon searchArea)
+{
+    // 查询 GeoLocation 位于给定多边形区域内的所有地点
+    var locationsInArea = await _context.Locations
+        .Where(l =&gt; l.GeoLocation != null &amp;&amp; searchArea.Contains(l.GeoLocation))
+        .ToListAsync();
+
+    return locationsInArea;
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h5 id="查询注意事项" tabindex="-1"><a class="header-anchor" href="#查询注意事项"><span>查询注意事项</span></a></h5><ul><li><strong>投影查询</strong>：当你需要执行空间操作时，通常需要将几何列包含在你的查询中。</li><li><strong>SRID 匹配</strong>：确保你在创建几何对象时使用的 SRID 与数据库列的 SRID 匹配，否则可能会导致错误或不正确的结果。对于 <code>geography</code> 类型，通常是 4326。</li><li><strong>数据库函数支持</strong>：并非所有 NTS 方法都能被 EF Core 转换为所有数据库提供程序的 SQL 函数。如果 EF Core 无法转换，你可能需要回退到 <code>FromSqlRaw()</code> 或 <code>FromSqlInterpolated()</code> 并手动编写 SQL。</li><li><strong>性能</strong>：空间查询通常涉及复杂的计算。确保你的数据库有合适的<strong>空间索引</strong>，以优化查询性能。</li></ul><h4 id="空间索引" tabindex="-1"><a class="header-anchor" href="#空间索引"><span>空间索引</span></a></h4><p>为了优化空间查询的性能，你需要在数据库中为你的空间列创建<strong>空间索引</strong>。EF Core 迁移无法自动创建空间索引，你通常需要：</p><ol><li><strong>手动在数据库中创建索引</strong>。</li><li><strong>在迁移中编写自定义 SQL 来创建索引</strong>。</li></ol><h3 id="批量配置" tabindex="-1"><a class="header-anchor" href="#批量配置"><span>批量配置</span></a></h3><p>批量配置是指通过编写代码来自动化模型中重复的配置任务。它不像 <code>HasData()</code> 那样是插入数据，而是<strong>定义模型构建时的默认行为或应用特定规则</strong>。</p><h4 id="实现方式" tabindex="-1"><a class="header-anchor" href="#实现方式"><span>实现方式</span></a></h4><h5 id="模型构建拦截器" tabindex="-1"><a class="header-anchor" href="#模型构建拦截器"><span>模型构建拦截器</span></a></h5><p>创建实现 <code>IModelFinalizingInterceptor</code> 接口的类，并在 <code>OnModelFinalizing</code> 方法中对模型进行最终的配置调整。</p><p>示例：批量设置所有<code>string</code>属性的最大长度为255</p><ol><li>创建自定义拦截器类</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Metadata;
+
+// 1. 定义一个实现 IModelFinalizingInterceptor 接口的类
+public class StringLengthConventionInterceptor : IModelFinalizingInterceptor
+{
+    // OnModelFinalizing 在模型构建的最后阶段被调用，此时所有实体、属性等都已发现
+    public void ModelFinalizing(IModel model, ModelEventData eventData, InterceptionResult result)
+    {
+        // 遍历模型中的所有实体类型
+        foreach (IMutableEntityType entityType in model.GetEntityTypes())
+        {
+            // 遍历当前实体类型中的所有属性
+            foreach (IMutableProperty property in entityType.GetProperties())
+            {
+                // 检查属性是否是字符串类型，并且没有被显式设置过最大长度
+                // HasMaxLength() 检查是否已设置最大长度
+                if (property.ClrType == typeof(string) &amp;&amp; property.GetMaxLength() == null)
+                {
+                    // 设置默认最大长度
+                    property.SetMaxLength(255);
+                    Console.WriteLine($&quot;Configured &#39;{entityType.DisplayName}.{property.Name}&#39; to MaxLength 255&quot;);
+                }
+            }
+        }
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="2"><li>在<code>DbContext</code>种注册拦截器</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics; // For IModelFinalizingInterceptor
+
+public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;User&gt; Users { get; set; }
+    public DbSet&lt;Product&gt; Products { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(&quot;Data Source=.;Initial Catalog=BatchConfigDb;Integrated Security=True;TrustServerCertificate=True;TrustServerCertificate=True&quot;)
+            .AddInterceptors(new StringLengthConventionInterceptor()); // 注册自定义拦截器
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 你也可以在这里继续进行具体的 Fluent API 配置，
+        // 它们会优先于拦截器中的通用约定
+        modelBuilder.Entity&lt;User&gt;().Property(u =&gt; u.Email).HasMaxLength(500); // 显式设置的会覆盖默认 255
+    }
+}
+
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty; // 会被设置为 255
+    public string Email { get; set; } = string.Empty;    // 会被设置为 500 (优先级高)
+}
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;     // 会被设置为 255
+    public string Description { get; set; } = string.Empty; // 会被设置为 255
+    public decimal Price { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>当模型构建完成后，<code>StringLengthConventionInterceptor</code> 的 <code>ModelFinalizing</code> 方法会被调用，遍历所有字符串属性并应用 <code>MaxLength(255)</code>。</p><h5 id="模型构建器扩展方法" tabindex="-1"><a class="header-anchor" href="#模型构建器扩展方法"><span>模型构建器扩展方法</span></a></h5><p>这种方法不如拦截器灵活，因为它只允许你封装<strong>已知的、重复的配置模式</strong>，而不是动态地检查所有实体和属性。但对于特定的配置块，它能提供更好的代码组织。</p><p>示例：为所有实体添加审计属性</p><ol><li>创建扩展方法</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+public static class ModelBuilderExtensions
+{
+    public static void ApplyAuditProperties(this ModelBuilder modelBuilder)
+    {
+        // 找到所有实现了 IAuditable 接口的实体
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(IAuditable).IsAssignableFrom(entityType.ClrType))
+            {
+                // 为这些实体添加 CreatedDate 和 LastModifiedDate 属性
+                entityType.Property&lt;DateTime&gt;(&quot;CreatedDate&quot;)
+                    .HasDefaultValueSql(&quot;GETDATE()&quot;); // SQL Server 语法
+                entityType.Property&lt;DateTime&gt;(&quot;LastModifiedDate&quot;)
+                    .IsRequired(false); // 可选
+            }
+        }
+    }
+}
+
+public interface IAuditable
+{
+    // 实体可以实现此接口，以指示它们应该有审计属性
+}
+
+public class BlogPost : IAuditable
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    // CreatedDate 和 LastModifiedDate 将作为影子属性添加
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="2"><li>在<code>DbContext</code>种调用扩展方法</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class ApplicationDbContext : DbContext
+{
+    public DbSet&lt;BlogPost&gt; BlogPosts { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyAuditProperties(); // 调用扩展方法应用批量配置
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>这种方式需要你明确知道要配置哪些实体，并通过接口或其他方式来过滤它们。</p><h4 id="优先级" tabindex="-1"><a class="header-anchor" href="#优先级"><span>优先级</span></a></h4><ol><li><strong>数据注解 (Data Annotations)</strong>：优先级最低。</li><li><strong>约定 (Conventions)</strong>：包括 EF Core 内置的约定和你的自定义约定（通过拦截器或自定义约定 API）。</li><li><strong>Fluent API</strong>：优先级最高。任何通过 <code>OnModelCreating</code> 中的 Fluent API 显式配置的规则，都会<strong>覆盖</strong>约定和数据注解。</li></ol><p>这意味着，如果你在拦截器中设置了所有字符串的 <code>MaxLength(255)</code>，但你在 <code>OnModelCreating</code> 中对某个属性显式设置了 <code>HasMaxLength(500)</code>，那么该属性最终将是 <code>500</code>。</p><h3 id="具有相同dbcontext的交替模型" tabindex="-1"><a class="header-anchor" href="#具有相同dbcontext的交替模型"><span>具有相同DbContext的交替模型</span></a></h3><p>通常一个 <code>DbContext</code> 类会映射到一个单一且固定的<strong>模型 (Model)</strong>。这个模型包含了所有实体类型、它们之间的关系、属性的配置以及数据库映射等信息。然而，在某些高级或特定场景下，你可能希望<strong>同一个 <code>DbContext</code> 实例能够基于不同的条件使用不同的模型</strong>。</p><h4 id="实现方式-1" tabindex="-1"><a class="header-anchor" href="#实现方式-1"><span>实现方式</span></a></h4><ol><li><code>DbContextOptions</code> 和 <code>OnConfiguring</code></li></ol><p><code>DbContext</code> 的配置（包括它使用的模型）是通过 <code>DbContextOptions</code> 对象传递的。当你创建 <code>DbContext</code> 实例时，可以传入这些选项。</p><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class MyDbContext : DbContext
+{
+    // 构造函数接收 DbContextOptions
+    public MyDbContext(DbContextOptions&lt;MyDbContext&gt; options) : base(options) { }
+
+    // OnModelCreating 通常用于定义模型，但如果模型是动态的，这里可能只包含共享配置
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 共享的或通用的模型配置
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="2"><li><p>预构建模型或使用 <code>OnModelCreating</code> 参数</p><p>要实现交替模型，你需要：</p><ol><li><strong>在 <code>DbContext</code> 外部预先构建多个模型</strong>：将模型构建逻辑封装起来，根据条件返回不同的 <code>IModel</code> 实例。</li><li><strong>将构建好的模型传递给 <code>DbContextOptions</code></strong>：使用 <code>UseModel()</code> 方法。</li></ol></li></ol><p><strong>示例：多租户，每个租户使用不同的Schema</strong></p><p>假设你有 <code>Product</code> 实体，并且希望不同租户的数据存储在不同的 Schema 中（例如 <code>TenantA.Products</code>, <code>TenantB.Products</code>）。</p><ol><li>定义实体类</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="2"><li><strong>创建模型缓存或工厂</strong>：你需要一个机制来根据租户 ID 返回不同的模型。为了效率，可以缓存已构建的模型。</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System.Collections.Concurrent;
+
+public class TenantModelCache
+{
+    private static readonly ConcurrentDictionary&lt;string, IModel&gt; _models = new();
+
+    public static IModel GetModelForTenant(string tenantId)
+    {
+        // 尝试从缓存获取，如果不存在则构建
+        return _models.GetOrAdd(tenantId, id =&gt; BuildModelForTenant(id));
+    }
+
+    private static IModel BuildModelForTenant(string tenantId)
+    {
+        var modelBuilder = new ModelBuilder();
+
+        // 为 Product 实体配置共享结构
+        modelBuilder.Entity&lt;Product&gt;(b =&gt;
+        {
+            b.HasKey(p =&gt; p.Id);
+            b.Property(p =&gt; p.Name).HasMaxLength(100);
+            b.Property(p =&gt; p.Price).HasPrecision(18, 2);
+        });
+
+        // 根据租户 ID 动态配置 Schema
+        // 这里是关键！
+        modelBuilder.Entity&lt;Product&gt;().ToTable(&quot;Products&quot;, schema: tenantId);
+
+        // 返回构建好的模型
+        return modelBuilder.FinalizeModel(); // 确保模型已最终确定
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="3"><li><strong>修改 <code>DbContext</code> 的 <code>OnConfiguring</code> 方法</strong>：让它在构建选项时使用预构建的模型。</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>public class TenantDbContext : DbContext
+{
+    private readonly string _tenantId;
+
+    // 构造函数除了接收 options，还需要接收租户 ID
+    public TenantDbContext(DbContextOptions&lt;TenantDbContext&gt; options, string tenantId)
+        : base(options)
+    {
+        _tenantId = tenantId;
+    }
+
+    public DbSet&lt;Product&gt; Products { get; set; } = null!;
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // 确保基类的 OnConfiguring 已经被调用，如果它有其他配置
+        base.OnConfiguring(optionsBuilder);
+
+        // 如果当前 DbContextOptions 中没有模型，或者模型不是我们预期的租户模型，
+        // 则从缓存中获取并使用针对当前租户的模型。
+        // 注意：当 DbContext 是通过依赖注入注册时，通常模型是已经构建并传递进来的，
+        // 这里的 OnConfiguring 可能是冗余的，但在手动创建 DbContext 时很有用。
+        if (!optionsBuilder.IsConfigured || optionsBuilder.Options.Model == null)
+        {
+             // 从预构建的缓存中获取模型
+            optionsBuilder.UseModel(TenantModelCache.GetModelForTenant(_tenantId));
+        }
+    }
+
+    // 通常，当使用 UseModel() 时，OnModelCreating 不会再次执行，
+    // 所以这里可以空着或只包含不依赖租户的通用配置。
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // base.OnModelCreating(modelBuilder); // 确保基类配置被执行
+        // 此方法在此方案中可能不会被调用，因为模型是在外部通过 UseModel() 传递的
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><ol start="4"><li><strong>在应用程序启动时或请求生命周期中注册 <code>DbContext</code> 和提供租户 ID</strong>：</li></ol><div class="language-C# line-numbers-mode" data-ext="C#" data-title="C#"><pre class="language-C#"><code>using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Http; // For HttpContextAccessor
+
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddHttpContextAccessor(); // 允许访问 HttpContext 来获取租户 ID
+
+        // 注册 DbContext 并动态提供模型和租户 ID
+        services.AddDbContext&lt;TenantDbContext&gt;((serviceProvider, options) =&gt;
+        {
+            var httpContextAccessor = serviceProvider.GetRequiredService&lt;IHttpContextAccessor&gt;();
+            // 从 HttpContext (例如请求头、URL) 获取租户 ID
+            var tenantId = httpContextAccessor.HttpContext?.Request.Headers[&quot;X-Tenant-Id&quot;].FirstOrDefault() ?? &quot;DefaultTenant&quot;;
+
+            options.UseSqlServer(&quot;YourConnectionString&quot;); // 连接字符串可以共享
+            options.UseModel(TenantModelCache.GetModelForTenant(tenantId)); // 传递预构建的模型
+        });
+
+        // ... 其他服务
+    }
+}
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h4 id="注意事项" tabindex="-1"><a class="header-anchor" href="#注意事项"><span>注意事项</span></a></h4><ul><li><strong>模型构建成本</strong>：构建 EF Core 模型是一个相对耗时的操作。因此，<strong>强烈建议缓存预构建的模型</strong>（如 <code>TenantModelCache</code> 所示），而不是每次都重新构建。</li><li><strong><code>modelBuilder.FinalizeModel()</code></strong>：在 <code>ModelBuilder</code> 上调用 <code>FinalizeModel()</code> 会返回一个不可变的 <code>IModel</code> 实例。这个模型可以被缓存和重复使用。</li><li><strong>迁移 (Migrations)</strong>：当使用交替模型时，数据库迁移变得更加复杂。EF Core 迁移工具通常会期望一个单一、固定的模型。 <ul><li>你可能需要为每个租户 Schema 维护一套独立的迁移。</li><li>或者，如果你只改变 Schema 名称，而实体结构不变，那么迁移可能只需要针对一个“模板”Schema 运行，然后手动或通过脚本将更改应用到所有实际的租户 Schema。</li><li>通常，这种多租户架构在迁移时需要自定义脚本，而不是完全依赖 EF Core 的自动迁移。</li></ul></li><li><strong>查询性能</strong>：使用交替模型本身对查询性能影响不大，因为最终还是使用了优化的 <code>IModel</code>。</li><li><strong>复杂性</strong>：这种模式增加了应用程序的复杂性。只有在你确实需要根据运行时条件动态改变数据库 Schema 或实体映射时才考虑使用。对于简单的多租户，可能通过数据过滤或在 <code>OnModelCreating</code> 中基于运行时上下文进行简单配置更合适。</li><li><strong>共享与独立配置</strong>：确保你的模型构建逻辑清晰地区分哪些配置是<strong>共享的</strong>（例如，所有租户的 <code>Product</code> 都有 <code>Name</code> 和 <code>Price</code>），哪些是<strong>特定于租户的</strong>（例如，<code>ToTable(&quot;Products&quot;, schema: tenantId)</code>）。</li></ul>`,550),t=[l];function a(r,o){return i(),n("div",null,t)}const v=e(d,[["render",a],["__file","create model.html.vue"]]),m=JSON.parse('{"path":"/dotnet/ef%20core/create%20model.html","title":"创建模型","lang":"zh-CN","frontmatter":{"title":"创建模型","shortTitle":"创建模型","description":"创建模型","date":"2025-07-12T17:37:33.000Z","categories":[".NET","EF CORE"],"tags":[".NET"],"order":2},"headers":[{"level":2,"title":"创建模型","slug":"创建模型","link":"#创建模型","children":[{"level":3,"title":"概述","slug":"概述","link":"#概述","children":[]},{"level":3,"title":"实体类型","slug":"实体类型","link":"#实体类型","children":[]},{"level":3,"title":"实体属性","slug":"实体属性","link":"#实体属性","children":[]},{"level":3,"title":"主键","slug":"主键","link":"#主键","children":[]},{"level":3,"title":"生成的值","slug":"生成的值","link":"#生成的值","children":[]},{"level":3,"title":"阴影和索引器属性","slug":"阴影和索引器属性","link":"#阴影和索引器属性","children":[]},{"level":3,"title":"关系","slug":"关系","link":"#关系","children":[]},{"level":3,"title":"索引和约束","slug":"索引和约束","link":"#索引和约束","children":[]},{"level":3,"title":"继承","slug":"继承","link":"#继承","children":[]},{"level":3,"title":"序列","slug":"序列","link":"#序列","children":[]},{"level":3,"title":"支持字段","slug":"支持字段","link":"#支持字段","children":[]},{"level":3,"title":"值转换","slug":"值转换","link":"#值转换","children":[]},{"level":3,"title":"值比较器","slug":"值比较器","link":"#值比较器","children":[]},{"level":3,"title":"数据种子设定","slug":"数据种子设定","link":"#数据种子设定","children":[]},{"level":3,"title":"实体类型构造函数","slug":"实体类型构造函数","link":"#实体类型构造函数","children":[]},{"level":3,"title":"高级表映射","slug":"高级表映射","link":"#高级表映射","children":[]},{"level":3,"title":"从属实体类型","slug":"从属实体类型","link":"#从属实体类型","children":[]},{"level":3,"title":"无键实体类型","slug":"无键实体类型-1","link":"#无键实体类型-1","children":[]},{"level":3,"title":"空间数据","slug":"空间数据","link":"#空间数据","children":[]},{"level":3,"title":"批量配置","slug":"批量配置","link":"#批量配置","children":[]},{"level":3,"title":"具有相同DbContext的交替模型","slug":"具有相同dbcontext的交替模型","link":"#具有相同dbcontext的交替模型","children":[]}]}],"git":{"createdTime":1752018223000,"updatedTime":1752830607000,"contributors":[{"name":"Zhiyun Qin","email":"96156298+Okita1027@users.noreply.github.com","commits":3}]},"readingTime":{"minutes":84.13,"words":25239},"filePathRelative":"dotnet/ef core/create model.md","localizedDate":"2025年7月13日"}');export{v as comp,m as data};
