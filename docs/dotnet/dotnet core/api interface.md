@@ -18,7 +18,7 @@ ASP.NET Core 支持两种创建 API 的方法：基于控制器的方法和最�
 
 ---
 
-示例通用类代码：
+示例实体类代码：
 
 ```C#
 namespace APIWithControllers;
