@@ -259,7 +259,7 @@ public class MyDbContextWithDebugLogging : DbContext
 
 #### 配置`Microsoft.Extensions.Logging`
 
-日志通常在 `Program.cs` 或 `Startup.cs` 中进行配置，通过依赖注入系统管理 `ILoggerFactory` 和 `ILogger` 实例。
+日志通常在 `Program.cs` 中进行配置，通过依赖注入系统管理 `ILoggerFactory` 和 `ILogger` 实例。
 
 ##### `appsettings.json`
 
@@ -777,12 +777,11 @@ public void ConfigureServices(IServiceCollection services)
 **命令 (Command) 拦截：** 在执行数据库命令之前、之后或执行失败时进行拦截。这是最常用的拦截类型。
 
 - **用途：**
-
-  - **记录 SQL 日志：** 捕获并记录 EF Core 生成的所有 SQL 语句。
-
-  - **修改 SQL：** 动态地修改将要执行的 SQL 命令，例如为所有查询自动添加 `WHERE TenantId = @p0` 来实现多租户。
-
-  - **模拟命令执行结果：** 不实际执行命令，而是直接返回一个预设的结果，非常适合用于测试。
+- **记录 SQL 日志：** 捕获并记录 EF Core 生成的所有 SQL 语句。
+  
+- **修改 SQL：** 动态地修改将要执行的 SQL 命令，例如为所有查询自动添加 `WHERE TenantId = @p0` 来实现多租户。
+  
+- **模拟命令执行结果：** 不实际执行命令，而是直接返回一个预设的结果，非常适合用于测试。
 
 **连接 (Connection) 拦截：** 在打开或关闭数据库连接时进行拦截。
 
@@ -937,6 +936,20 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
 
 - 当你使用 `AddDbContext`（非池化）时，侦听器通常和 `DbContext` 一样是 `Scoped` 的。
 - 当你使用 `AddDbContextPool`（池化）时，情况就变得复杂了。如果你的侦听器是无状态的（像上面的 `AuditableEntityInterceptor`），你可以将其注册为**单例 (Singleton)** 以获得最佳性能。但如果你的侦听器需要持有请求级别的状态（例如，依赖 `IHttpContextAccessor`），你**必须**将其注册为 `Scoped`，并且在 `AddDbContextPool` 时要小心，因为池化的 `DbContext` 可能会跨越多个作用域，这可能导致侦听器状态不正确。对于有状态的侦听器，通常建议配合**非池化**的 `AddDbContext` 使用。
+
+#### 侦听器与拦截器
+
+| 对比维度                  | 拦截器（Interceptor）                                        | 侦听器（Listener）                                     |
+| ------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| **本质**                  | 插入逻辑，**修改/阻止** 框架内部行为                         | 被动监听，**观察/记录** 框架发出的事件                 |
+| **是否能影响原始行为**    | ✅ 可以（如阻止数据库操作、修改命令）                         | ❌ 不可以（只能记录或处理通知）                         |
+| **典型实现方式**          | 实现如 `IDbCommandInterceptor` / `ISaveChangesInterceptor` 等接口 | 通过 `DiagnosticListener` + `IObserver` 等监听系统事件 |
+| **用途**                  | 安全检查、日志审计、命令修改、行为替换                       | 记录 SQL、性能分析、监控、调试                         |
+| **EF Core 中的应用**      | 插入 SaveChanges、ExecuteCommand 等流程逻辑                  | 监听 EF 内部事件（如执行 SQL、失败）                   |
+| **ASP.NET Core 中的应用** | 中间件、过滤器（Filter）、授权拦截器                         | 日志系统、诊断源（如 ASP.NET Core 请求事件）           |
+| **运行时性能影响**        | 中等（可能增加处理逻辑）                                     | 极低（一般只读，不干预行为）                           |
+| **是否支持异步操作**      | ✅ 支持异步拦截                                               | ✅ 支持异步事件侦听                                     |
+| **框架级别支持**          | EF Core、ASP.NET Core、HttpClient、SignalR 等均提供拦截器接口 | DiagnosticSource 是 .NET 系统性日志机制，广泛支持      |
 
 ## 诊断侦听器
 

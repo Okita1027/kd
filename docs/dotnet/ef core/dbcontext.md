@@ -92,7 +92,7 @@ order: 1
 
 #### 使用方式
 
-在 `Program.cs` (或 `Startup.cs`) 中，将 `AddDbContext` 替换为 `AddDbContextPool`：
+在 `Program.cs`中，将 `AddDbContext` 替换为 `AddDbContextPool`：
 
 ```C#
 // Program.cs

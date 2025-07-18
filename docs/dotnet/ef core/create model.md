@@ -8,8 +8,6 @@ tags: [.NET]
 order: 2
 ---
 
-
-
 ## 创建模型
 
 ### 概述
@@ -873,6 +871,10 @@ public class ApplicationDbContext : DbContext
 
 #### 索引器属性
 
+> [!tip]
+>
+> 可以在[C#语法 | 沖田さんの知識ベース](https://kd.zhiyun.space/dotnet/C_/basic.html#索引器)查看相关知识
+
 **索引器属性**是一种特殊的实体属性，它允许你的实体类作为**属性包 (Property Bag)** 使用，而不是定义固定的属性列表。它的数据以键值对的形式存储，并通过索引器 `[key]` 进行访问。
 
 主要使用场景：
@@ -971,7 +973,8 @@ public class ApplicationDbContext : DbContext
   }
   ```
 
-  
+
+
 
 ### 关系
 
@@ -1085,7 +1088,7 @@ EF Core 会通过**约定**来尝试自动发现和配置关系：
       public int CategoryId { get; set; }
   
       // 导航属性，被约定发现
-      [Required] // 可选：如果希望 Product 必须有 Category
+      [Required] // 可选注解：如果希望 Product 必须有 Category
       public Category Category { get; set; } = null!;
   }
   ```
