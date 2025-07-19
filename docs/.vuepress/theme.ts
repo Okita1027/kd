@@ -136,10 +136,15 @@ export default hopeTheme({
             apiKey: "bde9b1a8aa183d5a239eb6c030c8c835",
             indexName: "okita1027io",
         }, */
-        docsearch: {
+        /* docsearch: {
             appId: "0251D4S7LW",
             apiKey: "22fdb1ea25ae8f93a0502c85f5b5ff30",
             indexName: "kd_zhiyun_space_0251d4s7lw_pages",
+        }, */
+        docsearch: {
+            appId: "0251D4S7LW",
+            apiKey: "9b9b28389ae36cd67cfaf5d486149ab3",
+            indexName: "kd clawer",
         },
 
         copyCode: {

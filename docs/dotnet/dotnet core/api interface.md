@@ -534,7 +534,7 @@ Host: localhost:5000
 | 纯文本 | `text/plain`         | ✅        | `StringOutputFormatter`                   |
 | HTML   | `text/html`（Razor） | ✅        | 视图引擎自动处理                          |
 
-#### 支持XML格式
+#### 如何支持XML格式
 
 1. 安装NuGet包
 
