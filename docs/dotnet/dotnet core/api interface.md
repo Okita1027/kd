@@ -168,21 +168,21 @@ ASP.NET Core 提供以下 Web API 控制器操作返回类型选项：
 
 **控制器基类提供的辅助方法**：`ControllerBase` 和 `Controller` 提供了许多便利的辅助方法来创建 `IActionResult` 实例，例如：
 
-| 返回方法 / 类                     | 状态码 | 说明                        |
-| --------------------------------- | ------ | --------------------------- |
-| `Ok()` / `Ok(object)`             | 200    | 成功，带或不带数据          |
-| `Created()` / `CreatedAtAction()` | 201    | 创建成功，并附带位置头部    |
-| `NoContent()`                     | 204    | 操作成功但无内容返回        |
-| `BadRequest()`                    | 400    | 客户端请求错误              |
-| `Unauthorized()`                  | 401    | 未授权                      |
-| `Forbid()`                        | 403    | 权限不足                    |
-| `NotFound()`                      | 404    | 资源未找到                  |
-| `Conflict()`                      | 409    | 冲突（如资源已存在）        |
-| `StatusCode(500)`                 | 任意   | 返回自定义状态码            |
-| `File()`                          | 200    | 返回文件内容                |
-| `Redirect()`                      | 302    | 重定向到其他 URL            |
-| `Content()`                       | 200    | 返回纯文本                  |
-| `Json()`                          | 200    | 返回 JSON（Razor 页面专用） |
+| 返回方法 / 类                                        | 状态码 | 说明                        |
+| ---------------------------------------------------- | ------ | --------------------------- |
+| `Ok()` / `Ok(object)`                                | 200    | 成功，带或不带数据          |
+| `Created()` / `CreatedAtAction()`/`CreatedAtRoute()` | 201    | 创建成功，并附带位置头部    |
+| `NoContent()`                                        | 204    | 操作成功但无内容返回        |
+| `BadRequest()`                                       | 400    | 客户端请求错误              |
+| `Unauthorized()`                                     | 401    | 未授权                      |
+| `Forbid()`                                           | 403    | 权限不足                    |
+| `NotFound()`                                         | 404    | 资源未找到                  |
+| `Conflict()`                                         | 409    | 冲突（如资源已存在）        |
+| `StatusCode(500)`                                    | 任意   | 返回自定义状态码            |
+| `File()`                                             | 200    | 返回文件内容                |
+| `Redirect()`                                         | 302    | 重定向到其他 URL            |
+| `Content()`                                          | 200    | 返回纯文本                  |
+| `Json()`                                             | 200    | 返回 JSON（Razor 页面专用） |
 
 #### `ActionResult<T>`
 
@@ -579,8 +579,6 @@ Host: localhost:5000
 2. 重写关键方法：`CanWriteResult()` 和 `WriteResponseBodyAsync()`
 3. 设置支持的内容类型和编码
 4. 注册到 `MvcOptions.OutputFormatters` 中
-
-
 
 ### 分析器
 

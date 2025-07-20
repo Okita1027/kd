@@ -24,11 +24,13 @@ order: 2
   - **生命周期：** 瞬时。每次请求该服务时都会创建一个新的实例。
   - **适用场景：** 轻量级、无状态的服务，每次使用都需要新实例的场景。
 
+> 在使用`builder.Services.AddTransient<IMyService, MyService>()`注册服务后，注入时必须使用`IMyService`，若使用`MyService`则会报错。
+>
 > **不推荐**的注册方式：可以忽略接口，直接注入实现类`AddScoped<TImplementation>`
 
 ### 服务消费
 
-#### **构造函数注入**
+#### 构造函数注入
 
 这是推荐和最常用的方式。DI 容器会在创建对象时自动解析其构造函数中声明的依赖项。
 
@@ -45,7 +47,7 @@ public class MyController : Controller
 }
 ```
 
-#### **方法注入**
+#### 方法注入
 
 将依赖项作为方法参数传递。适用于某个方法需要特定依赖项，但整个类不需要的情况。
 
@@ -59,9 +61,9 @@ public class MyClass
 }
 ```
 
-#### **属性注入**
+#### 属性注入
 
-通过公共属性注入依赖项。通常需要手动从容器中解析，或者使用特定的 IoC 容器扩展。在 .NET 的内置 DI 中不直接支持属性注入，除非手动从 `IServiceProvider` 解析。
+通过公共属性注入依赖项。通常需要手动从容器中解析，或者使用特定的IOC容器扩展。在 .NET 的内置 DI 中不直接支持属性注入，除非手动从 `IServiceProvider` 解析。
 
 ```c#
 // 不推荐的方式
@@ -72,12 +74,6 @@ public class MyClass
 // 然后在某处手动解析并赋值
 // myClass.MyService = serviceProvider.GetService<IMyService>();
 ```
-
-#### 注意点
-
-> 在使用`builder.Services.AddTransient<IMyService, MyService>()`注册服务后
->
-> 注入时必须使用IMyService，若使用MyService则会报错
 
 ### IServiceProvider
 
@@ -367,7 +363,7 @@ dotnet publish -c Release -r win-x64 --self-contained true
    一个自定义中间件通常是一个公共类，它满足以下条件：
 
    - **构造函数：** 接收一个 `RequestDelegate` 类型的参数，命名为 `next`。这个 `next` 委托代表了管道中的下一个中间件。
-   - **`InvokeAsync` 方法：** 包含中间件的核心逻辑。它必须是 `public`、`async`，并返回 `Task`，接收 `HttpContext` 作为参数。
+   - **`Invoke` 方法：** 包含中间件的核心逻辑。它必须是 `public`、`async`，并返回 `Task`，接收 `HttpContext` 作为参数。
 
    ```C#
    public class MyCustomLoggingMiddleware
@@ -667,13 +663,13 @@ app.Run();
 
 在本例中：访问 `/?admin=true` 会进入管理员分支，而访问 `/` 则不会。
 
-##### `UseWhen()` - 基于条件**插入**中间件（请求可能回到主管道）
+##### `UseWhen()` - 基于条件插入中间件（请求可能回到主管道）
 
-`UseWhen()` 类似于 `MapWhen()`，也是基于一个条件。但最大的区别是：**如果分支中的中间件调用了 `_next()`，请求会回到主管道，并继续执行 `UseWhen()` 之后的主管道中间件。**
+`UseWhen()` 类似于 `MapWhen()`，也是基于一个条件。但最大的区别是：如果分支中的中间件调用了 `_next()`，请求会回到主管道，并继续执行 `UseWhen()` 之后的主管道中间件。
 
 - **特点：** 条件灵活，分支结束后可以回到主管道。适用于在特定条件下**插入额外的中间件**，而不是完全替换管道。
 - **语法：** `app.UseWhen(context => context.Request.Query.ContainsKey("debug"), builder => { /* 配置分支管道 */ });`
-- DEMO: 在调试模式下添加额外日志
+- 示例: 在调试模式下添加额外日志
 
 ```C#
 // Program.cs
