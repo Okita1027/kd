@@ -156,7 +156,7 @@ builder.Services.AddTransient<IMyService>(serviceProvider =>
 });
 ```
 
-#### 使用命名服务（第三方库或手动实现）
+#### 使用命名服务（第三方库）
 
 .NET Core 内置的 DI 容器**不支持开箱即用的“命名服务”注册**（即像 Spring 那样通过名字来区分注入哪个实例）。如果需要这种功能，需要：
 
@@ -247,7 +247,7 @@ public class MyConsumerWithNamedService
 - **部署更简便：** 只有一个文件，部署和分发变得异常简单。您无需担心目标机器上是否安装了正确版本的 .NET 运行时。
 - **更高的安全性：** 不包含 JIT 编译器可以减少某些潜在的攻击面。
 
-#### （不）适用场景
+#### 适用场景
 
 **适用：**
 
@@ -259,14 +259,13 @@ public class MyConsumerWithNamedService
 **不推荐：**
 
 - **依赖大量运行时动态特性**的应用：
-
   - **反射：** 如果您的代码或依赖库大量使用反射来动态创建类型、方法调用（如通过 `Activator.CreateInstance` 或动态调用私有成员）。
-
+  
   - **动态代码生成：** 使用 `System.Reflection.Emit` 命名空间下的功能。
   - **`dynamic` 关键字：** 不支持。
   - **运行时加载外部程序集：** 比如插件系统。
   - **依赖第三方库：** 某些第三方库可能没有完全兼容 AOT，或者其内部使用了 AOT 不支持的动态特性。
-
+  
 - **项目编译时间要求严格**：AOT 编译过程比 JIT 耗时更长。
 
 - **需要调试本机代码**：调试 AOT 编译后的程序比调试 IL 代码要复杂。
@@ -1498,7 +1497,7 @@ app.MapGet("/no-cache", () =>
 
 
 
-### 请求解压缩
+### 请求解压缩中间件
 
 #### 定义
 
@@ -1989,13 +1988,25 @@ Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。
   - `dotnet run /MyKey "Using /" /Position:Title=Cmd /Position:Name=Cmd_Rick`
   - `dotnet run --MyKey "Using --" --Position:Title=Cmd --Position:Name=Cmd_Rick`
 
-**内存中提供程序**：
-
-- 允许您以编程方式在内存中添加键值对。
-
 **用户秘密提供程序 (User Secrets)**：
 
 - **仅在开发环境**下使用，用于存储敏感信息。这些秘密存储在本地用户配置文件的一个 JSON 文件中，不会被提交到源代码管理。
+
+- **使用方式：**
+
+  - 在 Visual Studio 中，右键点击你的项目 (`.csproj` 文件) -> 选择 "管理用户机密" (Manage User Secrets)。
+
+    Visual Studio 会自动为你的项目创建一个 `UserSecretsId`，并打开一个名为 `secrets.json` 的文件。
+
+  - 在你的项目根目录（包含 `.csproj` 文件的目录）下，运行以下命令：`dotnet user-secrets init`,这个命令会在你的 `.csproj` 文件中添加一个 `<UserSecretsId>` 元素，例如：
+
+    ```XML
+    <PropertyGroup>
+      <UserSecretsId>your-unique-guid-here</UserSecretsId>
+    </PropertyGroup>
+    ```
+
+    然后，你可以打开 `secrets.json` 文件进行编辑。要打开它，可以运行：`dotnet user-secrets open`
 
 **Azure Key Vault 提供程序**：
 
@@ -2014,8 +2025,6 @@ Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。
 5. 命令行参数
 
 ### 在程序中读取/使用配置
-
-#### 配置对象模型`IConfiguration`
 
 配置系统将所有加载的键值对组织成一个**层次结构**。可以通过 `IConfiguration` 接口访问这些数据。
 
@@ -2896,7 +2905,7 @@ app.Run();
 - **组织和查找**：在大量的日志输出中，日志类别能帮助你快速识别是哪个部分的代码产生了这条日志，方便问题定位和分析。
 - **可读性**：日志输出中通常会包含类别信息，让日志本身更容易理解。
 
-##### **如何确定日志类别**？
+##### **确定日志类别的方法**
 
 1. **通过泛型参数 `ILogger<T>` 自动推断 (推荐方式)**： 这是最常见也是推荐的方式。当你通过依赖注入获取 `ILogger<T>` 实例时，`T` 的**完全限定名（包括命名空间和类名）**就会自动成为该 `ILogger` 实例的日志类别。
 
@@ -2946,7 +2955,7 @@ public class MyStartupClass
 }
 ```
 
-##### 匹配规则
+#### 匹配规则
 
 配置文件：
 
@@ -3266,18 +3275,13 @@ app.MapPost("/items", (ILogger<Program> logger) =>
 app.Run();
 ```
 
-#### 最佳实践
-
-`ILogger` 接口提供了 `LogTrace()`, `LogDebug()`, `LogInformation()`, `LogWarning()`, `LogError()`, `LogCritical()` 等**扩展方法**。它们是类型安全的，并且参数与日志级别相对应，是记录日志的首选方式。
-
-**使用日志消息模板和结构化日志**：强烈推荐使用占位符 `{}` 和传入参数的方式来构建日志消息（如 `_logger.LogInformation("User {UserId} logged in.", userId);`），而不是字符串拼接（如 `_logger.LogInformation("User " + userId + " logged in.");`）。
-
-**优点**：
-
-- **性能更好**：在日志级别不满足时，参数不会被格式化，节省开销。
-- **结构化**：在支持结构化日志的提供程序（如 Serilog、Azure Log Analytics）中，`UserId` 会被作为独立的字段解析，方便查询和分析。
-
 #### 第三方日志记录提供程序
+##### Serilog
+
+
+
+##### NLog
+
 
 
 
@@ -3458,8 +3462,6 @@ info: Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware[2]
 ### W3C记录器
 
 #### 概述
-
-**定义**：
 
 W3CLogger 是一个以 [W3C 标准格式](https://www.w3.org/TR/WD-logfile.html)写入日志文件的中间件。 相关日志包含有关 HTTP 请求和 HTTP 响应的信息。 W3CLogger 提供以下内容的日志：
 
@@ -3842,7 +3844,7 @@ public class MyCustomHealthCheck : IHealthCheck
 
 **生命周期**：每个 HTTP 请求创建一个新的 HttpContext 实例，请求结束后销毁。
 
-#### HttpRequest
+### HttpRequest
 
 通过`HttpContext.Request`，可以访问和读取所有关于传入请求的信息。
 
@@ -3879,7 +3881,7 @@ public class MyCustomHealthCheck : IHealthCheck
 - **`IsHttps`**：指示请求是否通过 HTTPS 安全连接发送。
 - **`Host`**：获取请求的主机名（域名和端口）。
 
-#### HttpResponse
+### HttpResponse
 
 通过`HttpResponse`，您可以写入响应内容、设置状态码和头部信息。
 
@@ -3918,7 +3920,7 @@ public class MyCustomHealthCheck : IHealthCheck
   HttpContext.Response.Redirect("/login");
   ```
 
-#### RequestAborted
+### RequestAborted
 
 `HttpContext.RequestAborted` 是一个 `CancellationToken`（取消令牌）。它表示**客户端取消了请求**（例如，用户关闭了浏览器标签页，或者网络连接中断）。
 
@@ -3947,7 +3949,7 @@ public async Task<IActionResult> DownloadLargeFile()
 
 在上面的例子中，`Task.Delay` 和 `HttpContext.Response.WriteAsync` 等异步操作通常会接受 `CancellationToken` 参数。当 `RequestAborted` 被触发时，这些操作就会抛出 `OperationCanceledException`，您可以捕获它来处理取消逻辑。
 
-#### Abort
+### Abort
 
 `HttpContext.Abort()` 方法用于**立即终止当前 HTTP 请求的处理**。
 
@@ -3975,7 +3977,7 @@ public IActionResult UnsafeOperation()
 
 大多数情况下，使用 `return Unauthorized()` 或 `return Forbid()` 来处理访问控制，它们会发送一个标准的 HTTP 响应，而不是粗暴地终止连接。
 
-#### User
+### User
 
 `HttpContext.User` 属性是一个 `ClaimsPrincipal` 对象，它代表了**当前 HTTP 请求的用户的身份信息**。它是 .NET Core **认证和授权机制的核心**。
 
@@ -4017,7 +4019,7 @@ public IActionResult GetUserProfile()
 }
 ```
 
-#### Features
+### Features
 
 `HttpContext.Features` 是一个 `IFeatureCollection`，它是一个**低级别的、键值对集合**，用于**访问和操作当前请求的特定功能和能力**。
 
@@ -4062,11 +4064,11 @@ public IActionResult GetConnectionInfo()
 
 在大多数高层应用代码中，可能不会直接与 `Features` 交互，而是通过 `HttpContext.Request`、`HttpContext.Response` 等更高级别的属性来访问信息，因为这些属性已经封装了对底层特性的访问。然而，在编写自定义中间件或深度定制框架行为时，`Features` 变得非常有用。
 
-#### 线程不安全性
+### 线程不安全性
 
 **含义**
 
-`HttpContext` 对象是**为单个 HTTP 请求而创建的**，它的设计目的是在**单线程的请求处理管道中**使用。这意味着，您不应该在多个线程之间共享同一个 `HttpContext` 实例，也不应该在异步操作中跨越 `await` 边界后继续直接使用它，除非您了解其限制并采取了适当的措施。
+`HttpContext` 对象是**为单个 HTTP 请求而创建的**，它的设计目的是在**单线程的请求处理管道中**使用。不应该在多个线程之间共享同一个 `HttpContext` 实例，也不应该在异步操作中跨越 `await` 边界后继续直接使用它，除非您了解其限制并采取了适当的措施。
 
 **为什么线程不安全？**
 
@@ -4489,11 +4491,7 @@ public IActionResult Get([FromServices] ILogger<MyController> logger) { /* ... *
 - 模板：`catchall/{**filepath}`
 - 匹配：`/catchall/folder/subfolder/file.txt` (捕获 `filepath = "folder/subfolder/file.txt"`)
 
-### 路由的优先级
 
-1. 具体路由优先于通用路由
-2. 带约束的路由优先于不带约束的路由
-3. 定义顺序（对于相同优先级的路由）
 
 ---
 
@@ -4685,6 +4683,12 @@ app.MapGet("/generate-link", (LinkGenerator linker) =>
 
 
 ### 参数转换器
+
+#### 自定义参数转换器
+
+
+
+#### 模型绑定器
 
 
 

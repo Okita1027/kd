@@ -12,8 +12,6 @@ order: 1
 
 ### 概述
 
-#### 定义
-
 `DbContext` 是 EF Core 的核心，它扮演着以下几个关键角色：
 
 - **数据库会话 (Database Session)**：`DbContext` 的一个实例代表了与数据库的一次会话或工作单元。在这个会话中，你可以加载实体、跟踪它们的更改、保存数据。
@@ -36,7 +34,7 @@ order: 1
 
 #### 使用方式
 
-`DbContext` 的配置主要通过重写 `OnConfiguring` 方法或更常见的通过**依赖注入**在 `Program.cs` (或 `Startup.cs`) 中进行。
+`DbContext` 的配置主要通过重写 `OnConfiguring` 方法或更常见的通过**依赖注入**在 `Program.cs`中进行。
 
 - **`OnConfiguring` 方法 (主要用于控制台应用或简单场景)**：
 
@@ -112,9 +110,15 @@ builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
 #### 注意事项
 
 - **仅适用于 `DbContext` 类型具有无参构造函数或只接受 `DbContextOptions<TContext>` 参数的构造函数。**（这是最常见的，通常不是问题）
+
 - **不适用于每个请求都传递配置信息给 `DbContext` 的场景。** 因为池化的实例是预先配置好的。
+
 - **状态管理**：
-- - `DbContext` 从池中取出时会**被重置**，这意味着你**不能**依赖 `DbContext` 实例在不同请求之间维护任何自定义状态。如果你在 `DbContext` 中添加了自定义字段并期望它们在重用时保持状态，那将是个问题。
+
+  - `DbContext` 从池中取出时会**被重置**，这意味着你**不能**依赖 `DbContext` 实例在不同请求之间维护任何自定义状态。如果你在 `DbContext` 中添加了自定义字段并期望它们在重用时保持状态，那将是个问题。
+
   - EF Core 会确保重置其**内部**状态（如变更跟踪器），但如果你有自定义的业务逻辑在 `DbContext` 构造函数中执行，并且这些逻辑是昂贵的或有副作用的，那么池化可能不会带来太大收益，或者需要额外小心。
+
 - **并发访问**：池化的 `DbContext` 实例仍然**不是线程安全的**。每个请求从池中获取一个实例，使用完毕后归还。在单个请求内部，不要在多个线程间共享同一个 `DbContext` 实例。
+
 - **池的大小**：默认情况下，池的大小是有限的。如果并发请求数超出池的容量，新的 `DbContext` 实例仍然会被创建。你可以通过 `options.UsePooledDbContextFactory` 来配置池的最大大小（但这通常不是直接通过 `AddDbContextPool` 的参数）。

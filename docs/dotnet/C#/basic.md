@@ -367,7 +367,7 @@ var (_, _, ageOnly) = person; // 忽略 FirstName 和 LastName
 Console.WriteLine($"Age Only: {ageOnly}");
 ```
 
-### 组合使用（结构+模式匹配）
+### 组合使用（解构+模式匹配）
 
 ```C#
 // 假设有一个 Item 元组
