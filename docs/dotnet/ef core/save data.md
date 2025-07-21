@@ -217,13 +217,7 @@ public async Task PerformMultipleOperations()
 }
 ```
 
-#### `SaveChanges()`与`SaveChangesAsync()`
-
-**`SaveChanges()`**：同步方法。在完成数据库操作之前，会阻塞当前线程。
-
-**`SaveChangesAsync()`**：异步方法。在等待数据库操作完成时，不会阻塞当前线程。**推荐在现代异步编程模型（如 ASP.NET Core）中使用**，以提高应用程序的响应性和可伸缩性。
-
-#### 总结
+#### 小结
 
 - 所有变更都通过 **`DbContext` 的变更跟踪器**进行管理。
 - 使用 **`DbSet.Add()`** 添加新实体，状态变为 `Added`。
@@ -289,7 +283,7 @@ EF Core 的 `Add()` 方法实际上会递归遍历实体对象图，将所有状
 
 ### 级联删除
 
-**级联删除**是指当你删除一个主实体时，EF Core 会自动删除它关联的依赖实体（子实体）。
+当你删除一个主实体时，EF Core 会自动删除它关联的依赖实体（子实体）。
 
 #### 使用方式
 
@@ -322,7 +316,7 @@ EF Core 使用的是**乐观锁并发控制**：
 
 #### 使用方式
 
-1. 使用 `[ConcurrencyCheck]` 特性
+- 使用 `[ConcurrencyCheck]` 特性
 
 ```C#
 public class Product
@@ -338,7 +332,7 @@ public class Product
 
 如果 `Price` 字段在读取后被其他用户改过，你的保存操作就会抛出并发异常。
 
-2. 【推荐】使用版本字段
+- 【推荐】使用版本字段
 
 ```C#
 public class Product
@@ -396,7 +390,7 @@ catch (DbUpdateConcurrencyException ex)
 
 - **高内存消耗**：将所有需要更新/删除的实体加载到应用程序内存中，可能导致内存溢出或垃圾回收压力。
 - **网络往返开销**：从数据库读取大量数据到应用程序，然后应用程序再发送大量 `UPDATE` 或 `DELETE` 命令到数据库。
-- **单条 SQL 语句效率低**：`SaveChanges()` 会为每条修改/删除的记录生成一条单独的 `UPDATE` 或 `DELETE` 语句（除非使用批量操作插件），这效率远低于在数据库层面执行一条语句来更新/删除多条记录。
+- **单条 SQL 语句效率低**：`SaveChanges()` 会为每条修改/删除的记录生成一条单独的 `UPDATE` 或 `DELETE` 语句（除非使用批量操作插件），效率远低于在数据库层面执行一条语句来更新/删除多条记录。
 
 `ExecuteUpdate` 和 `ExecuteDelete` 方法的引入就是为了解决这些问题。它们允许你**直接在数据库服务器上执行更新和删除操作**，而无需将实体加载到内存中。这类似于直接执行 SQL 的 `UPDATE` 或 `DELETE` 语句，但仍然可以利用 LINQ 的类型安全和可组合性。
 

@@ -1317,8 +1317,6 @@ app.MapGet("/myservice", (IMyService myService) =>
 
 ### 响应缓存中间件
 
-#### 定义
-
 **响应缓存中间件**是一个内置的中间件，它允许你的应用程序**缓存服务器的 HTTP 响应**。当客户端再次请求相同的资源时，如果缓存有效，服务器可以直接从缓存中返回响应，而不需要重新执行完整的业务逻辑（如数据库查询、计算等）。
 
 #### 工作原理
@@ -1345,9 +1343,9 @@ app.MapGet("/myservice", (IMyService myService) =>
 
 #### 使用方式
 
-##### 服务注册(`Program.cs` 的 `builder.Services` 部分)
+##### 服务注册
 
-将响应缓存服务添加到 ASP.NET Core 的依赖注入 (DI) 容器中。
+将响应缓存服务添加到 .NET Core 的依赖注入 (DI) 容器中。
 
 ```C#
 // Program.cs
@@ -1364,7 +1362,7 @@ var app = builder.Build();
 
 `AddResponseCaching()` 默认使用内存缓存来存储响应。你也可以通过重载来配置缓存选项，例如设置默认的缓存大小限制等。
 
-##### 中间件配置(`Program.cs` 的 `app` 部分)
+##### 中间件配置
 
 在管道中启用响应缓存中间件。它应该放在 **`UseStaticFiles()` 之后**（静态文件通常由自己的中间件处理），并且在 **`UseRouting()` 之前**（因为缓存逻辑需要在路由匹配之前介入）。
 
