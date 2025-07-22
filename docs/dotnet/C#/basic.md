@@ -367,7 +367,9 @@ var (_, _, ageOnly) = person; // 忽略 FirstName 和 LastName
 Console.WriteLine($"Age Only: {ageOnly}");
 ```
 
-### 组合使用（解构+模式匹配）
+---
+
+**示例：组合使用（解构+模式匹配）**
 
 ```C#
 // 假设有一个 Item 元组
@@ -817,6 +819,36 @@ obj.Property1 = 10;
 obj.Property2 = "Test";
 ```
 
+#### 使用场景
+
+##### 多团队并行开发
+
+##### 代码生成器协作
+
+```CS
+// 文件1：Form.Designer.cs（自动生成）
+public partial class MainForm
+{
+    private Button button1;
+    private void InitializeComponent() { /* 设计器代码 */ }
+}
+
+// 文件2：Form.cs（手动编写）
+public partial class MainForm
+{
+    private void button1_Click(object sender, EventArgs e)
+    {
+        MessageBox.Show("Button clicked!");
+    }
+}
+```
+
+
+
+##### 大型类的逻辑分组
+
+
+
 #### 注意事项
 
 - **所有部分都必须用 `partial` 关键字标记。**
@@ -896,6 +928,54 @@ public partial class MyClass
 
 - **如果部分方法只有声明，没有实现**：编译器会移除所有对该部分方法的调用。这意味着，即使你调用了 `OnInitialized()`，如果它的实现不存在，这行代码也会在编译时被优化掉，不会产生任何运行时开销。
 - **如果部分方法有实现**：那么它就是一个普通的私有方法，其调用会正常执行。
+
+#### 使用场景
+
+##### 轻量级事件钩子
+
+```CS
+// 文件1：Entity.Generated.cs（工具生成）
+public partial class Entity
+{
+    partial void OnCreated(); // 无实际实现
+
+    public Entity()
+    {
+        OnCreated(); // 如果开发者未实现，编译器会移除该调用
+    }
+}
+
+// 文件2：Entity.Extensions.cs（手动扩展）
+public partial class Entity
+{
+    partial void OnCreated()
+    {
+        Console.WriteLine("Entity created!");
+    }
+}
+```
+
+
+
+##### 条件编译扩展
+
+利用**预处理器指令 (Preprocessor Directives)** 来控制源代码在编译时哪些部分被包含或排除。它允许你根据定义的符号 (symbols) 来编译不同的代码块，从而适应不同的构建配置、目标平台或特性集。
+
+```CS
+public partial class Logger
+{
+    partial void LogDebug(string message);
+
+    public void Log(string message)
+    {
+#if DEBUG
+        LogDebug(message); // 仅在DEBUG模式下生效
+#endif
+    }
+}
+```
+
+
 
 #### 注意事项
 

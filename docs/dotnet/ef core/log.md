@@ -196,7 +196,7 @@ public class MyDbContextWithDebugLogging : DbContext
 
 #### 与`Microsoft.Extensions.Logging`的关系
 
-`LogTo()` 方法实际上是 `Microsoft.Extensions.Logging` 抽象的一个简化包装。在内部，它仍然使用 `Microsoft.Extensions.Logging`。如果你在 ASP.NET Core 应用程序中，或者已经使用了 `Microsoft.Extensions.Logging` 进行全面的日志配置，那么通常**不需要**再显式使用 `LogTo()`。你应该通过配置 `appsettings.json` 来控制 `Microsoft.EntityFrameworkCore` 类别的日志级别。
+`LogTo()` 方法实际上是 `Microsoft.Extensions.Logging` 抽象的一个简化包装。在内部，它仍然使用 `Microsoft.Extensions.Logging`。如果你在 .NET Core 应用程序中，或者已经使用了 `Microsoft.Extensions.Logging` 进行全面的日志配置，那么通常**不需要**再显式使用 `LogTo()`。你应该通过配置 `appsettings.json` 来控制 `Microsoft.EntityFrameworkCore` 类别的日志级别。
 
 例如，在`appsettings.json`中，可以这样配置来显示 EF Core 的 SQL 命令：
 
@@ -212,8 +212,6 @@ public class MyDbContextWithDebugLogging : DbContext
 ```
 
 ### `Microsoft.Extensions.Logging`
-
-#### 定义
 
 `Microsoft.Extensions.Logging` 是 .NET 的**官方日志记录抽象库**。
  EF Core 并没有自己实现日志系统，而是直接基于这个标准库。
@@ -442,7 +440,7 @@ public class Product
     public decimal Price { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime? LastModifiedDate { get; set; }
-    public bool IsDeleted { get; set; } // 用于软删除
+    public bool IsDeleted { get; set; }
 }
 
 public class MyDbContext : DbContext
@@ -540,13 +538,11 @@ public async Task PerformProductOperations()
   - **简单易用**：对于简单的事件处理，直接订阅 `DbContext` 上的事件非常直观。
   - **直接访问 `DbContext`**：事件处理器可以直接访问触发事件的 `DbContext` 实例及其变更跟踪器。
 - **缺点**：
-  - **侵入性**：你需要在 `DbContext` 派生类的构造函数中订阅这些事件，这可能会使 `DbContext` 类变得臃肿，并与业务逻辑耦合。
+  - **侵入性**：需要在 `DbContext` 派生类的构造函数中订阅这些事件，这可能会使 `DbContext` 类变得臃肿，并与业务逻辑耦合。
   - **难以复用**：如果你有多个 `DbContext` 类型或需要在多个应用程序中使用相同的事件处理逻辑，复用性较差。
   - **同步限制**：这些事件本质上是同步的，尽管你可以在处理器中调用异步方法，但事件本身不会等待这些异步操作完成，可能会导致意外行为。
 
 ##### 拦截器
-
-###### 定义
 
 **拦截器**是 EF Core 5.0 引入的更强大、更推荐的事件处理机制。它们提供了一种非侵入式的方式，让你可以在 EF Core 操作的不同阶段插入自定义逻辑，并且设计得更易于复用和组合。
 

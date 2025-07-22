@@ -3,7 +3,7 @@ title: Axios
 shortTitle: Axios
 description: 
 date: 2024-06-16 22:29:35
-categories: [Axios]
+categories: [前端,Axios]
 tags: []
 ---
 ## 快速上手

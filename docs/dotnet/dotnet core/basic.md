@@ -1957,7 +1957,7 @@ public class Startup
 
 Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。它已被更通用、更强大的**泛型主机**及其在 .NET 6+ 中的简化版本 **`WebApplication`** 所取代。在新的项目中，你几乎不会再手动创建 Web 主机。
 
-### 三者关系
+---
 
 这三者代表了 ASP.NET Core **主机模型** 的演进：
 
@@ -1969,24 +1969,24 @@ Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。
 
 ### 配置提供程序
 
-**文件提供程序**：
+#### 文件提供程序
 
 - `appsettings.json`：默认的主配置文件。
 - `appsettings.{EnvironmentName}.json`：环境特定文件（例如 `appsettings.Development.json` 用于开发环境，`appsettings.Production.json` 用于生产环境）。
 - 可以通过 `AddXmlFile()` 或 `AddIniFile()` 添加其他格式的文件。
 
-**环境变量提供程序**：
+#### 环境变量提供程序
 
 - 从操作系统环境变量中读取配置。这是在生产环境管理敏感信息（如连接字符串、API 密钥）的**推荐方式**，因为环境变量不会被提交到版本控制。键名通常遵循约定，例如 `MySettings__Setting1`。
 
-**命令行参数提供程序**：
+#### 命令行参数提供程序
 
 - 从应用启动时的命令行参数中读取配置，例如 `dotnet run --Logging:LogLevel:Default Debug`。
   - `dotnet run MyKey="Using =" Position:Title=Cmd Position:Name=Cmd_Rick`
   - `dotnet run /MyKey "Using /" /Position:Title=Cmd /Position:Name=Cmd_Rick`
   - `dotnet run --MyKey "Using --" --Position:Title=Cmd --Position:Name=Cmd_Rick`
 
-**用户秘密提供程序 (User Secrets)**：
+#### 用户秘密提供程序 (User Secrets)
 
 - **仅在开发环境**下使用，用于存储敏感信息。这些秘密存储在本地用户配置文件的一个 JSON 文件中，不会被提交到源代码管理。
 
@@ -2005,10 +2005,6 @@ Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。
     ```
 
     然后，你可以打开 `secrets.json` 文件进行编辑。要打开它，可以运行：`dotnet user-secrets open`
-
-**Azure Key Vault 提供程序**：
-
-- 在云环境中，用于安全地存储和管理敏感信息。
 
 ### 配置加载顺序与覆盖规则
 
@@ -2893,8 +2889,6 @@ app.Run();
 
 #### 日志类别
 
-##### 概述
-
 **日志类别**是一个字符串，用于**标识日志消息的来源或生成该日志的组件**。可以把它看作是日志的“命名空间”或“标签”，用来给日志消息分组。
 
 **作用：**
@@ -2972,8 +2966,6 @@ public class MyStartupClass
   }
 }
 ```
-
-匹配规则：
 
 日志类别匹配是**从最具体到最不具体**的原则。
 
@@ -3826,8 +3818,6 @@ public class MyCustomHealthCheck : IHealthCheck
 
 7. **与监控系统集成**：将健康检查终结点配置到您的容器编排平台（Kubernetes 的 `livenessProbe` 和 `readinessProbe`）、负载均衡器或云监控服务中。
 
-### 指标
-
 
 
 ## HttpContext
@@ -4478,13 +4468,13 @@ public IActionResult Get([FromServices] ILogger<MyController> logger) { /* ... *
 
 作用：用于匹配 URL 路径的剩余部分。
 
-**`{\*param}`**：捕获所有剩余的路径段，但不包括路径分隔符 `/`。
+**`{*param}`**：捕获所有剩余的路径段，但不包括路径分隔符 `/`。
 
 - 模板：`files/{*path}`
 - 匹配：`/files/documents/report.pdf` (捕获 `path = "documents/report.pdf"`)
 - 如果 URL 是 `/files/documents/sub/report.pdf`，`path` 仍为 `"documents/sub/report.pdf"`。
 
-**`{\**param}`**：捕获所有剩余的路径段，**包括路径分隔符 `/`**。这在代理或处理文件路径时非常有用。
+**`{**param}`**：捕获所有剩余的路径段，**包括路径分隔符 `/`**。这在代理或处理文件路径时非常有用。
 
 - 模板：`catchall/{**filepath}`
 - 匹配：`/catchall/folder/subfolder/file.txt` (捕获 `filepath = "folder/subfolder/file.txt"`)
@@ -4682,6 +4672,8 @@ app.MapGet("/generate-link", (LinkGenerator linker) =>
 
 ### 参数转换器
 
+允许你在路由匹配发生时，**动态地修改路由参数的值**。这通常用于将路由中的特定命名约定（如 Kebab-case）转换为 C# 中常用的命名约定（如 PascalCase 或 CamelCase），或者执行其他简单的字符串转换。
+
 #### 自定义参数转换器
 
 
@@ -4692,7 +4684,7 @@ app.MapGet("/generate-link", (LinkGenerator linker) =>
 
 ### 区域路由
 
-
+用于MVC
 
 ---
 
@@ -4906,7 +4898,7 @@ public class MyController : ControllerBase
    }
    ```
 
-#### `UseDeveloperExceptionPage`
+### `UseDeveloperExceptionPage`
 
 仅开发时使用
 

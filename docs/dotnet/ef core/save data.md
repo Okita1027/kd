@@ -675,8 +675,6 @@ using (IDbContextTransaction transaction = await context.Database.BeginTransacti
 
 ### 断开连接的实体
 
-#### 定义
-
 **连接的实体 (Connected/Tracked Entity)**：如果一个实体实例是通过某个 `DbContext` 实例从数据库中加载出来的，或者通过 `DbContext.Add()`、`DbContext.Attach()` 等方法明确地附加到该 `DbContext` 实例的变更跟踪器中，那么它就是**连接的**或**被跟踪的**。EF Core 会监控这些实体属性的变化，并在调用 `SaveChanges()` 时自动生成相应的 `UPDATE` 或 `DELETE` 语句。
 
 **断开连接的实体 (Disconnected Entity)**：如果一个实体实例**不是**由当前的 `DbContext` 实例加载的，也**没有**被附加到它的变更跟踪器中，那么它就是**断开连接的**。

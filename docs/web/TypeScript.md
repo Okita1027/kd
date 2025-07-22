@@ -3,7 +3,7 @@ title: TypeScript
 shortTitle: TypeScript
 description: 
 date: 2024-06-16 22:30:07
-categories: [TypeScript]
+categories: [前端,TypeScript]
 tags: []
 ---
 ## 快速上手
@@ -1471,6 +1471,9 @@ console.log(obj.someVariable);
 ```
 使用Mixin可以在不修改原有类结构的情况下，将多个功能组合到一个类中，提高代码的重用性和可维护性。但需要注意避免混入过多的功能，以免造成代码复杂性和命名冲突。
 ## 装饰器
+
+### 访问器装饰器
+
 ### 参数装饰器
 参数装饰器是应用于类方法参数的装饰器，它接收3个参数：目标对象、方法名称和参数在函数参数列表中的索引。
 ```javascript
@@ -1549,3 +1552,7 @@ class MyClass {
 
 // 输出: Log message - Method myMethod in MyClass has been decorated
 ```
+
+### 装饰器组合
+
+装饰器可以组合使⽤，执⾏顺序为：先【由上到下】的执⾏所有的装饰器⼯⼚，依次获取到装饰 器，然后再【由下到上】执⾏所有的装饰器。
