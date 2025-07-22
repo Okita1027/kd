@@ -182,7 +182,9 @@ public async Task DeleteBlog(int blogId)
 }
 ```
 
-#### 同时保存多个操作
+---
+
+#### `SaveChanges`批量保存
 
 `SaveChanges()` 的一个强大之处在于，它会**批量处理**所有待定的变更（添加、修改、删除），并尝试在**一个数据库事务**中执行它们。这意味着如果其中任何一个操作失败，整个事务都会回滚，从而保持数据库的一致性。
 
@@ -548,6 +550,8 @@ WHERE [p].[Price] < 10.0;
 - **事务**：与 `ExecuteUpdateAsync()` 类似，`ExecuteDeleteAsync()` 本身不会启动事务，需要手动管理。
 
 ### 事务
+
+#### ACID特性
 
 #### 隐式事务
 

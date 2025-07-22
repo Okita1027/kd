@@ -632,7 +632,7 @@ public class MyDbContext : DbContext
 
 **优先级**：如果在 `DbContext` 级别设置了全局行为，并且在单个查询上使用了 `.AsSingleQuery()` 或 `.AsSplitQuery()`，那么**单个查询上的方法具有更高的优先级**。例如，如果全局设置为 `SplitQuery`，但你在某个查询上使用了 `.AsSingleQuery()`，那么该查询将作为单个查询执行。
 
-### 复杂查询运算符
+### 查询运算符
 
 | 类别     | 运算符                                             |
 | -------- | -------------------------------------------------- |
@@ -1035,7 +1035,7 @@ public async Task UpdateProductNameInterpolated(int productId, string newName)
 - **不影响变更跟踪器**：这些操作直接作用于数据库，不会更新 `DbContext` 的变更跟踪器。如果你在执行 `UPDATE` 或 `DELETE` 后还想继续使用被跟踪的实体，可能需要重新加载它们以确保数据一致性。
 - **返回受影响的行数**：方法的返回值是执行 SQL 命令所影响的行数。
 
-#### 从原始SQL中获取标量结果或无键实体
+#### 从原始SQL获取标量结果或无键实体
 
 ##### 获取标量结果 (`DbConnection.ExecuteScalarAsync()`)
 
@@ -1133,7 +1133,7 @@ public async Task GetProductSummariesFromSql()
 
 ```C#
 using Microsoft.EntityFrameworkCore;
-using System.Linq; // 确保引用此命名空间
+using System.Linq;
 
 public class Order
 {

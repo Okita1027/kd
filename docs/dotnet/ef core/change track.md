@@ -5,7 +5,7 @@ description: 更改跟踪
 date: 2025-07-16 07:54:33
 categories: [.NET, EF CORE]
 tags: [.NET]
-order: 6
+order: 7
 ---
 
 ## 更改跟踪
@@ -205,7 +205,7 @@ public class Product : INotifyPropertyChanged // 实现接口
 - `context.ChangeTracker.DetectChanges()`：强制 EF Core 立即扫描所有被跟踪实体以查找更改并更新它们的状态。`SaveChanges()` 在内部会自动调用此方法。
 - `context.Entry(entity).State = EntityState.Modified;`：直接设置实体状态。
 
-### 访问更改跟踪器API
+### 访问跟踪器API
 
 `DbContext.ChangeTracker` 属性提供了访问更改跟踪器实例的入口，允许你进行更高级的操作：
 

@@ -8,7 +8,7 @@ tags: [.NET]
 order: 1
 ---
 
-## DbContext配置和初始化
+## DbContext
 
 ### 概述
 
