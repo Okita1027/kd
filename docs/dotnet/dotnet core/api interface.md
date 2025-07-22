@@ -322,7 +322,7 @@ return Ok(new ApiResponse<User> { Data = user });
 
 [ASP.NET Core Web API 中的 JSON 修补程序 | Microsoft Learn](https://learn.microsoft.com/zh-cn/aspnet/core/web-api/jsonpatch?view=aspnetcore-8.0)
 
-#### 包安装
+#### NuGet安装`NewtonsoftJson`
 
 JSON Patch基于 `Newtonsoft.Json`，并且需要 [`Microsoft.AspNetCore.Mvc.NewtonsoftJson`](https://www.nuget.org/packages/Microsoft.AspNetCore.Mvc.NewtonsoftJson/) NuGet 包。
 

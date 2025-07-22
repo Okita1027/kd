@@ -4915,7 +4915,38 @@ if (app.Environment.IsDevelopment())
 
 
 
-### 异常过滤器
+### 自定义异常过滤器
+
+1. 自定义异常过滤器
+
+```C#
+public class ArgumentExceptionFilter : IExceptionFilter
+{
+    public void OnException(ExceptionContext context)
+    {
+        if (context.Exception is ArgumentException argumentException)
+        {
+            context.Result = new BadRequestObjectResult(new
+            {
+                Title = "参数异常——来自ArgumentExceptionFilter",
+                Detail = argumentException.Message,
+                StatusCode = 400
+            });
+
+            context.ExceptionHandled = true;
+        }
+    }
+}
+```
+
+2. 注册服务
+
+```C#
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new ArgumentExceptionFilter());
+});
+```
 
 
 
