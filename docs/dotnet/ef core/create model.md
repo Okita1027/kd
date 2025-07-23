@@ -510,13 +510,13 @@ public class ApplicationDbContext : DbContext
 }
 ```
 
-#### 主键类型和值生成
-
-##### ？？？？？？
+#### 主键类型与值生成
 
 主键的类型会影响其值的生成方式。
 
-- **整数类型 (`int`, `long`)**：
+##### 整数类型
+
+- **整数类型 (`int`, `long`，`short`)**：
 
   - **默认**：EF Core 默认将整数主键配置为**数据库自动生成**（例如 SQL Server 的 `IDENTITY`，MySQL 的 `AUTO_INCREMENT`）。这意味着当你 `Add()` 一个新实体并 `SaveChanges()` 时，数据库会自动分配 ID。
   - **覆盖**：你可以通过数据注解 `[DatabaseGenerated(DatabaseGeneratedOption.None)]` 或 Fluent API `ValueGeneratedNever()` 来告诉 EF Core，主键值应由应用程序提供，而不是数据库生成。
@@ -533,9 +533,41 @@ public class ApplicationDbContext : DbContext
   // modelBuilder.Entity<MyEntity>().Property(e => e.Id).ValueGeneratedNever();
   ```
 
-#### 替代键
+##### GUID/UUID
 
-##### ？？？？？
+定义：数据库可以生成 GUID。例如 SQL Server 的 NEWID() 或 NEWSEQUENTIALID()。
+
+EF Core 配置：
+
+数据注解：`[DatabaseGenerated(DatabaseGeneratedOption.Identity)]` （与整数 Identity 语法相同，但行为不同）。
+
+Fluent API：`builder.Property(b => b.Id).ValueGeneratedOnAdd();`
+
+SQL Server：EF Core 默认会映射 Guid 主键到 uniqueidentifier 类型，并使用 NEWSEQUENTIALID() 作为默认值（如果你不提供值），这比 NEWID() 对聚集索引更友好。如果你希望使用 NEWID()，可能需要显式配置 HasDefaultValueSql("NEWID()")。
+
+##### 字符串、复合主键
+非整数类型必须在应用程序中手动生成主键值
+
+##### 值生成模式
+
+| `Never`         | 从不自动生成，必须由代码提供         |
+| --------------- | ------------------------------------ |
+| `OnAdd`         | 插入时自动生成（如 Identity、NEWID） |
+| `OnUpdate`      | 更新时自动生成（如 LastModified）    |
+| `OnAddOrUpdate` | 插入或更新时都自动生成               |
+
+##### 序列
+
+**序列**是一个独立的数据库对象，它被设计用来生成一系列唯一的数字值。它独立于任何特定的表，这意味着多个表或多个应用程序实例可以共用同一个序列来生成主键或任何其他需要唯一数字的列值。
+
+| 数据库       | 是否支持序列 | 说明                     |
+| ------------ | ------------ | ------------------------ |
+| ✅ SQL Server | 支持         | 有内建的 `SEQUENCE` 对象 |
+| ✅ PostgreSQL | 支持         | 使用 `nextval('...')`    |
+| ❌ MySQL      | 不支持       | 没有原生 `SEQUENCE` 对象 |
+| ✅ Oracle     | 支持         | 有 `SEQUENCE` 概念       |
+
+#### 替代键
 
 除了主键之外，你还可以定义**替代键 (Alternate Keys)**。替代键是一个或一组属性，它们的值也**必须是唯一的**，但它们**不是主键**。在数据库中，替代键通常通过**唯一索引 (Unique Index)** 来实现。
 
@@ -544,7 +576,7 @@ public class ApplicationDbContext : DbContext
 - **强制唯一性**：确保某个列或某些列的组合是唯一的。
 - **作为外键的目标**：有时候，外键可能不是指向另一个表的主键，而是指向其替代键。
 
-**配置方式（仅能使用Fluent API）**
+**配置方式1：Fluent API**
 
 ```C#
 public class ApplicationDbContext : DbContext
@@ -574,8 +606,16 @@ public class User
     public string Email { get; set; }
 }
 ```
-
-
+**配置方式2：数据注解**
+```CS
+[Index(nameof(Username), IsUnique = true)]
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; }
+    public string Email { get; set; }
+}
+```
 
 ### 生成的值
 
@@ -1478,16 +1518,6 @@ modelBuilder.Entity<Cat>().UseTpcMappingStrategy();
 modelBuilder.Entity<Dog>().UseTpcMappingStrategy();
 ```
 
-### 序列
-
-**序列**是一个独立的数据库对象，它被设计用来生成一系列唯一的数字值。它独立于任何特定的表，这意味着多个表或多个应用程序实例可以共用同一个序列来生成主键或任何其他需要唯一数字的列值。
-
-| 数据库       | 是否支持序列 | 说明                     |
-| ------------ | ------------ | ------------------------ |
-| ✅ SQL Server | 支持         | 有内建的 `SEQUENCE` 对象 |
-| ✅ PostgreSQL | 支持         | 使用 `nextval('...')`    |
-| ❌ MySQL      | 不支持       | 没有原生 `SEQUENCE` 对象 |
-| ✅ Oracle     | 支持         | 有 `SEQUENCE` 概念       |
 
 ### 支持字段
 
@@ -2511,8 +2541,6 @@ var customSalesData = await _context.ProductSales
 
 ### 从属实体类型
 
-### ？？
-
 #### 定义
 
 从属实体类型允许你**将一个实体类型映射为另一个实体类型（其所有者）的一部分**，而不需要在数据库中为从属实体单独创建一张表。
@@ -2529,6 +2557,8 @@ var customSalesData = await _context.ProductSales
 - **值对象 (Value Objects)**：当你的领域模型中存在值对象时，这些对象通常没有独立的标识，其相等性基于其属性的值。例如，一个 `Address` 对象，它只作为 `Customer` 的一部分存在，没有独立的 `AddressId`。
 - **复杂类型 (Complex Types)**：当你希望将 C# 中的复杂对象作为某个实体的一部分进行持久化，而不想为它创建单独的表关系时。
 - **更好的封装和领域驱动设计 (DDD)**：允许你更好地建模聚合，将相关的数据和行为封装在一起，同时保持数据库的规范化或反规范化。
+
+#### 使用场景===============
 
 #### 配置方式
 

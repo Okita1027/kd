@@ -129,41 +129,13 @@ public class MyConsumer
 
 在有用到 策略模式 的场景，需要根据运行时条件选择执行哪个服务，或者需要对所有注册的服务执行某个操作。
 
-#### 使用工厂方法，根据条件注册特定实例
 
-若希望根据某些条件在运行时决定注入哪个实例，可以使用工厂方法注册。
+#### 按照名称注入
 
-```c#
-// Program.cs
-builder.Services.AddTransient<MyServiceA>(); // 注册具体类型
-builder.Services.AddTransient<MyServiceB>(); // 注册具体类型
+##### 手动实现工厂模式
+手动注册一个 Func<string, IService>，在它内部根据名称返回不同实现。
 
-// 通过工厂方法注册 IMyService
-builder.Services.AddTransient<IMyService>(serviceProvider =>
-{
-    // 假设这里根据配置或某些运行时条件来决定
-    var config = serviceProvider.GetRequiredService<IConfiguration>();
-    var useServiceA = config.GetValue<bool>("UseServiceA");
-
-    if (useServiceA)
-    {
-        return serviceProvider.GetRequiredService<MyServiceA>();
-    }
-    else
-    {
-        return serviceProvider.GetRequiredService<MyServiceB>();
-    }
-});
-```
-
-#### 使用命名服务（第三方库）
-
-.NET Core 内置的 DI 容器**不支持开箱即用的“命名服务”注册**（即像 Spring 那样通过名字来区分注入哪个实例）。如果需要这种功能，需要：
-
-1. **使用第三方 DI 容器：** 例如 Autofac、Ninject 等，它们通常提供了命名注册的功能。
-2. **手动实现工厂模式：** 注册一个工厂服务，该工厂服务根据传入的名称返回不同的 `IMyService` 实例。
-
-```c#
+```C#
 // 假设您需要一个工厂来提供命名服务
 public interface IMyServiceFactory
 {
@@ -210,6 +182,96 @@ public class MyConsumerWithNamedService
         _factory.GetService("ServiceA").DoSomething();
     }
 }
+```
+---
+接口和实现类：
+```CS
+public interface IMessageSender
+{
+    void Send(string message);
+}
+
+public class EmailSender : IMessageSender
+{
+    public void Send(string message) => Console.WriteLine($"Email: {message}");
+}
+
+public class SmsSender : IMessageSender
+{
+    public void Send(string message) => Console.WriteLine($"SMS: {message}");
+}
+
+```
+注册服务：
+```CS
+builder.Services.AddTransient<EmailSender>();
+builder.Services.AddTransient<SmsSender>();
+
+builder.Services.AddTransient<Func<string, IMessageSender>>(serviceProvider => key =>
+{
+    return key switch
+    {
+        "email" => serviceProvider.GetRequiredService<EmailSender>(),
+        "sms" => serviceProvider.GetRequiredService<SmsSender>(),
+        _ => throw new ArgumentException("Invalid message sender type")
+    };
+});
+
+```
+使用示例：
+```CS
+public class MyController
+{
+    private readonly IMessageSender _sender;
+
+    public MyController(Func<string, IMessageSender> senderFactory)
+    {
+        _sender = senderFactory("sms"); // 或 "email"
+    }
+
+    public void Notify()
+    {
+        _sender.Send("Hello!");
+    }
+}
+
+```
+##### 使用 NamedServiceProvider 自定义容器（封装一层）
+手动维护一个字典，把实现类按名称注册起来，适合多个实例的场景。
+```CS
+public class NamedServiceProvider<T>
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly Dictionary<string, Type> _namedServices;
+
+    public NamedServiceProvider(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+        _namedServices = new()
+        {
+            ["email"] = typeof(EmailSender),
+            ["sms"] = typeof(SmsSender)
+        };
+    }
+
+    public T Get(string name)
+    {
+        if (_namedServices.TryGetValue(name, out var type))
+        {
+            return (T)_serviceProvider.GetRequiredService(type);
+        }
+
+        throw new KeyNotFoundException($"No service registered with the name '{name}'");
+    }
+}
+
+```
+`Program.cs`注册
+```CS
+builder.Services.AddTransient<EmailSender>();
+builder.Services.AddTransient<SmsSender>();
+builder.Services.AddSingleton<NamedServiceProvider<IMessageSender>>();
+
 ```
 
 ### 生命周期
@@ -436,7 +498,7 @@ dotnet publish -c Release -r win-x64 --self-contained true
      ```
 
 
-### 管道顺序
+### 中间件的执行顺序
 
 中间件的执行是**顺序依赖**的：
 
@@ -535,7 +597,7 @@ app.Run();
 
 > 中间件的顺序错误可能会导致应用程序行为异常，甚至出现安全漏洞
 
-### 管道分支
+### 中间件条件执行分支
 
 #### 概述
 
@@ -608,7 +670,7 @@ app.Run();
 
 在这个例子中，访问 `/api/products` 的请求会进入 `apiApp.Map("/api", ...)` 定义的分支，执行其中的认证、授权和 API 路由，而不会执行主管道中的 `MapRazorPages` 等。
 
-##### `MapWhen()` - 基于任意条件的分支
+##### `MapWhen()` - 基于条件判断
 
 `MapWhen()` 方法允许您根据一个任意的 `Predicate<HttpContext>`（一个返回布尔值的函数）来匹配请求。如果条件为 `true`，则请求进入分支；否则，请求继续在主管道中流动。
 
@@ -660,7 +722,7 @@ app.Run();
 
 在本例中：访问 `/?admin=true` 会进入管理员分支，而访问 `/` 则不会。
 
-##### `UseWhen()` - 基于条件插入中间件（请求可能回到主管道）
+##### `UseWhen()` - 基于条件判断（请求可能回到主管道）
 
 `UseWhen()` 类似于 `MapWhen()`，也是基于一个条件。但最大的区别是：如果分支中的中间件调用了 `_next()`，请求会回到主管道，并继续执行 `UseWhen()` 之后的主管道中间件。
 
@@ -1997,7 +2059,7 @@ Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。
 
 #### 用户秘密提供程序 (User Secrets)
 
-- **仅在开发环境**下使用，用于存储敏感信息。这些秘密存储在本地用户配置文件的一个 JSON 文件中，不会被提交到源代码管理。
+- 用于存储敏感信息。这些秘密存储在本地用户配置文件的一个 JSON 文件中，不会被提交到源代码管理。
 
 - **使用方式：**
 
@@ -4060,60 +4122,6 @@ public IActionResult GetConnectionInfo()
 ```
 
 在大多数高层应用代码中，可能不会直接与 `Features` 交互，而是通过 `HttpContext.Request`、`HttpContext.Response` 等更高级别的属性来访问信息，因为这些属性已经封装了对底层特性的访问。然而，在编写自定义中间件或深度定制框架行为时，`Features` 变得非常有用。
-
-### 线程不安全性
-
-**含义**
-
-`HttpContext` 对象是**为单个 HTTP 请求而创建的**，它的设计目的是在**单线程的请求处理管道中**使用。不应该在多个线程之间共享同一个 `HttpContext` 实例，也不应该在异步操作中跨越 `await` 边界后继续直接使用它，除非您了解其限制并采取了适当的措施。
-
-**为什么线程不安全？**
-
-`HttpContext` 内部包含许多可变状态（如 `Request`、`Response` 等），这些状态在请求处理过程中可能会被修改。如果在多个线程同时修改或读取这些状态，就会导致数据损坏、竞态条件或不可预测的行为。
-
-**常见问题场景**：
-
-1. **后台任务**：在 ASP.NET Core 请求处理结束后的后台任务中，直接引用从请求中捕获的 `HttpContext` 是一个错误。此时 `HttpContext` 可能已经被销毁或重用了。
-
-2. **异步操作中的 `await` 陷阱**：在 `async` 方法中，如果 `HttpContext` 在 `await` 之前被访问，并且 `await` 之后又被访问，由于上下文切换，`HttpContext` 可能不再是同一个实例，或者其内部状态已经发生变化。
-
-   ```C#
-   public async Task<IActionResult> MyAsyncAction()
-   {
-       string originalPath = HttpContext.Request.Path; // 第一次访问
-   
-       await Task.Delay(1000); // 模拟耗时操作，可能导致上下文切换
-   
-       // 警告：这里的 HttpContext.Request.Path 可能不再是原始请求的路径，
-       // 如果在await期间请求被取消或上下文被重用
-       string currentPath = HttpContext.Request.Path; // 第二次访问，风险点
-   
-       return Ok();
-   }
-   ```
-
-**正确的手法**
-
-1. **在 `await` 前捕获所需数据**：如果在`await`之后需要`HttpContext`中的特定数据，请在`await`之前将其复制到局部变量中。
-
-   ```C#
-   public async Task<IActionResult> MyAsyncAction()
-   {
-       string pathAtStart = HttpContext.Request.Path; // 捕获数据
-       string traceId = HttpContext.TraceIdentifier; // 捕获数据
-   
-       await Task.Delay(1000); // 模拟耗时操作
-   
-       // 安全地使用已捕获的数据
-       _logger.LogInformation("Path at start: {Path}, Trace ID: {TraceId}", pathAtStart, traceId);
-   
-       return Ok();
-   }
-   ```
-
-2. **避免在后台任务中直接引用 `HttpContext`**：如果需要在后台任务中使用请求数据，请将所需的数据作为参数传递给后台任务，而不是传递 `HttpContext` 本身。
-3. **使用 `IHttpContextAccessor` 的注意事项**：`IHttpContextAccessor` 虽然允许在服务层访问 `HttpContext`，但它也存在同样的线程安全限制。在后台任务中 `IHttpContextAccessor.HttpContext` 将会是 `null`。
-4. **将操作包装在同步代码中**：如果操作是同步的，或者您能确保 `await` 不会导致上下文切换，那么风险较小。但通常，最好遵循上述捕获数据的原则。
 
 ## 路由
 
