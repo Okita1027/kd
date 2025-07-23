@@ -512,6 +512,8 @@ public class ApplicationDbContext : DbContext
 
 #### 主键类型和值生成
 
+##### ？？？？？？
+
 主键的类型会影响其值的生成方式。
 
 - **整数类型 (`int`, `long`)**：
@@ -532,6 +534,8 @@ public class ApplicationDbContext : DbContext
   ```
 
 #### 替代键
+
+##### ？？？？？
 
 除了主键之外，你还可以定义**替代键 (Alternate Keys)**。替代键是一个或一组属性，它们的值也**必须是唯一的**，但它们**不是主键**。在数据库中，替代键通常通过**唯一索引 (Unique Index)** 来实现。
 
@@ -2506,6 +2510,8 @@ var customSalesData = await _context.ProductSales
 - **无主键**：不能用作关系中的主体端。
 
 ### 从属实体类型
+
+### ？？
 
 #### 定义
 
