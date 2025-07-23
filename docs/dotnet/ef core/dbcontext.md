@@ -10,8 +10,6 @@ order: 1
 
 ## DbContext
 
-### 概述
-
 `DbContext` 是 EF Core 的核心，它扮演着以下几个关键角色：
 
 - **数据库会话 (Database Session)**：`DbContext` 的一个实例代表了与数据库的一次会话或工作单元。在这个会话中，你可以加载实体、跟踪它们的更改、保存数据。
@@ -20,19 +18,63 @@ order: 1
 - **变更跟踪 (Change Tracking)**：这是 EF Core 最强大的功能之一。`DbContext` 会自动跟踪从数据库加载的实体以及你添加到它的新实体。当这些实体发生变化时，`DbContext` 会记录这些变化，并在你调用 `SaveChanges()` 或 `SaveChangesAsync()` 时，生成相应的 SQL INSERT、UPDATE 或 DELETE 语句来同步数据库。
 - **查询和保存数据**：它是你与数据库交互的主要入口点。你可以通过它执行 LINQ 查询、添加新实体、更新现有实体、删除实体，并将这些更改持久化到数据库。
 
-#### 生命周期【TODO:学习】
+### 生命周期
 
-`DbContext` 实例的生命周期通常是**短暂的**，并且每个工作单元（或每个 HTTP 请求）都应该使用**一个新的** `DbContext` 实例。这是 EF Core 的设计哲学，也是大多数 Web 应用程序的最佳实践。
+`DbContext` 实例的生命周期通常是**短暂的**，并且每个工作单元（或每个 HTTP 请求）都应该使用**一个新的** `DbContext` 实例
 
-- **为什么是短暂的？**
-  - **变更跟踪**：一个 `DbContext` 实例会跟踪它加载的所有实体。如果一个实例存活时间过长，它跟踪的实体数量会不断增加，导致内存占用增多，性能下降。
-  - **并发问题**：`DbContext` 不是线程安全的。多个线程同时使用同一个 `DbContext` 实例可能导致数据不一致或其他不可预测的行为。
-  - **数据陈旧**：长时间存活的 `DbContext` 可能持有旧的数据，无法反映数据库中的最新更改。
-- **如何在 .NET Core 中管理？**
-  - 在 ASP.NET Core 中，`DbContext` 通常通过**依赖注入 (Dependency Injection - DI)** 进行注册和管理。
-  - 默认情况下，`DbContext` 会被注册为 **`Scoped` (作用域)** 生命周期。这意味着在每个 HTTP 请求的生命周期内，只会创建一个 `DbContext` 实例。请求结束，`DbContext` 实例就会被销毁。这完美符合“每个工作单元使用一个新实例”的最佳实践。
+```MERMAID
+sequenceDiagram
+    participant Request
+    participant DI
+    participant DbContext
+    participant Database
 
-#### 使用方式
+    Request->>DI: 需要 AppDbContext
+    DI->>DbContext: 创建新实例（Scoped）
+    DbContext->>Database: 打开连接
+    loop 请求处理
+        Request->>DbContext: 执行查询/更新
+        DbContext->>Database: 发送SQL
+    end
+    Request->>DbContext: 操作完成
+    DbContext->>Database: 关闭连接
+    DI->>DbContext: 调用 Dispose()
+```
+
+1. **创建（Creation）**
+
+- **触发时机**：首次从 DI 容器解析时（如控制器构造函数注入）
+- **关键操作**：
+  - 建立数据库连接池连接
+  - 初始化变更跟踪器
+
+2. **使用（Usage）**
+
+- **请求内共享**：同一请求中的 Repository/Service 使用相同的 DbContext
+- **变更跟踪**：所有查询的实体默认被跟踪（除非显式使用 `AsNoTracking`）
+
+3. **释放（Disposal）**
+
+- **自动触发**：请求结束时 ASP.NET Core 自动调用 `Dispose()`
+- **关键操作**：
+  - 关闭数据库连接
+  - 清理变更跟踪器
+  - 释放所有资源
+
+**为什么是短暂的？**
+
+- **变更跟踪**：一个 `DbContext` 实例会跟踪它加载的所有实体。如果一个实例存活时间过长，它跟踪的实体数量会不断增加，导致内存占用增多，性能下降。
+- **并发问题**：`DbContext` 不是线程安全的。多个线程同时使用同一个 `DbContext` 实例可能导致数据不一致或其他不可预测的行为。
+- **数据陈旧**：长时间存活的 `DbContext` 可能持有旧的数据，无法反映数据库中的最新更改。
+
+**如何在 .NET Core 中管理？**
+
+- 在 ASP.NET Core 中，`DbContext` 通常通过**依赖注入 (Dependency Injection - DI)** 进行注册和管理。
+- 默认情况下，`DbContext` 会被注册为 **`Scoped` (作用域)** 生命周期。这意味着在每个 HTTP 请求的生命周期内，只会创建一个 `DbContext` 实例。请求结束，`DbContext` 实例就会被销毁。这完美符合“每个工作单元使用一个新实例”的最佳实践。
+
+### 使用方法
+
+#### 依赖注入
 
 `DbContext` 的配置主要通过重写 `OnConfiguring` 方法或更常见的通过**依赖注入**在 `Program.cs`中进行。
 
@@ -64,6 +106,325 @@ order: 1
   这种方式更灵活，可以从配置源（如 `appsettings.json`）获取连接字符串，并且方便地集成到 .NET Core 的整个 DI 体系中。
 
 > DbContext 非线程安全，仅在单一线程或请求中使用。
+
+#### 使用new进行基本DbContext实例化
+
+通过依赖注入 (DI) 容器注册和使用 `DbContext` 是**最推荐和最常见**的做法，但在某些特定场景下，你可能需要手动使用 `new` 关键字来初始化 `DbContext` 实例。
+
+这种手动初始化方式通常用于：
+
+- **控制台应用程序**：没有内置的 DI 容器。
+- **单元测试或集成测试**：需要直接控制 `DbContext` 实例。
+- **一次性脚本**：快速执行一些数据库操作，无需完整的 Web 应用上下文。
+- **后台任务/非 HTTP 请求上下文**：在需要独立于当前请求生命周期的 `DbContext` 实例时（尽管更推荐使用 `IDbContextFactory<TDbContext>`）。
+
+---
+
+当你使用 `new` 关键字初始化 `DbContext` 时，你需要提供数据库连接配置。这通常通过重写 `DbContext` 类中的 `OnConfiguring` 方法来完成。
+
+1. 修改`DbContext`类
+
+在你的 `ApplicationDbContext` 类中，添加一个**无参数构造函数**，并重写 `OnConfiguring` 方法来配置数据库连接。
+
+- 无参构造：
+
+```C#
+// ApplicationDbContext.cs
+using Microsoft.EntityFrameworkCore;
+using DEMO_CRUD.Models.Entity; // 假设你的实体定义在这里
+
+public class ApplicationDbContext : DbContext
+{
+    // 1. 无参数构造函数 (重要，用于手动 new)
+    public ApplicationDbContext()
+    {
+    }
+
+    // 2. 带有 DbContextOptions 的构造函数 (用于 DI)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+
+    // DbSets 保持不变
+    public DbSet<Book> Books { get; set; }
+    public DbSet<Author> Authors { get; set; }
+    public DbSet<Publisher> Publishers { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<BookCategory> BookCategories { get; set; }
+
+    // 3. 重写 OnConfiguring 方法来配置数据库连接
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // 如果 DbContextOptions 还没有被配置 (即通过无参构造函数创建时)
+        if (!optionsBuilder.IsConfigured)
+        {
+            // 直接在这里提供连接字符串和数据库提供程序
+            string connectionString = "Server=localhost;Port=3306;Database=your_database_name;Uid=your_username;Pwd=your_password;";
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+
+            // 可选：启用敏感数据日志（仅用于开发/调试）
+            // optionsBuilder.EnableSensitiveDataLogging();
+        }
+    }
+
+    // 4. OnModelCreating 保持不变 (用于模型配置)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // ... 你的 Fluent API 配置或 ApplyConfigurationsFromAssembly ...
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+    }
+}
+```
+
+- 上面的无参构造函数可以换成有参构造：让`connectionString`从外部传进来。
+
+- 可以创建 `DbContextOptions`，并可以显式调用构造函数：
+
+  ```CS
+  var contextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+      .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=Test;ConnectRetryCount=0")
+      .Options;
+  
+  using var context = new ApplicationDbContext(contextOptions);
+  ```
+
+2. 在代码中使用`new`初始化
+
+现在，你可以在任何地方使用 `new` 关键字来创建 `ApplicationDbContext` 的实例。**记住，手动创建的 `DbContext` 实例需要手动管理其生命周期，通常使用 `using` 语句来确保它被正确释放**
+
+```CS
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using DEMO_CRUD.Models.Entity; // 确保引用了你的实体命名空间
+
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        Console.WriteLine("手动初始化 DbContext 示例开始...");
+
+        // 使用 'using' 语句确保 DbContext 实例被正确释放
+        await using (var context = new ApplicationDbContext())
+        {
+            try
+            {
+                // 确保数据库存在并应用所有挂起的迁移（可选，但推荐在启动时做）
+                // 仅在手动初始化且不需要 migrations cli 时使用
+                // await context.Database.MigrateAsync();
+                Console.WriteLine("数据库连接成功。");
+
+                // 添加一个新的 Author
+                var newAuthor = new Author { Name = "New Author " + Guid.NewGuid().ToString().Substring(0, 4) };
+                context.Authors.Add(newAuthor);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"添加新作者: {newAuthor.Name}, ID: {newAuthor.Id}");
+
+                // 查询所有书籍
+                var books = await context.Books.Include(b => b.Author).ToListAsync();
+                Console.WriteLine("\n当前所有书籍:");
+                foreach (var book in books)
+                {
+                    Console.WriteLine($"- ID: {book.Id}, Title: {book.Title}, Author: {book.Author?.Name ?? "N/A"}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"发生错误: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+            }
+        }
+
+        Console.WriteLine("\n手动初始化 DbContext 示例结束.");
+    }
+}
+```
+
+#### 使用DbContext工厂`IDbContextFactory<TDbContext>`
+
+1. 定义`ApplicationDbContext`
+
+```CS
+// ApplicationDbContext.cs
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+}
+```
+
+2. 注册DbContext工厂
+
+```CS
+// Program.cs
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 4, 4)),  // 指定MySQL版本
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure()  // 可选：启用重试
+    ));
+```
+
+3. 使用
+
+> [!IMPORTANT]
+>
+> 请注意，以这种方式创建的 `DbContext` 实例并非由应用程序的服务提供程序进行管理，因此必须由应用程序释放。
+
+```CS
+// 假设您有一个后台服务（BackgroundService），需要定期查询数据库
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+public class MyBackgroundService : BackgroundService
+{
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+    private readonly ILogger<MyBackgroundService> _logger;
+
+    public MyBackgroundService(IDbContextFactory<AppDbContext> dbContextFactory, ILogger<MyBackgroundService> logger)
+    {
+        _dbContextFactory = dbContextFactory;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // 使用using语句创建并自动Dispose DbContext
+            using var dbContext = _dbContextFactory.CreateDbContext();
+
+            try
+            {
+                // 示例：查询用户
+                var users = await dbContext.Users.ToListAsync(stoppingToken);
+                _logger.LogInformation("Found {Count} users.", users.Count);
+
+                // 示例：添加用户
+                var newUser = new User { Name = "New User" };
+                dbContext.Users.Add(newUser);
+                await dbContext.SaveChangesAsync(stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in background task.");
+            }
+
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);  // 每分钟执行一次
+        }
+    }
+}
+```
+
+### `DbContextOptions`
+
+`DbContextOptions<TContext>`（或其非泛型版本`DbContextOptions`）是Entity Framework Core (EF Core)中的一个核心配置类，用于定义和传递`DbContext`的各种选项和行为。它本质上是一个构建器（Builder），允许您在创建DbContext实例时指定：
+
+- **数据库提供者**：如MySQL、SQL Server等（通过扩展方法如`UseMySql`）。
+- **连接字符串**：数据库连接细节。
+- **高级配置**：如查询日志、异常重试、敏感数据日志、查询跟踪行为、模型缓存等。
+- **扩展性**：可以自定义行为，例如启用懒加载、配置连接池大小等。
+
+#### 在DI中配置DbContextOptions
+
+这是最常见的方式。在注册DbContext工厂时，使用lambda构建选项：
+
+```CS
+// Program.cs
+using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql.Storage;  // 如果使用Pomelo提供者
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 注册DbContext工厂，并配置DbContextOptions
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+{
+    // 核心：使用MySQL提供者
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),  // 从appsettings.json获取连接字符串
+        new MySqlServerVersion(new Version(8, 4, 4)),  // 指定MySQL服务器版本（匹配您的8.4.4）
+        mySqlOptions =>
+        {
+            // 可选：MySQL特定配置
+            mySqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,  // 失败重试次数
+                maxRetryDelay: TimeSpan.FromSeconds(10),  // 最大延迟
+                errorNumbersToAdd: null  // 可添加特定MySQL错误码
+            );
+            mySqlOptions.CharSet(CharSet.Utf8mb4);  // 设置字符集，推荐utf8mb4以支持表情符号等
+        }
+    );
+
+    // 通用EF Core选项配置
+    options.EnableSensitiveDataLogging();  // 启用敏感数据日志（开发环境用，生产禁用）
+    options.EnableDetailedErrors();  // 详细错误信息（开发用）
+    options.LogTo(Console.WriteLine, LogLevel.Information);  // 将EF Core日志输出到控制台
+
+    // 可选：禁用查询跟踪（提高性能，如果不需ChangeTracker）
+    // options = options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
+    // 可选：启用懒加载（需安装Microsoft.EntityFrameworkCore.Proxies包）
+    // options.UseLazyLoadingProxies();
+});
+
+// 其他服务注册...
+
+var app = builder.Build();
+app.Run();
+```
+
+在您的`AppDbContext`类中，通常只需在构造函数中接收它：
+
+```CS
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    // ... 其他代码如DbSet<User>等
+}
+```
+
+
+
+#### 常见的数据库提供程序
+
+| 数据库系统              | 配置示例                                     | NuGet 程序包                                                 |
+| :---------------------- | :------------------------------------------- | :----------------------------------------------------------- |
+| SQL Server 或 Azure SQL | `.UseSqlServer(connectionString)`            | [Microsoft.EntityFrameworkCore.SqlServer](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.SqlServer/) |
+| Azure Cosmos DB         | `.UseCosmos(connectionString, databaseName)` | [Microsoft.EntityFrameworkCore.Cosmos](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Cosmos/) |
+| SQLite                  | `.UseSqlite(connectionString)`               | [Microsoft.EntityFrameworkCore.Sqlite](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Sqlite/) |
+| EF Core 内存中数据库    | `.UseInMemoryDatabase(databaseName)`         | [Microsoft.EntityFrameworkCore.InMemory](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.InMemory/) |
+| PostgreSQL*             | `.UseNpgsql(connectionString)`               | [Npgsql.EntityFrameworkCore.PostgreSQL](https://www.nuget.org/packages/Npgsql.EntityFrameworkCore.PostgreSQL/) |
+| MySQL/MariaDB*          | `.UseMySql(connectionString)`                | [Pomelo.EntityFrameworkCore.MySql](https://www.nuget.org/packages/Pomelo.EntityFrameworkCore.MySql/) |
+| Oracle*                 | `.UseOracle(connectionString)`               | [Oracle.EntityFrameworkCore](https://www.nuget.org/packages/Oracle.EntityFrameworkCore/) |
+
+> [!warning]
+>
+> EF Core 内存中数据库不是为生产用途设计的。 此外，它可能不是测试的最佳选择。 有关详细信息，请参阅[使用 EF Core 的测试代码](https://learn.microsoft.com/zh-cn/ef/core/testing/)。
+
+#### `DbContextOptionsBuilder`的常见方法
+
+| DbContextOptionsBuilder 方法                                 | 作用                                     | 了解更多                                                     |
+| :----------------------------------------------------------- | :--------------------------------------- | :----------------------------------------------------------- |
+| [UseQueryTrackingBehavior](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.usequerytrackingbehavior) | 设置查询的默认跟踪行为                   | [查询跟踪行为](https://learn.microsoft.com/zh-cn/ef/core/querying/tracking) |
+| [LogTo](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.logto) | 获取 EF Core 日志的一种简单方法          | [日志记录、事件和诊断](https://learn.microsoft.com/zh-cn/ef/core/logging-events-diagnostics/) |
+| [UseLoggerFactory](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.useloggerfactory) | 注册 `Microsoft.Extensions.Logging` 工厂 | [日志记录、事件和诊断](https://learn.microsoft.com/zh-cn/ef/core/logging-events-diagnostics/) |
+| [EnableSensitiveDataLogging](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.enablesensitivedatalogging) | 在异常和日志记录中包括应用程序数据       | [日志记录、事件和诊断](https://learn.microsoft.com/zh-cn/ef/core/logging-events-diagnostics/) |
+| [EnableDetailedErrors](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.enabledetailederrors) | 更详细的查询错误（以性能为代价）         | [日志记录、事件和诊断](https://learn.microsoft.com/zh-cn/ef/core/logging-events-diagnostics/) |
+| [ConfigureWarnings](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.configurewarnings) | 忽略或引发警告和其他事件                 | [日志记录、事件和诊断](https://learn.microsoft.com/zh-cn/ef/core/logging-events-diagnostics/) |
+| [AddInterceptors](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.dbcontextoptionsbuilder.addinterceptors) | 注册 EF Core 侦听器                      | [日志记录、事件和诊断](https://learn.microsoft.com/zh-cn/ef/core/logging-events-diagnostics/) |
+| [UseLazyLoadingProxies](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.proxiesextensions.uselazyloadingproxies) | 使用动态代理进行延迟加载                 | [延迟加载](https://learn.microsoft.com/zh-cn/ef/core/querying/related-data/lazy) |
+| [UseChangeTrackingProxies](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.proxiesextensions.usechangetrackingproxies) | 使用动态代理进行更改跟踪                 | 即将推出...                                                  |
+
+#### `DbContextOptions` 与 `DbContextOptions<TContext>`
+
+
 
 ### 上下文池
 
