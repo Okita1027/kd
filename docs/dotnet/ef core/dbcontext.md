@@ -74,7 +74,7 @@ sequenceDiagram
 
 ### 使用方法
 
-#### 依赖注入
+#### 基本依赖注入
 
 `DbContext` 的配置主要通过重写 `OnConfiguring` 方法或更常见的通过**依赖注入**在 `Program.cs`中进行。
 
@@ -125,8 +125,6 @@ sequenceDiagram
 1. 修改`DbContext`类
 
 在你的 `ApplicationDbContext` 类中，添加一个**无参数构造函数**，并重写 `OnConfiguring` 方法来配置数据库连接。
-
-- 无参构造：
 
 ```C#
 // ApplicationDbContext.cs
@@ -276,6 +274,8 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 > [!IMPORTANT]
 >
 > 请注意，以这种方式创建的 `DbContext` 实例并非由应用程序的服务提供程序进行管理，因此必须由应用程序释放。
+>
+> 推荐使用`using`关键字
 
 ```CS
 // 假设您有一个后台服务（BackgroundService），需要定期查询数据库
@@ -422,13 +422,9 @@ public class AppDbContext : DbContext
 | [UseLazyLoadingProxies](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.proxiesextensions.uselazyloadingproxies) | 使用动态代理进行延迟加载                 | [延迟加载](https://learn.microsoft.com/zh-cn/ef/core/querying/related-data/lazy) |
 | [UseChangeTrackingProxies](https://learn.microsoft.com/zh-cn/dotnet/api/microsoft.entityframeworkcore.proxiesextensions.usechangetrackingproxies) | 使用动态代理进行更改跟踪                 | 即将推出...                                                  |
 
-#### `DbContextOptions` 与 `DbContextOptions<TContext>`
+### `DbContextPool`
 
-
-
-### 上下文池
-
-“上下文池”是 EF Core 提供的一种**性能优化技术**，它旨在解决创建和初始化 `DbContext` 实例可能带来的开销，特别是在高并发的 Web 应用程序中。
+**`DbContext` 池（DbContext Pooling）** 是一种性能优化机制，它允许框架重用 `DbContext` 实例，而不是每次都创建和销毁，从而减少了内存分配和 GC 压力。
 
 #### 作用
 
@@ -449,7 +445,46 @@ public class AppDbContext : DbContext
 3. **重置状态**：从池中取出的 `DbContext` 实例会被重置到其“干净”状态（即没有实体被跟踪），然后才被应用程序使用。
 4. **归还实例**：当 `DbContext` 实例被使用完毕（例如，HTTP 请求结束，作用域被销毁），它不会被立即销毁，而是被**归还到池中**，等待下一次重用。
 
-#### 查询缓存
+
+#### 配置方式
+
+在 `Program.cs`中，将 `AddDbContext` 替换为 `AddDbContextPool`：
+
+```C#
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// ... 获取连接字符串 ...
+
+// 启用 DbContext 池
+builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
+{
+    options.UseMySql(connectionString,
+        ServerVersion.AutoDetect(connectionString))
+}, poolSize: 128);	// 设置池子的大小
+
+// ... 其他服务和应用配置 ...
+```
+
+> EF Core 会维护一个池，默认最多保留 **1024 个上下文实例**
+
+#### 注意事项
+
+- **仅适用于 `DbContext` 类型具有无参构造函数或只接受 `DbContextOptions<TContext>` 参数的构造函数。**（这是最常见的，通常不是问题）
+
+- **不适用于每个请求都传递配置信息给 `DbContext` 的场景。** 因为池化的实例是预先配置好的。
+
+- **状态管理**：
+
+  - `DbContext` 从池中取出时会**被重置**，这意味着你**不能**依赖 `DbContext` 实例在不同请求之间维护任何自定义状态。如果你在 `DbContext` 中添加了自定义字段并期望它们在重用时保持状态，那将是个问题。
+
+  - EF Core 会确保重置其**内部**状态（如变更跟踪器），但如果你有自定义的业务逻辑在 `DbContext` 构造函数中执行，并且这些逻辑是昂贵的或有副作用的，那么池化可能不会带来太大收益，或者需要额外小心。
+
+- **并发访问**：池化的 `DbContext` 实例仍然**不是线程安全的**。每个请求从池中获取一个实例，使用完毕后归还。在单个请求内部，不要在多个线程间共享同一个 `DbContext` 实例。
+
+- **池的大小**：默认情况下，池的大小是有限的。如果并发请求数超出池的容量，新的 `DbContext` 实例仍然会被创建。你可以通过 `options.UsePooledDbContextFactory` 来配置池的最大大小（但这通常不是直接通过 `AddDbContextPool` 的参数）。
+
+### 查询缓存与参数化
 
 当你使用 LINQ 查询（例如 `_context.Books.Where(b => b.Id == 1).ToList()`）时，EF Core 需要执行一系列复杂的步骤才能将其发送到数据库并获取结果：
 
@@ -472,37 +507,230 @@ public class AppDbContext : DbContext
 
    - 数据库也会重用之前编译好的执行计划，只是将新的参数值传递给它。
 
-#### 使用方式
+### 动态构造的查询
 
-在 `Program.cs`中，将 `AddDbContext` 替换为 `AddDbContextPool`：
+#### if条件判断+LINQ表达式
 
-```C#
-// Program.cs
-var builder = WebApplication.CreateBuilder(args);
+#### `Expression`表达式树
 
-// ... 获取连接字符串 ...
+##### 概念
 
-// 启用 DbContext 池
-builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString,
-        ServerVersion.AutoDetect(connectionString))
-);
+`Expression` 表达式 代表了**可执行代码的数据结构化表示**。
 
-// ... 其他服务和应用配置 ...
+简单来说，它将你通常编写的 C# 代码（例如方法调用、算术运算、属性访问、Lambda 表达式等）转换成了一个可以被程序在运行时分析、修改、编译和执行的**对象模型**。
+
+它就像是在程序中创建一个「代码的 AST（抽象语法树）」，而不是立即执行它。
+
+**Expression的家族结构：**
+
+| 类型                    | 作用                                        |
+| ----------------------- | ------------------------------------------- |
+| `Expression`（抽象类）  | 所有表达式的基类                            |
+| `Expression<TDelegate>` | 用于表示 Lambda 表达式                      |
+| `ParameterExpression`   | 变量、参数，如 `x`                          |
+| `ConstantExpression`    | 常量，如 `"张三"`、123                      |
+| `MemberExpression`      | 属性或字段，如 `x.Name`                     |
+| `BinaryExpression`      | 二元运算，如 `x.Age > 18`                   |
+| `LambdaExpression`      | Lambda 表达式本体，如 `x => x.Name == "张"` |
+
+##### 使用案例
+
+示例1：基本构造一个`X => X.AGE > 18`
+
+等价于：
+
+```CS
+Expression<Func<User, bool>> expr = x => x.Age > 18;
+```
+
+构造方式：
+
+```CS
+// 参数 x
+var param = Expression.Parameter(typeof(User), "x");
+
+// 属性 x.Age
+var ageProp = Expression.Property(param, "Age");
+
+// 常量 18
+var const18 = Expression.Constant(18);
+
+// 比较 x.Age > 18
+var body = Expression.GreaterThan(ageProp, const18);
+
+// 构建 lambda
+var lambda = Expression.Lambda<Func<User, bool>>(body, param);
+```
+
+执行表达式：
+
+```CS
+var func = lambda.Compile(); // 转换为可执行委托
+bool result = func(new User { Age = 20 }); // true
+```
+
+---
+
+示例2：组合多个条件（用于动态查询）
+
+比如：`x => x.Name.Contains("张") && x.Age > 18`
+
+```CS
+var param = Expression.Parameter(typeof(User), "x");
+
+var nameProp = Expression.Property(param, "Name");
+var containsMethod = typeof(string).GetMethod("Contains", [typeof(string)]);
+var nameCondition = Expression.Call(nameProp, containsMethod!, Expression.Constant("张"));
+
+var ageProp = Expression.Property(param, "Age");
+var ageCondition = Expression.GreaterThan(ageProp, Expression.Constant(18));
+
+var body = Expression.AndAlso(nameCondition, ageCondition);
+
+var lambda = Expression.Lambda<Func<User, bool>>(body, param);
+```
+
+---
+
+示例3：动态过滤字符串（字段名称和值运行时决定）
+
+```CS
+public static Expression<Func<T, bool>> BuildEqualExpression<T>(string fieldName, object value)
+{
+    var param = Expression.Parameter(typeof(T), "x");
+    var property = Expression.Property(param, fieldName);
+    var constant = Expression.Constant(value);
+    var body = Expression.Equal(property, constant);
+    return Expression.Lambda<Func<T, bool>>(body, param);
+}
+```
+
+```CS
+var expr = BuildEqualExpression<User>("Name", "张三");
+var list = context.Users.Where(expr).ToList();
+```
+
+##### 动态组合表达式（借助LinqKit的`PredicateBuilder`）
+
+```CS
+using LinqKit;
+
+var predicate = PredicateBuilder.New<User>();
+
+if (!string.IsNullOrEmpty(name))
+    predicate = predicate.And(u => u.Name.Contains(name));
+
+if (age.HasValue)
+    predicate = predicate.And(u => u.Age == age.Value);
+
+var result = context.Users.AsExpandable().Where(predicate).ToList();
+
+```
+
+### 已编译的模型
+
+已编译模型是将 `DbContext` 的元数据提前编译并缓存为 .NET IL 代码或对象，以避免运行时重复构建模型（Model Building）。
+
+#### 问题引入
+
+当你首次运行 EF Core 应用程序时，或者第一次使用 `DbContext` 实例时，EF Core 需要执行一个重要的步骤：**构建其内部的数据库模型**。这个过程涉及到：
+
+1. **扫描你的实体类**：识别所有的 `DbSet` 属性。
+2. **应用约定 (Conventions)**：根据默认规则推断实体之间的关系、主键、属性类型等。
+3. **应用数据注解 (Data Annotations)**：处理你在实体类上定义的 `[Table]`, `[Key]`, `[Required]` 等特性。
+4. **应用 Fluent API 配置**：执行你在 `OnModelCreating` 方法中定义的所有配置（包括通过 `IEntityTypeConfiguration` 应用的配置）。
+5. **生成内部元数据**：创建 EF Core 运行时使用的所有内部模型元数据结构。
+
+对于包含大量实体、复杂关系或广泛配置的大型模型来说，这个模型构建过程可能会相当耗时，导致应用程序的**首次请求响应时间 (TTFB - Time To First Byte)** 变长，或者在应用程序启动时有明显的延迟。
+
+**已编译的模型就是为了解决这个“启动时模型构建开销”的问题而诞生的。**
+
+#### 工作原理
+
+已编译模型的核心思想是：**将模型构建的逻辑从运行时提前到编译时或构建时，并将构建好的模型序列化为 C# 代码。**
+
+具体步骤如下：
+
+1. **生成模型代码**：EF Core 命令行工具 (CLI) 会分析你的 `DbContext` 和实体，然后生成一个包含模型定义的 C# 文件。这个生成的文件包含一个经过优化、预先构建的模型表示。
+2. **编译生成代码**：这个生成的 C# 文件会被编译到你的应用程序程序集中。
+3. **运行时加载**：当应用程序启动时，EF Core 会直接加载这个预编译的模型，而不是在运行时动态构建它。这大大减少了模型初始化的时间。
+
+#### 使用场景
+
+| 场景                                 | 是否推荐                         |
+| ------------------------------------ | -------------------------------- |
+| 模型实体类数量非常多（>100个）       | ✅ 强烈推荐                       |
+| 短生命周期服务 / 云函数              | ✅ 推荐                           |
+| 模型配置复杂，首次构建很慢           | ✅ 推荐                           |
+| 小型项目 / 内网后台 / 轻量接口       | ❌ 一般不需要                     |
+| 使用 Code-First + Migration 动态变更 | ⚠️ 谨慎使用（需同步重新编译模型） |
+
+#### 使用步骤
+
+1. 安装工具包
+
+```BASH
+dotnet add package Microsoft.EntityFrameworkCore.Design
+```
+
+2. 创建一个类用于模型编译
+
+```CS
+public class MyDbContext : DbContext
+{
+    public DbSet<User> Users => Set<User>();
+
+    public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>().HasIndex(x => x.Name);
+        // 可添加其他模型配置
+    }
+}
+```
+
+3. 生成已编译模型的代码（CLI命令）
+
+```BASH
+dotnet ef dbcontext optimize --output-dir CompiledModels
+```
+
+会在项目中生成一个包含 `.cs` 文件的目录，例如：
+
+```TXT
+CompiledModels/
+  MyDbContextModel.cs
+```
+
+4. 在运行时使用已经编译的模型
+
+```CS
+var options = new DbContextOptionsBuilder<MyDbContext>()
+    .UseSqlServer("YourConnectionString")
+    .UseModel(MyDbContextModel.Instance) // 指定使用已编译模型
+    .Options;
+
+using var db = new MyDbContext(options);
 ```
 
 #### 注意事项
 
-- **仅适用于 `DbContext` 类型具有无参构造函数或只接受 `DbContextOptions<TContext>` 参数的构造函数。**（这是最常见的，通常不是问题）
+1. **模型一旦修改，需要重新生成编译模型**
 
-- **不适用于每个请求都传递配置信息给 `DbContext` 的场景。** 因为池化的实例是预先配置好的。
+- 否则运行时报错或模型不同步。
 
-- **状态管理**：
+- 修改模型实体类或 Fluent API 后必须重新运行：
 
-  - `DbContext` 从池中取出时会**被重置**，这意味着你**不能**依赖 `DbContext` 实例在不同请求之间维护任何自定义状态。如果你在 `DbContext` 中添加了自定义字段并期望它们在重用时保持状态，那将是个问题。
+  ```BASH
+  dotnet ef dbcontext optimize
+  ```
 
-  - EF Core 会确保重置其**内部**状态（如变更跟踪器），但如果你有自定义的业务逻辑在 `DbContext` 构造函数中执行，并且这些逻辑是昂贵的或有副作用的，那么池化可能不会带来太大收益，或者需要额外小心。
+2. **和 Migration 共存**
 
-- **并发访问**：池化的 `DbContext` 实例仍然**不是线程安全的**。每个请求从池中获取一个实例，使用完毕后归还。在单个请求内部，不要在多个线程间共享同一个 `DbContext` 实例。
+- 已编译模型是优化运行时性能，不影响迁移管理，只要保持一致即可。
 
-- **池的大小**：默认情况下，池的大小是有限的。如果并发请求数超出池的容量，新的 `DbContext` 实例仍然会被创建。你可以通过 `options.UsePooledDbContextFactory` 来配置池的最大大小（但这通常不是直接通过 `AddDbContextPool` 的参数）。
+3. **不能与 `UseLazyLoadingProxies` 混用**
+
+- 懒加载代理不兼容已编译模型。
+

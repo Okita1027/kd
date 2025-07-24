@@ -11,7 +11,135 @@ tags: []
 
 [简介 - JavaScript教程 - 廖雪峰的官方网站](https://liaoxuefeng.com/books/javascript/introduction/index.html)
 
+[JavaScript 指南 - JavaScript | MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide)
+
 ## 基础语法
+
+### 变量
+
+#### 假值
+
+- `false`
+- `undefined`
+- `null`
+- `0`
+- `NaN`
+- 空字符串（`""`）
+
+#### `let`和`var`
+
+| 特性             | `var`                          | `let`                                |
+| ---------------- | ------------------------------ | ------------------------------------ |
+| **作用域**       | 函数作用域（Function Scope）   | 块级作用域（Block Scope）            |
+| **变量提升**     | 有，初始化为 `undefined`       | 有，但不初始化（存在**暂时性死区**） |
+| **重复声明**     | 可以重复声明                   | 不可以重复声明                       |
+| **绑定到全局**   | 是，全局变量变成 `window` 属性 | 否，不会变成 `window` 的属性         |
+| **适合使用场景** | 旧代码或函数作用域的变量       | 建议使用，行为更安全、现代           |
+
+##### 作用域
+
+`var` 在函数内有效，`let` 在块 `{}` 内有效。
+
+```JS
+if (true) {
+  var x = 10;
+  let y = 20;
+}
+console.log(x); // 10 ✅
+console.log(y); // ❌ ReferenceError
+```
+
+##### 变量提升
+
+`var` 声明的变量会被提升并自动初始化为 `undefined`。
+
+`let` 声明的变量虽然提升了，但在**声明之前不可访问**（称为**暂时性死区（TDZ）**）
+
+```JS
+console.log(a); // undefined ✅
+var a = 5;
+
+console.log(b); // ❌ ReferenceError: Cannot access 'b' before initialization
+let b = 10;
+```
+
+##### 重复声明
+```JS
+var x = 1;
+var x = 2; // ✅ 合法
+
+let y = 1;
+let y = 2; // ❌ SyntaxError: Identifier 'y' has already been declared
+```
+
+
+##### 全局对象属性
+```JS
+var a = 1;
+let b = 2;
+
+console.log(window.a); // 1 ✅
+console.log(window.b); // undefined ❌
+```
+
+### 模板字符串
+
+**模板字符串 (Template Literals)** 是 ES6 (ECMAScript 2015) 引入的一种增强型字符串字面量。它提供了一种更简洁、更灵活的方式来创建字符串，解决了传统字符串拼接的一些痛点。
+
+#### 基本用法
+
+模板字符串使用**反引号**（```）包裹，而不是普通字符串使用的单引号 `'` 或双引号 `"`。
+
+```JS
+const str = `这是一个模板字符串`;
+```
+
+#### 特性用法
+
+##### 多行字符串
+
+普通字符串需要使用 `\n` 来换行，模板字符串可以直接换行：
+
+```JS
+const multiLine = `这是第一行
+这是第二行`;
+```
+
+##### 插值表达式
+
+在模板字符串中可以使用 `${}` 插入变量或表达式：
+
+```JS
+const name = "小明";
+const age = 22;
+const message = `你好，我是${name}，今年${age}岁。`;
+console.log(message); // 输出：你好，我是小明，今年22岁。
+```
+
+```JS
+const x = 5;
+const y = 10;
+const result = `总和是：${x + y}`; // 总和是：15
+```
+
+##### 调用函数
+
+可以在 `${}` 中调用函数：
+
+```JS
+function greet(name) {
+  return `你好，${name}`;
+}
+
+const message = `${greet("小红")}`; // 你好，小红
+```
+
+##### 嵌套对象属性
+
+```JS
+const person = { name: "张三", age: 30 };
+const info = `姓名：${person.name}，年龄：${person.age}`;
+```
 
 ### 运算符
 
@@ -434,8 +562,407 @@ greetPeople('Hello', 'Alice', 'Bob', 'Charlie');
 // Hello, Charlie!
 ```
 
+### 标签函数
+
+当你在一个模板字符串前面放置一个函数名（这个函数就是“标签函数”）时，JavaScript 不会直接将模板字符串解析成一个普通的字符串，而是会调用这个标签函数，并将模板字符串的内容分解成两个部分传递给它：
+
+1. **字符串数组 (String Array)**：一个包含模板字符串中**所有静态字符串部分**的数组。这些静态字符串是插值表达式 (`${...}`) 之间的部分，以及开头和结尾的部分。
+2. **表达式值 (Expression Values)**：后续的参数是模板字符串中**所有插值表达式的值**。
+
+#### 语法形式
+
+一个标签函数通常接收的参数如下：
+
+```JS
+function tagFunction(strings, ...expressions) {
+  // strings 是一个数组，包含静态字符串
+  // expressions 是一个数组，包含所有插值表达式的值
+  // ... 你可以在这里自定义如何处理这些部分
+}
+```
+
+示例代码：
+
+```JS
+function tag(strings, ...values) {
+  console.log(strings); // 字符串部分的数组
+  console.log(values);  // 表达式插值结果
+  return strings[0] + values[0] + strings[1];
+}
+
+const name = "小明";
+const age = 22;
+
+const result = tag`我叫${name}，我今年${age}岁。`;
+console.log(result);
+```
+
+输出结果：
+
+```JS
+[ '我叫', '，我今年', '岁。' ]
+[ '小明', 22 ]
+我叫小明，我今年22岁。
+```
+
+#### `raw`属性
+
+`strings` 数组还有一个特殊的 `raw` 属性，它包含了原始的、未处理的字符串形式。例如，`\n` 在 `strings` 中会被解析为换行符，但在 `strings.raw` 中它就是字面量的 `\n`。
+
+```JS
+function inspectRaw(strings, ...values) {
+  console.log('Processed strings:', strings);
+  console.log('Raw strings:', strings.raw);
+  return 'Check console.';
+}
+
+inspectRaw`Hello\nWorld! ${123}`;
+// 输出:
+// Processed strings: [ 'Hello\nWorld! ', '' ]
+// Raw strings: [ 'Hello\\nWorld! ', '' ]
+```
+
+### 生成器
+
+**生成器 (Generators)** 是一种特殊类型的函数，它允许你**暂停执行并在稍后恢复执行**。这使得它们非常适合处理**惰性计算 (lazy computation)** 和**异步操作**。生成器函数通过使用 `function*` 语法定义，并在其函数体内使用 `yield` 关键字来暂停和产出值。
+#### 问题引入
+传统的 JavaScript 函数在被调用时，会一直运行到返回（或抛出错误）为止，期间不能暂停。但很多场景需要一种能够“中断”和“恢复”执行流的机制：
+
+- **处理无限序列**：例如，斐波那契数列、无穷递增的 ID。你不能一次性生成所有值。
+
+- **惰性计算**：只在需要时才计算下一个值，节省内存和计算资源。
+
+- **简化异步代码**：与 async/await 类似，生成器（结合 co 库或手动实现）可以把异步回调地狱（callback hell）扁平化，使其看起来像同步代码。虽然现在 async/await 更常用，但生成器是其底层原理之一。
+#### 关键特性
+| 特性          | 描述                                          |
+| ----------- | ------------------------------------------- |
+| `function*` | 声明生成器函数                                     |
+| `yield`     | 暂停函数执行，并返回一个值                               |
+| `.next()`   | 继续执行到下一个 `yield`，返回 `{ value, done }` 对象    |
+| 可用于异步控制     | 和 `async/await` 类似，可用于控制异步流程（与 `co` 等库结合使用） |
+#### 使用方式
+1. 定义：通过 function* 语法定义生成器函数。
+```JS
+function* myGenerator() {
+  // ...
+}
+```
+2. 创建迭代器：调用生成器函数并不会立即执行其内部代码，而是会返回一个生成器迭代器 (Generator Iterator) 对象。
+```JS
+const generatorObject = myGenerator();
+```
+3. 暂停与恢复
+- 当你调用迭代器的 next() 方法时，生成器函数会从上次暂停的地方（或从头开始）执行，直到遇到第一个 yield 表达式。
+
+- yield 关键字会暂停生成器函数的执行，并把紧跟在 yield 后面的表达式的值作为 next() 方法的返回对象的 value 属性返回。
+
+- next() 方法返回的是一个对象，包含两个属性：value（yield 产出的值）和 done（一个布尔值，表示生成器是否已完成）。
+
+- 当再次调用 next() 时，生成器函数会从上次 yield 暂停的地方继续执行，直到遇到下一个 yield 或 return 语句。
+4. 完成
+- 如果生成器函数执行完毕，没有更多的 yield 表达式，或者遇到了 return 语句，next() 方法返回的对象的 done 属性会变为 true。
+
+- return 语句会使生成器完成，并将其后的值作为 value 属性返回。之后再调用 next()，value 属性将是 undefined。
+---
+示例代码：
+```JS
+function* countGenerator() {
+  console.log('Start generator');
+  yield 1; // 第一次暂停，产出 1
+  console.log('After first yield');
+  yield 2; // 第二次暂停，产出 2
+  console.log('After second yield');
+  yield 3; // 第三次暂停，产出 3
+  console.log('End generator');
+  return 'Finished!'; // 返回最终值
+}
+
+const iterator = countGenerator(); // 调用生成器函数，返回迭代器对象
+
+console.log('First next() call:');
+console.log(iterator.next()); // { value: 1, done: false }
+// 控制台输出: Start generator
+
+console.log('Second next() call:');
+console.log(iterator.next()); // { value: 2, done: false }
+// 控制台输出: After first yield
+
+console.log('Third next() call:');
+console.log(iterator.next()); // { value: 3, done: false }
+// 控制台输出: After second yield
+
+console.log('Fourth next() call (after last yield):');
+console.log(iterator.next()); // { value: 'Finished!', done: true } (return 的值)
+// 控制台输出: End generator
+
+console.log('Fifth next() call (generator is done):');
+console.log(iterator.next()); // { value: undefined, done: true }
+```
+#### 遍历生成器
+生成器函数返回的迭代器对象是可迭代的 (Iterable)。这意味着你可以使用 for...of 循环来遍历生成器产出的所有值，而无需手动调用 next()。
+```javascript
+function* fibonacciGenerator() {
+  let a = 0;
+  let b = 1;
+  while (true) {
+    yield a;
+    [a, b] = [b, a + b]; // 数组解构赋值，交换并计算下一个斐波那契数
+  }
+}
+
+// 遍历前 10 个斐波那契数
+let count = 0;
+for (const num of fibonacciGenerator()) {
+  if (count >= 10) {
+    break; // 限制只取前 10 个
+  }
+  console.log(num);
+  count++;
+}
+// 输出: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34
+```
+> 注意，如果没有 break，fibonacciGenerator 会生成一个无限序列。
+
+#### 迭代器方法
+##### `next()`的可选参数
+next() 方法可以接受一个可选参数，这个参数会作为上次 yield 表达式的返回值传递回生成器内部。这允许你向生成器“发送”数据。
+```javascript
+function* interactiveGenerator() {
+  const name = yield 'What is your name?';
+  const age = yield `Hello, ${name}! How old are you?`;
+  return `So, ${name}, you are ${age} years old.`;
+}
+
+const it = interactiveGenerator();
+
+console.log(it.next());       // { value: 'What is your name?', done: false }
+console.log(it.next('Alice')); // { value: 'Hello, Alice! How old are you?', done: false }
+console.log(it.next(30));     // { value: 'So, Alice, you are 30 years old.', done: true }
+```
+##### `throw()`
+在生成器内部抛出一个错误，并暂停生成器。如果生成器内部没有捕获该错误，它会向外冒泡。
+##### `return()`
+提前终止生成器，并返回一个带有给定 value 和 done: true 的对象。
+### 预定义的函数
+#### 数值处理
+| 函数                | 作用          |
+| ----------------- | ----------- |
+| `parseInt(str)`   | 将字符串解析为整数   |
+| `parseFloat(str)` | 将字符串解析为浮点数  |
+| `isNaN(value)`    | 判断是否为 `NaN` |
+| `isFinite(value)` | 判断是否为有限数字   |
+| `Number(value)`   | 显式转换为数字     |
+```JS
+parseInt("123abc");     // 123
+parseFloat("3.14px");   // 3.14
+isNaN("abc");           // true
+isFinite(1000);         // true
+```
+#### 字符串处理
+| 函数                     | 作用         |
+| ---------------------- | ---------- |
+| `encodeURI(uri)`       | 对 URI 编码   |
+| `decodeURI(uri)`       | 对 URI 解码   |
+| `encodeURIComponent()` | 对 URI 组件编码 |
+| `decodeURIComponent()` | 对 URI 组件解码 |
+| `escape(str)` ✅过时      | 编码字符串      |
+| `unescape(str)` ✅过时    | 解码字符串      |
+#### 控制执行函数
+| 函数                    | 作用         |
+| --------------------- | ---------- |
+| `setTimeout(fn, ms)`  | 延迟执行函数（一次） |
+| `setInterval(fn, ms)` | 每隔一段时间执行函数 |
+| `clearTimeout(id)`    | 清除超时定时器    |
+| `clearInterval(id)`   | 清除间隔定时器    |
+#### 数学函数
+Math.round(3.5);     // 4
+Math.floor(3.9);     // 3
+Math.ceil(3.1);      // 4
+Math.max(1, 5, 10);  // 10
+Math.random();       // 0~1 之间的随机数
+#### 全局函数
+| 函数             | 作用                 |
+| -------------- | ------------------ |
+| `eval(code)`   | 执行一段 JS 字符串（⚠️不推荐） |
+| `alert(msg)`   | 弹出提示框（浏览器环境）       |
+| `prompt(msg)`  | 弹出输入框（浏览器）         |
+| `confirm(msg)` | 弹出确认框（浏览器）         |
+#### 类型转换器
+| 函数               | 说明           |
+| ---------------- | ------------ |
+| `String(value)`  | 转换为字符串       |
+| `Number(value)`  | 转换为数字        |
+| `Boolean(value)` | 转换为布尔值       |
+| `Object(value)`  | 转换为对象        |
+| `typeof`         | 返回值的类型（不是函数） |
+
+## 集合
+### WeakMap
+#### 特点
+WeakMap = “不可遍历 + 对象弱引用键 + 安全私有数据结构”
+| 特性        | 说明                                       |
+| --------- | ---------------------------------------- |
+| 键只能是对象    | 原始值（如字符串、数字）不能作为键                        |
+| 不可遍历      | 无法使用 `forEach`、`for...of`、`keys()` 等方法遍历 |
+| 弱引用键      | 如果对象为NULL并且没有其他引用，键值会被垃圾回收                      |
+| 适合做私有数据存储 | 可为对象关联额外信息且不暴露                           |
+
+---
+**不可以枚举的原因：**
+
+WeakMap 和 WeakSet 不可枚举的原因正是由于它们的“弱”特性。如果它们是可枚举的，那么在遍历时，垃圾回收器可能会在遍历过程中回收掉某个键或成员。这会导致遍历结果的不确定性和不稳定性，这在编程中是不可接受的。因此，设计者决定牺牲可枚举性来换取弱引用的优势。
+
+WeakMap 的方法：
+- weakMap.set(key, value): 设置键值对。
+
+- weakMap.get(key): 获取键对应的值。
+
+- weakMap.has(key): 检查是否存在某个键。
+
+- weakMap.delete(key): 删除某个键值对。
+#### 使用场景
+##### 存储DOM元素元数据
+当你需要为一个 DOM 元素添加一些额外的数据，而又不想直接修改 DOM 元素本身（可能导致内存泄漏，因为你手动存储的引用会阻止 DOM 元素被回收）时，WeakMap 是理想选择。
+```javascript
+const elementData = new WeakMap();
+const myDiv = document.getElementById('myDiv');
+elementData.set(myDiv, { clickCount: 0 });
+
+myDiv.addEventListener('click', () => {
+  let data = elementData.get(myDiv);
+  data.clickCount++;
+  console.log('Click count:', data.clickCount);
+});
+
+// 当 myDiv 从 DOM 中被移除，且没有其他地方引用它时，
+// 它将被垃圾回收，同时 elementData 中对应的条目也会自动消失。
+```
+##### 私有数据
+在不使用 Symbol 或 class 私有字段的情况下，可以使用 WeakMap 来实现对象的私有数据，因为外部无法访问 WeakMap 的键。
+##### 缓存
+当缓存的数据需要与对象的生命周期同步时。
+### WeakSet
+#### 特点
+WeakSet = “只能存对象 + 成员弱引用 + 无法遍历” 的简化版 Set，适合做对象标记用途
+| 特性      | 说明                                             |
+| ------- | ---------------------------------------------- |
+| 成员只能是对象 | 基本类型（如字符串、数字）不允许加入                             |
+| 成员是弱引用  | 对象若无其他引用，会被自动垃圾回收                              |
+| 不可遍历    | 不能用 `for...of`、`forEach`、`.size`、`.keys()` 等方法 |
+| 无法清空    | 没有 `.clear()` 方法                               |
+| 不可序列化   | 不能 JSON.stringify()                            |
+---
+WeakSet 的方法：
+- weakSet.add(value): 添加一个对象作为成员。
+
+- weakSet.has(value): 检查是否存在某个成员。
+
+- weakSet.delete(value): 删除某个成员。
+#### 使用场景
+##### 标记已访问的对象
+在图遍历或循环引用检测中，可以用来跟踪已经访问过的对象，避免无限循环，同时不阻止对象被回收。
+##### 事件监听器管理
+当需要跟踪哪些对象注册了特定的事件监听器时，如果这些对象本身可能被销毁，使用 WeakSet 可以确保当对象被回收时，其在集合中的引用也会自动消失。
+
 ## OOP
 
+### 构造器、getter、setter
+```javascript
+class Color {
+  constructor(r, g, b) {
+    this.values = [r, g, b];
+  }
+  get red() {
+    return this.values[0];
+  }
+  set red(value) {
+    this.values[0] = value;
+  }
+}
+
+const red = new Color(255, 0, 0);
+red.red = 0;
+console.log(red.red); // 0
+```
+这就像是对象有了一个 red 属性——但实际上，实例上并没有这样的属性！实例只有两个方法，分别以 get 和 set 为前缀，而这使得我们可以像操作属性一样操作它们。
+
+如果一个字段仅有一个 getter 而没有 setter，它将是只读的。
+```js
+class Color {
+  constructor(r, g, b) {
+    this.values = [r, g, b];
+  }
+  get red() {
+    return this.values[0];
+  }
+}
+
+const red = new Color(255, 0, 0);
+red.red = 0;
+console.log(red.red); // 255
+```
+> [!note]
+> 在严格模式下，red.red = 0 这一行将抛出类型错误：“Cannot set property red of #<Color> which has only a getter”。在非严格模式下，赋值将被静默忽略。
+
+### (静态)公有字段/方法
+默认情况下，类的所有属性和方法都是公共的。这意味着它们可以从类的外部直接访问、读取和修改。
+声明方式：
+- 在构造函数中使用 this.propertyName = value;
+- 在类体中直接写 propertyName = value; (ES2019 Class Fields 提案，已是标准)
+```JS
+class Person {
+  // 公共实例字段 (Class Fields 语法)
+  name = 'Anonymous';
+  age = 0;
+
+  constructor(name, age) {
+    // 也可以在构造函数中定义公共实例字段
+    this.name = name;
+    this.age = age;
+  }
+
+  greet() {
+    console.log(`Hello, my name is ${this.name} and I am ${this.age} years old.`);
+  }
+}
+
+const alice = new Person('Alice', 30);
+console.log(alice.name);   // 输出: Alice (公共，可直接访问)
+alice.age = 31;            // 公共，可直接修改
+console.log(alice.age);    // 输出: 31
+alice.greet();             // 输出: Hello, my name is Alice and I am 31 years old.
+```
+### (静态)私有字段/方法
+私有字段是 ES2022 (ES13) 引入的语言特性，允许你在类中声明真正私有的属性和方法。这些私有成员只能在类的内部访问，从外部无法直接访问。
+声明方式：
+- #propertyName = value;
+- #methodName() { ... }
+```JS
+class Calculator {
+  #pi = 3.14159; // 私有字段
+  #validateNumber(num) { // 私有方法
+    if (typeof num !== 'number' || isNaN(num)) {
+      throw new Error('Input must be a valid number.');
+    }
+  }
+
+  add(a, b) {
+    this.#validateNumber(a); // 内部调用私有方法
+    this.#validateNumber(b);
+    return a + b;
+  }
+
+  // 公共方法可以访问私有字段
+  getPi() {
+    return this.#pi;
+  }
+}
+
+const calc = new Calculator();
+console.log(calc.add(5, 3)); // 输出: 8
+// console.log(calc.#pi); // SyntaxError
+// calc.#validateNumber(10); // SyntaxError
+```
 ### `this`
 
 #### this不受限制
@@ -746,3 +1273,6 @@ alert( clone[id] ); // 123
 
 
 #### 系统Symbol
+
+
+## `Promise`
