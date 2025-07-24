@@ -634,12 +634,13 @@ inspectRaw`Hello\nWorld! ${123}`;
 
 - **简化异步代码**：与 async/await 类似，生成器（结合 co 库或手动实现）可以把异步回调地狱（callback hell）扁平化，使其看起来像同步代码。虽然现在 async/await 更常用，但生成器是其底层原理之一。
 #### 关键特性
-| 特性          | 描述                                          |
-| ----------- | ------------------------------------------- |
-| `function*` | 声明生成器函数                                     |
-| `yield`     | 暂停函数执行，并返回一个值                               |
-| `.next()`   | 继续执行到下一个 `yield`，返回 `{ value, done }` 对象    |
-| 可用于异步控制     | 和 `async/await` 类似，可用于控制异步流程（与 `co` 等库结合使用） |
+| 特性           | 描述                                                         |
+| -------------- | ------------------------------------------------------------ |
+| `function*`    | 声明生成器函数                                               |
+| `yield`        | 暂停函数执行，并返回一个值                                   |
+| `yield*`       | 委托给另一个生成器                                           |
+| `.next()`      | 继续执行到下一个 `yield`，返回 `{ value, done }` 对象        |
+| 可用于异步控制 | 和 `async/await` 类似，可用于控制异步流程（与 `co` 等库结合使用） |
 #### 使用方式
 1. 定义：通过 function* 语法定义生成器函数。
 ```JS
@@ -743,7 +744,89 @@ console.log(it.next(30));     // { value: 'So, Alice, you are 30 years old.', do
 在生成器内部抛出一个错误，并暂停生成器。如果生成器内部没有捕获该错误，它会向外冒泡。
 ##### `return()`
 提前终止生成器，并返回一个带有给定 value 和 done: true 的对象。
+
+#### `yield*`
+
+**`yield*` 表达式**用于委托给另一个[`generator`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/function*) 或可迭代对象。
+
+##### `yield*`表达式的值
+
+`yield*` 是一个表达式，不是语句，所以它会有自己的值，`yield*` 表达式本身的值是当迭代器关闭时返回的值（即`done`为`true`时）。
+
+```JS
+function* g4() {
+  yield* [1, 2, 3];
+  return "foo";
+}
+
+var result;
+
+function* g5() {
+  result = yield* g4();
+}
+
+var iterator = g5();
+
+console.log(iterator.next()); // { value: 1, done: false }
+console.log(iterator.next()); // { value: 2, done: false }
+console.log(iterator.next()); // { value: 3, done: false }
+console.log(iterator.next()); // { value: undefined, done: true },
+// 此时 g4() 返回了 { value: "foo", done: true }
+
+console.log(result); // "foo"
+```
+
+##### 委托给其他生成器
+
+以下代码中，`g1()` `yield` 出去的每个值都会在 `g2()` 的 `next()` 方法中返回，就像那些 `yield` 语句是写在 `g2()` 里一样。
+
+```javascript
+function* g1() {
+  yield 2;
+  yield 3;
+  yield 4;
+}
+
+function* g2() {
+  yield 1;
+  yield* g1();
+  yield 5;
+}
+
+var iterator = g2();
+
+console.log(iterator.next()); // { value: 1, done: false }
+console.log(iterator.next()); // { value: 2, done: false }
+console.log(iterator.next()); // { value: 3, done: false }
+console.log(iterator.next()); // { value: 4, done: false }
+console.log(iterator.next()); // { value: 5, done: false }
+console.log(iterator.next()); // { value: undefined, done: true }
+```
+
+##### 委托给其他可迭代对象
+
+除了生成器对象这一种可迭代对象，`yield*` 还可以 `yield` 其他任意的可迭代对象，比如说数组、字符串、`arguments` 对象等等。
+
+```JS
+function* g3() {
+  yield* [1, 2];
+  yield* "34";
+  yield* arguments;
+}
+
+var iterator = g3(5, 6);
+
+console.log(iterator.next()); // { value: 1, done: false }
+console.log(iterator.next()); // { value: 2, done: false }
+console.log(iterator.next()); // { value: "3", done: false }
+console.log(iterator.next()); // { value: "4", done: false }
+console.log(iterator.next()); // { value: 5, done: false }
+console.log(iterator.next()); // { value: 6, done: false }
+console.log(iterator.next()); // { value: undefined, done: true }
+```
+
 ### 预定义的函数
+
 #### 数值处理
 | 函数                | 作用          |
 | ----------------- | ----------- |
@@ -864,7 +947,7 @@ WeakSet 的方法：
 ##### 事件监听器管理
 当需要跟踪哪些对象注册了特定的事件监听器时，如果这些对象本身可能被销毁，使用 WeakSet 可以确保当对象被回收时，其在集合中的引用也会自动消失。
 
-## OOP
+## 面向对象
 
 ### 构造器、getter、setter
 ```javascript
@@ -1275,4 +1358,6 @@ alert( clone[id] ); // 123
 #### 系统Symbol
 
 
-## `Promise`
+
+
+## Promise
