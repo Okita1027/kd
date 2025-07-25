@@ -127,7 +127,7 @@ console.log(Object.getPrototypeOf(Object.prototype) === null);               // 
 
 ### [[Prototype]]与prototype
 
-**`[[Prototype]]`** (或通过 `Object.getPrototypeOf()` 访问)：
+**`[[Prototype]]`** (通过 `Object.getPrototypeOf(XXX)`或`XXX.__proto` 访问)：
 
 - 是**每个对象**都拥有的**内部属性**，指向它的原型。
 - 它用于在查找属性时**构成原型链**。

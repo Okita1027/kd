@@ -5,7 +5,6 @@ description: 模式篇
 date: 2023-12-19 13:35:01
 categories: [Java]
 tags: [JUC]
-headerDepth: 4
 order: 2
 ---
 

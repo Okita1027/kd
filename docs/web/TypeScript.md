@@ -1,7 +1,7 @@
 ---
-title: TypeScript
-shortTitle: TypeScript
-description: 
+title: TypeScript（旧）
+shortTitle: TypeScript(旧)
+description: TypeScript(旧)
 date: 2024-06-16 22:30:07
 categories: [前端,TypeScript]
 tags: []

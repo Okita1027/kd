@@ -1974,7 +1974,7 @@ keys -->|"CRC16(key)&16383"| RedisCluster
 
 开发中最重要的是可用性，所以需要把如下配置修改成no，即有slot不能使用时，redis集群还是可以对外提供服务
 
-```redis.conf
+```ini
 cluster-require-full-coverage no
 ```
 

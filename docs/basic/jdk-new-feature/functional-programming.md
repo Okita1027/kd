@@ -5,7 +5,6 @@ description: Java函数式编程（Lambda、Stream）
 date: 2024-05-06 09:06:01
 categories: [Java, basic]
 tags: [Java]
-headerDepth: 4
 order: 1
 ---
 ## 概念
