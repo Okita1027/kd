@@ -1,7 +1,7 @@
 ---
-title: TypeScript
-shortTitle: TypeScript
-description: 
+title: JavaScript
+shortTitle: JavaScript基础篇
+description: JavaScript基础篇
 date: 2024-06-16 22:30:07
 categories: [前端,JavaScript]
 tags: []
@@ -15,7 +15,7 @@ tags: []
 
 ## 基础语法
 
-### 变量
+### 变量与类型
 
 #### 假值
 
@@ -82,6 +82,243 @@ console.log(window.a); // 1 ✅
 console.log(window.b); // undefined ❌
 ```
 
+##### 
+
+#### Symbol类型
+
+##### 特性
+
+###### 独一无二
+
+这是 `Symbol` 最根本的特性。每次调用 `Symbol()` 函数，都会返回一个全新的、与其他所有 `Symbol` 值（包括其他 `Symbol()` 调用和字符串）都不同的值。
+
+```JS
+const s1 = Symbol();
+const s2 = Symbol();
+console.log(s1 === s2); // false (即使没有描述或描述相同，它们也是不同的)
+
+const s3 = Symbol('description');
+const s4 = Symbol('description');
+console.log(s3 === s4); // false (描述仅用于调试，不影响唯一性)
+```
+
+###### 不可变
+
+`Symbol` 一旦创建，其值就不能被改变。
+
+###### 无法隐式转为字符串
+```JS
+const s = Symbol('id');
+console.log("Your id is " + s); // TypeError
+```
+避免了隐式转换带来的混乱。需要显式调用 `.toString()`。
+
+###### 可作为对象属性名
+
+`Symbol` 值可以作为对象的属性名。使用方括号语法来定义和访问 `Symbol` 属性。
+
+```JS
+const myId = Symbol('user_id');
+const user = {
+  name: 'Alice',
+  [myId]: 'unique_alice_id_123' // 使用 Symbol 作为属性名
+};
+console.log(user[myId]); // unique_alice_id_123
+console.log(user.name); // Alice
+```
+
+###### 不可枚举
+
+`Symbol` 属性默认情况下是不可枚举的。这意味着它们不会出现在以下遍历方法的结果中：
+
+- `for...in` 循环
+- `Object.keys()`
+- `Object.values()`
+- `Object.entries()`
+- `JSON.stringify()`
+
+```JS
+const secretKey = Symbol('secret');
+const data = {
+  publicData: 'hello',
+  [secretKey]: 'hidden_value'
+};
+
+for (const key in data) {
+  console.log(key); // 输出: publicData
+}
+console.log(Object.keys(data));     // ['publicData']
+console.log(JSON.stringify(data));  // {"publicData":"hello"}
+```
+
+###### 可访问性
+
+尽管默认不可枚举，但 `Symbol` 属性并非完全私有，它们可以通过特定的反射方法被获取到：
+
+- `Object.getOwnPropertySymbols(obj)`：返回一个数组，包含对象自身的所有 `Symbol` 属性键。
+- `Reflect.ownKeys(obj)`：返回一个数组，包含对象自身的所有属性键（包括字符串和 `Symbol`）。
+
+```JS
+const symbols = Object.getOwnPropertySymbols(data);
+console.log(symbols); // [Symbol(secret)]
+console.log(data[symbols[0]]); // hidden_value
+console.log(Reflect.ownKeys(data)); // ['publicData', Symbol(secret)]
+```
+
+###### 全局注册表
+
+`Symbol` 可以通过 `Symbol.for()` 方法在全局注册表中注册和获取。
+
+- `Symbol.for(key)`：根据 `key` 从全局注册表中查找或创建 `Symbol`。相同 `key` 总是返回同一个 `Symbol` 实例。
+- `Symbol.keyFor(symbol)`：返回全局注册表中 `Symbol` 对应的 `key`。
+
+```JS
+const globalSym1 = Symbol.for('myApp.config');
+const globalSym2 = Symbol.for('myApp.config');
+console.log(globalSym1 === globalSym2); // true (指向同一个 Symbol 实例)
+console.log(Symbol.keyFor(globalSym1)); // 'myApp.config'
+```
+
+##### 使用场景
+
+###### 避免属性名冲突
+
+这是 `Symbol` 最核心的用途之一。当你有多个模块、库或插件需要向同一个对象添加属性时，使用 `Symbol` 作为属性名可以确保彼此不会覆盖对方的属性，从而避免意外的 bug。
+
+- **场景**：
+  - 为第三方库或框架提供的对象**添加自定义数据或元信息**，而不干扰其内部属性。
+  - 在一个大型项目中，不同团队开发的模块可能需要给共享的配置对象或上下文对象添加各自的内部属性。
+  - 实现插件系统，插件通过 `Symbol` 向宿主对象注册自己的扩展点。
+
+案例代码：
+
+```JS
+// 假设这是第三方库代码 (lib.js)
+const _LIB_ID = Symbol('lib_internal_id');
+function attachLibData(obj) {
+  obj[_LIB_ID] = Math.random();
+  console.log('Lib data attached:', obj[_LIB_ID]);
+}
+
+// 你的应用代码 (app.js)
+const MY_APP_FLAG = Symbol('my_app_flag');
+const targetObject = {};
+attachLibData(targetObject); // 库添加数据
+
+targetObject.name = 'Test';
+targetObject[MY_APP_FLAG] = true; // 你添加数据
+
+console.log(targetObject); // { name: "Test", [Symbol(lib_internal_id)]: ..., [Symbol(my_app_flag)]: true }
+// 尽管两者都向 targetObject 添加了属性，但由于使用了不同的 Symbol，它们不会冲突。
+```
+
+###### 定义对象的“伪私有”属性
+
+在 ES2022 的 `#` 私有字段出现之前，`Symbol` 是实现对象“私有”属性的常见方式之一。即使现在有了 `#`，`Symbol` 仍然有用：
+
+**场景**：
+
+- 为普通对象（非类实例）添加一些不希望被常规遍历（如 `for...in`）发现的内部状态或标记。
+- 定义一些“只供内部团队使用但又不绝对私有”的属性，这些属性可以通过 `Object.getOwnPropertySymbols` 发现，用于调试或特定工具访问。
+
+**注意**：`#` 私有字段是更严格的私有化方案，仅限于类内部。`Symbol` 属性可以通过反射被访问，因此被称为“伪私有”。
+
+###### 自定义内置行为
+
+这是 `Symbol` 最强大和高级的应用，它允许开发者**自定义对象的一些内置行为**。这些预定义的 `Symbol` 值作为语言内部操作的“钩子”，通过在对象上实现对应的 `Symbol` 属性，可以改变这些操作的默认行为。
+
+**`Symbol.iterator`**：使对象可迭代，从而能被 `for...of` 循环、展开运算符 (`...`)、`Array.from()` 等使用。
+
+- **场景**：当你需要一个自定义对象能够像数组一样被遍历时。
+
+```JS
+class DataContainer {
+  constructor(...data) {
+    this.data = data;
+  }
+  // 让 DataContainer 实例成为一个可迭代对象
+  *[Symbol.iterator]() { // 使用生成器函数简化迭代器实现
+    yield* this.data; // 委托给内部数组的迭代器
+  }
+}
+const container = new DataContainer(10, 20, 30);
+for (const item of container) {
+  console.log(item); // 10, 20, 30
+}
+console.log([...container]); // [10, 20, 30]
+```
+
+---
+
+**`Symbol.toStringTag`**：用于自定义 `Object.prototype.toString()` 的返回值。
+
+- **场景**：当你希望 `Object.prototype.toString.call(myObj)` 返回一个更有意义的字符串，而不是 `[object Object]` 时。
+
+```JS
+class CustomType {
+  get [Symbol.toStringTag]() {
+    return 'MyCustomType';
+  }
+}
+const instance = new CustomType();
+console.log(Object.prototype.toString.call(instance)); // [object MyCustomType]
+```
+
+---
+
+**`Symbol.toPrimitive`**：定义对象转换为原始值（如数字、字符串、布尔值）时的行为。
+
+- **场景**：当你需要自定义对象在进行算术运算或字符串拼接时的行为。
+
+```JS
+const temperature = {
+  value: 25,
+  unit: 'Celsius',
+  [Symbol.toPrimitive](hint) {
+    if (hint === 'number') {
+      return this.value;
+    }
+    if (hint === 'string') {
+      return `${this.value}°${this.unit}`;
+    }
+    return this.value; // default
+  }
+};
+console.log(+temperature);       // 25 (转换为数字)
+console.log(`${temperature}`);   // "25°Celsius" (转换为字符串)
+console.log(temperature + 5);    // 30 (25 + 5)
+```
+
+**`Symbol.asyncIterator`**：使对象可异步迭代，配合 `for await...of` 循环。
+
+**`Symbol.hasInstance`**：自定义 `instanceof` 操作符的行为。
+
+**`Symbol.match`, `Symbol.replace`, `Symbol.search`, `Symbol.split`**：用于自定义字符串方法的行为。
+
+###### 常量定义
+
+有时也会用 `Symbol` 来定义一些常量，因为 `Symbol` 的独一无二性确保了这些常量即使值相同，它们在程序中也是不同的标识符，避免了“魔法字符串”或数字的重复定义可能带来的混淆。
+
+> “**魔法字符串**”（Magic String）是一个贬义词，用来形容在代码中**直接硬编码（hardcode）的、没有明确含义或解释的字符串字面量**。它之所以被称为“魔法”，是因为它的存在和作用看起来像是凭空出现，没有通过常量、变量或枚举等方式被赋予清晰的命名，导致阅读代码的人难以立即理解它的用途和含义。
+
+```JS
+const EVENT_TYPE_CLICK = Symbol('click');
+const EVENT_TYPE_FOCUS = Symbol('focus');
+
+// 保证即使描述相同，也是不同的事件类型
+function handleEvent(eventType) {
+  if (eventType === EVENT_TYPE_CLICK) {
+    console.log('Clicked!');
+  } else if (eventType === EVENT_TYPE_FOCUS) {
+    console.log('Focused!');
+  }
+}
+
+handleEvent(EVENT_TYPE_CLICK);
+```
+
+
+
 ### 模板字符串
 
 **模板字符串 (Template Literals)** 是 ES6 (ECMAScript 2015) 引入的一种增强型字符串字面量。它提供了一种更简洁、更灵活的方式来创建字符串，解决了传统字符串拼接的一些痛点。
@@ -141,7 +378,24 @@ const person = { name: "张三", age: 30 };
 const info = `姓名：${person.name}，年龄：${person.age}`;
 ```
 
-### 运算符
+### 运算与比较
+
+#### `==`
+
+**抽象相等**：允许类型转换后进行比较。通常不推荐，因为它可能导致意外结果。
+
+#### `===`
+
+**严格相等**：不进行类型转换。类型和值必须都相等。但在 `NaN` 和 `+0/-0` 上有特殊行为。
+
+`NAN` VS `NAN`: false
+`+0` VS `-0`: true
+
+#### `Object.is()`
+
+**值相等**：与 `===` 类似，但正确处理了 `NaN` 和 `+0/-0`。
+`NAN` VS `NAN`: true
+`+0` VS `-0`: false
 
 #### `??`
 
@@ -412,6 +666,34 @@ for (const [key, value] of myMap) { // 使用解构赋值获取键值对
 // Map Entry: age -> 30
 ```
 
+---
+
+#### 自定义可迭代对象
+
+
+
+```JS
+const myIterable = {
+  data: [1, 2, 3],
+  [Symbol.iterator]() {
+    let index = 0;
+    return {
+      next: () => ({
+        value: this.data[index],
+        done: index++ >= this.data.length
+      })
+    };
+  }
+};
+
+for (let val of myIterable) {
+  console.log(val);
+}
+
+```
+
+
+
 ## 函数
 
 ### arguments对象
@@ -622,7 +904,7 @@ inspectRaw`Hello\nWorld! ${123}`;
 // Raw strings: [ 'Hello\\nWorld! ', '' ]
 ```
 
-### 生成器
+### 生成器函数
 
 **生成器 (Generators)** 是一种特殊类型的函数，它允许你**暂停执行并在稍后恢复执行**。这使得它们非常适合处理**惰性计算 (lazy computation)** 和**异步操作**。生成器函数通过使用 `function*` 语法定义，并在其函数体内使用 `yield` 关键字来暂停和产出值。
 #### 问题引入
@@ -727,6 +1009,9 @@ for (const num of fibonacciGenerator()) {
 #### 迭代器方法
 ##### `next()`的可选参数
 next() 方法可以接受一个可选参数，这个参数会作为上次 yield 表达式的返回值传递回生成器内部。这允许你向生成器“发送”数据。
+
+可以使用`next(true)`来重置生成器
+
 ```javascript
 function* interactiveGenerator() {
   const name = yield 'What is your name?';
@@ -1361,3 +1646,704 @@ alert( clone[id] ); // 123
 
 
 ## Promise
+Promise 是一种用于处理异步操作的对象。它代表了一个异步操作的最终完成（或失败）及其结果值
+### 问题引入
+JavaScript 是单线程的，这意味着它一次只能执行一个任务。对于像网络请求（Ajax）、文件读取、定时器等耗时操作，如果同步执行，会导致页面卡死，用户体验极差。因此，这些操作通常都是异步的。
+
+传统上，异步操作通过回调函数来处理：
+```JS
+// 传统回调函数示例：回调地狱
+getData('api/users', function(users) {
+  getPosts(users[0].id, function(posts) {
+    getComments(posts[0].id, function(comments) {
+      console.log('Got all data:', { users, posts, comments });
+    }, function(err) {
+      console.error('Error getting comments:', err);
+    });
+  }, function(err) {
+    console.error('Error getting posts:', err);
+  });
+}, function(err) {
+  console.error('Error getting users:', err);
+});
+```
+这种层层嵌套的回调函数结构，被称为“回调地狱”，它导致代码难以阅读、调试和错误处理。Promise 就是为了解决这个问题而诞生的。
+### Promise的三种状态
+1. Pending (进行中)：初始状态，既不是成功也不是失败。异步操作正在进行。
+
+2. Fulfilled (已成功)：表示异步操作成功完成。此时，Promise 会有一个结果值 (value)。
+
+3. Rejected (已失败)：表示异步操作失败。此时，Promise 会有一个拒绝原因 (reason)，通常是一个 Error 对象。
+
+Promise 的状态一旦从 Pending 变为 Fulfilled 或 Rejected，就不可逆转。也就是说，一个 Promise 只能成功一次或失败一次。
+
+### 使用方法
+
+基本语法：
+
+```js
+const promise = new Promise((resolve, reject) => {
+  // 异步操作
+  setTimeout(() => {
+    const success = true;
+    if (success) {
+      resolve("操作成功");
+    } else {
+      reject("操作失败");
+    }
+  }, 1000);
+});
+
+promise
+  .then(result => console.log(result))      // 成功时调用
+  .catch(error => console.error(error))     // 失败时调用
+  .finally(() => console.log("完成"));       // 不论成功失败都会调用
+```
+
+#### 创建Promise
+使用 new Promise() 构造函数来创建 Promise 实例。构造函数接受一个名为**执行器 (executor)** 的函数作为参数。执行器函数本身会接收两个参数：
+
+- resolve：一个函数，当异步操作成功时调用，将 Promise 的状态从 Pending 变为 Fulfilled，并传递成功的结果值。
+
+- reject：一个函数，当异步操作失败时调用，将 Promise 的状态从 Pending 变为 Rejected，并传递失败的原因。
+```js
+const myPromise = new Promise((resolve, reject) => {
+  // 模拟一个异步操作，例如 1 秒后成功
+  setTimeout(() => {
+    const success = true; // 假设操作成功
+    if (success) {
+      resolve('Data fetched successfully!'); // 成功时调用 resolve
+    } else {
+      reject(new Error('Failed to fetch data.')); // 失败时调用 reject
+    }
+  }, 1000);
+});
+```
+
+#### 使用Promise
+
+##### `then()`
+
+`then()` 方法用于注册当 Promise 成功或失败时要执行的回调函数。它可以接受两个可选参数：
+
+- `onFulfilled` (或 `successCallback`)：当 Promise 成功（`Fulfilled`）时调用的函数。
+- `onRejected` (或 `failureCallback`)：当 Promise 失败（`Rejected`）时调用的函数。
+
+**链式调用`then()`**
+
+`then()` 方法总是返回一个新的 Promise。这使得你可以将多个异步操作**链式地连接起来**，形成一个线性的、更易读的流程，从而摆脱回调地狱。
+
+```js
+function fetchUser(userId) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(`User ${userId} fetched.`);
+      resolve({ id: userId, name: `User ${userId} Name` });
+    }, 500);
+  });
+}
+
+function fetchPosts(userId) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      console.log(`Posts for user ${userId} fetched.`);
+      // 模拟有时会失败
+      if (userId === 102) {
+        reject(new Error('Failed to fetch posts for user 102'));
+      } else {
+        resolve([{ postId: 1001, userId: userId, title: 'Post 1' }]);
+      }
+    }, 700);
+  });
+}
+
+fetchUser(101)
+  .then(user => {
+    console.log('User:', user);
+    return fetchPosts(user.id); // 返回一个新的 Promise，继续链式调用
+  })
+  .then(posts => {
+    console.log('Posts:', posts);
+    // 可以在这里进行更多操作
+    return 'All data processed!';
+  })
+  .then(finalResult => {
+    console.log('Final Result:', finalResult);
+  })
+  .catch(error => { // 统一处理链中任何环节的错误
+    console.error('An error occurred in the chain:', error.message);
+  });
+/*
+输出示例：
+User 101 fetched.
+User: { id: 101, name: 'User 101 Name' }
+Posts for user 101 fetched.
+Posts: [ { postId: 1001, userId: 101, title: 'Post 1' } ]
+Final Result: All data processed!
+*/
+
+// 带有错误的链式调用
+fetchUser(102)
+  .then(user => {
+    console.log('User:', user);
+    return fetchPosts(user.id);
+  })
+  .then(posts => {
+    console.log('Posts:', posts);
+  })
+  .catch(error => {
+    console.error('An error occurred in the chain (with error user):', error.message);
+  });
+/*
+输出示例：
+User 102 fetched.
+User: { id: 102, name: 'User 102 Name' }
+An error occurred in the chain (with error user): Failed to fetch posts for user 102
+*/
+```
+
+##### `catch()`
+
+`catch()` 方法是 `then(null, onRejected)` 的简写形式，专门用于处理 Promise 被拒绝（`Rejected`）的情况。它通常放在 Promise 链的末尾，用于统一捕获前面所有 `then()` 链中可能抛出的错误。
+
+```js
+somePromiseReturningFunction()
+  .then(data => {
+    // 处理数据
+  })
+  .catch(error => {
+    console.error('Caught an error:', error); // 捕获并处理任何错误
+  });
+```
+
+> [!NOTE]
+>
+> 强烈建议总是在 Promise 链的末尾添加 `.catch()` 来处理错误，以避免未捕获的 Promise 拒绝。
+
+##### `finally()`
+
+`finally()` 方法在 Promise 无论成功还是失败后都会执行。它通常用于执行一些清理操作，例如停止加载指示器。
+
+```js
+somePromiseReturningFunction()
+  .then(data => {
+    console.log('Success:', data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  })
+  .finally(() => {
+    console.log('Promise finished, performing cleanup.'); // 无论成功或失败都会执行
+  });
+```
+
+`finally()` 回调不接受任何参数，因为它不知道 Promise 是成功还是失败，也不会改变 Promise 的最终状态和值。
+
+### 常见静态方法
+
+`Promise` 构造函数本身也提供了一些有用的静态方法，用于处理多个 Promise：
+
+##### `Promise.all(iterable)`
+
+- **用途**：接受一个 Promise 可迭代对象（通常是 Promise 数组），并返回一个新的 Promise。
+- **行为**：
+  - 当**所有**传入的 Promise 都成功时，新的 Promise 才会成功，其结果是一个数组，包含所有 Promise 的成功结果，顺序与传入的 Promise 顺序一致。
+  - 只要其中**任何一个** Promise 失败，`Promise.all` 返回的 Promise 就会立即失败，并返回第一个失败 Promise 的原因。
+- **使用场景：**当多个不相关的异步操作都必须成功才能继续下一步时。
+
+```js
+const p1 = Promise.resolve(3);
+const p2 = 42; // 非 Promise 值也会被包装成 Promise
+const p3 = new Promise((resolve, reject) => {
+  setTimeout(resolve, 100, 'foo');
+});
+
+Promise.all([p1, p2, p3])
+  .then(values => {
+    console.log(values); // 输出: [3, 42, "foo"]
+  })
+  .catch(error => {
+    console.error(error);
+  });
+
+// 带有失败的 Promise.all
+const p4 = new Promise((resolve, reject) => setTimeout(reject, 200, 'Error in p4'));
+const p5 = Promise.resolve('Success in p5');
+
+Promise.all([p1, p4, p5])
+  .then(values => {
+    console.log(values);
+  })
+  .catch(error => {
+    console.error('Promise.all failed:', error); // 输出: Promise.all failed: Error in p4
+  });
+```
+
+---
+
+##### `Promise.race(iterable)`
+
+- **用途**：接受一个 Promise 可迭代对象，并返回一个新的 Promise。
+- **行为**：当传入的 Promise 中**任何一个**最早解决（成功或失败）时，`Promise.race` 返回的 Promise 就会以那个 Promise 的结果（值或原因）立即解决。
+- **使用场景**：当只需要最快完成的异步操作的结果时（例如，从多个 CDN 获取资源，或者设置请求超时）。
+
+```js
+const promise1 = new Promise((resolve) => setTimeout(resolve, 500, 'one'));
+const promise2 = new Promise((resolve) => setTimeout(resolve, 100, 'two'));
+
+Promise.race([promise1, promise2])
+  .then(value => {
+    console.log(value); // 输出: two (因为它更快)
+  });
+
+const promise3 = new Promise((resolve) => setTimeout(resolve, 500, 'three'));
+const promise4 = new Promise((_, reject) => setTimeout(reject, 100, 'four error'));
+
+Promise.race([promise3, promise4])
+  .then(value => {
+    console.log(value);
+  })
+  .catch(error => {
+    console.error('Promise.race failed:', error); // 输出: Promise.race failed: four error (它更快失败)
+  });
+```
+
+---
+
+##### `Promise.any(iterable)`
+
+**用途**：接受一个 Promise 可迭代对象，并返回一个新的 Promise。
+
+**行为**：
+
+- 当传入的 Promise 中**任何一个**成功时，`Promise.any` 返回的 Promise 就会立即成功，并返回第一个成功 Promise 的结果。
+- 只有当**所有**传入的 Promise 都失败时，它才会失败，并返回一个 `AggregateError`，其中包含所有失败的原因。
+
+**使用场景：**当多个异步操作中，只要有一个成功就足够时。
+
+```js
+const pA = new Promise((resolve) => setTimeout(resolve, 200, 'A resolved'));
+const pB = new Promise((_, reject) => setTimeout(reject, 100, 'B rejected'));
+const pC = new Promise((_, reject) => setTimeout(reject, 300, 'C rejected'));
+
+Promise.any([pB, pC, pA])
+  .then(value => {
+    console.log(value); // 输出: A resolved (因为A是第一个成功的，即使B和C更快失败)
+  })
+  .catch(error => {
+    console.error('Promise.any failed:', error);
+  });
+
+const pD = new Promise((_, reject) => setTimeout(reject, 100, 'D rejected'));
+const pE = new Promise((_, reject) => setTimeout(reject, 50, 'E rejected'));
+
+Promise.any([pD, pE])
+  .then(value => {
+    console.log(value);
+  })
+  .catch(error => {
+    console.error('All failed:', error); // 输出: All failed: AggregateError: All promises were rejected
+    console.log(error.errors); // [ 'D rejected', 'E rejected' ] (具体失败原因)
+  });
+```
+
+---
+
+##### `Promise.allSettled(iterable)`
+
+- **用途**：接受一个 Promise 可迭代对象，并返回一个新的 Promise。
+- **行为**：当**所有**传入的 Promise 都已解决（无论是成功还是失败）时，`Promise.allSettled` 返回的 Promise 才会成功。其结果是一个数组，每个元素都是一个对象，描述了对应 Promise 的最终状态和结果（`status: 'fulfilled'` 和 `value` 或 `status: 'rejected'` 和 `reason`）。
+- **使用场景**：当你需要知道所有异步操作的结果，无论它们成功还是失败时（例如，发送一系列独立日志请求，然后统计每个请求的状态）。
+
+```js
+const pSuccess = Promise.resolve('Success data');
+const pFailure = new Promise((_, reject) => setTimeout(reject, 100, 'Failure reason'));
+const pPending = new Promise(() => {}); // 一个永远不会解决的 Promise
+
+Promise.allSettled([pSuccess, pFailure, pPending])
+  .then(results => {
+    console.log(results);
+    /*
+    输出:
+    [
+      { status: 'fulfilled', value: 'Success data' },
+      { status: 'rejected', reason: 'Failure reason' },
+      // pPending 永远不会解决，所以 Promise.allSettled 永远不会 resolve
+      // 如果没有 pPending，它会在 pSuccess 和 pFailure 都解决后立即返回
+    ]
+    */
+  });
+
+// Corrected Example without infinite pending:
+const pSuccess2 = Promise.resolve('Success data 2');
+const pFailure2 = new Promise((_, reject) => setTimeout(reject, 100, 'Failure reason 2'));
+
+Promise.allSettled([pSuccess2, pFailure2])
+  .then(results => {
+    console.log(results);
+    /*
+    输出:
+    [
+      { status: 'fulfilled', value: 'Success data 2' },
+      { status: 'rejected', reason: 'Failure reason 2' }
+    ]
+    */
+  });
+```
+
+### async/await
+
+`async/await` 是 ES2017 引入的语法糖，它建立在 Promise 的基础上，使得异步代码的编写变得更像同步代码，极大地提高了可读性。
+
+#### 语法形式
+
+```js
+async function loadData() {
+  try {
+    const data = await fetchData();
+    console.log(data);
+  } catch (err) {
+    console.error(err);
+  }
+}
+```
+
+#### 核心特性
+
+##### async函数
+
+- 总是返回Promise
+- 返回值会自动包装为Promise
+
+```js
+async function foo() { return 1; }
+// 等价于
+function foo() { return Promise.resolve(1); }
+```
+
+##### await表达式
+
+- 只能用在async函数中
+- 会暂停async函数执行，等待Promise解决
+- 对非Promise值也会自动包装
+
+##### 错误处理
+
+```js
+async function getUser() {
+  try {
+    const user = await fetchUser();
+    const posts = await fetchPosts(user.id);
+    return { user, posts };
+  } catch (error) {
+    // 统一处理所有await错误
+    console.log('Failed:', error);
+    throw error; // 可以选择继续抛出
+  }
+}
+```
+
+#### 转换关系
+
+##### async/await -> Promise
+
+```js
+async function example() {
+  await a();
+  b();
+}
+
+// 等价于
+function example() {
+  return a().then(b);
+}
+```
+
+##### Promise -> async/await
+
+```js
+function example() {
+  return fetchData()
+    .then(data => process(data))
+    .catch(err => handleError(err));
+}
+
+// 转换为
+async function example() {
+  try {
+    const data = await fetchData();
+    return process(data);
+  } catch (err) {
+    return handleError(err);
+  }
+}
+```
+
+### 时序
+
+#### 总览
+
+JavaScript 的时序模型是基于其**单线程**、**事件循环（Event Loop）** 和 **任务队列（Task Queues）** 的特性。
+
+当你看到一段代码时，可以按照以下步骤来推断执行顺序：
+
+1. **执行所有同步代码**。
+2. **收集宏任务和微任务**：当遇到异步 API 时，将其回调函数注册到对应的宏任务队列或微任务队列中。
+3. **清空微任务队列**：在所有同步代码执行完毕后，立即执行微任务队列中的所有任务。
+4. **执行下一个宏任务**：当微任务队列清空后，从宏任务队列中取出并执行一个宏任务。
+5. **重复 3 和 4**：继续循环，直到两个队列都清空。
+
+| 类型                    | 执行时间                 | 例子                                                 |
+| ----------------------- | ------------------------ | ---------------------------------------------------- |
+| 同步代码                | 立即执行                 | `console.log()`、赋值语句                            |
+| 异步宏任务（macrotask） | 一轮事件循环执行完后     | `setTimeout`、`setInterval`、`requestAnimationFrame` |
+| 异步微任务（microtask） | 当前宏任务完成后立即执行 | `Promise.then`、`queueMicrotask`、`MutationObserver` |
+
+示例代码：
+
+```JS
+console.log('Global Start'); // 同步任务 1
+
+setTimeout(() => {
+  console.log('Macro A - setTimeout'); // 宏任务 A
+}, 0);
+
+Promise.resolve()
+  .then(() => {
+    console.log('Micro B - Promise.then'); // 微任务 B
+  })
+  .then(() => {
+    console.log('Micro C - Promise.then 2'); // 微任务 C (在 B 之后加入微任务队列)
+  });
+
+setTimeout(() => {
+  console.log('Macro D - setTimeout 2'); // 宏任务 D
+}, 0);
+
+console.log('Global End'); // 同步任务 2
+
+// 预期输出顺序：
+// 1. Global Start (同步)
+// 2. Global End (同步)
+// 3. Micro B - Promise.then (微任务队列清空，B 先)
+// 4. Micro C - Promise.then 2 (微任务队列清空，C 后)
+// 5. Macro A - setTimeout (宏任务队列取出第一个)
+// 6. Macro D - setTimeout 2 (宏任务队列取出第二个)
+```
+
+
+
+#### 宏任务队列
+
+宏任务是构成事件循环的每一次循环的基本单位。每个宏任务执行完毕后，事件循环会检查微任务队列，然后才会执行下一个宏任务。
+
+**宏任务的特点：**
+
+- **执行时机**：在每次事件循环中，JavaScript 引擎会从宏任务队列中取出**一个**任务来执行。
+- **优先级**：相对较低。
+- **常见来源**：
+  - **`setTimeout()`**：定时器回调。
+  - **`setInterval()`**：定时器回调。
+  - **I/O 操作**：例如，Node.js 中的文件读写、网络请求回调（在浏览器中，`fetch` 等网络请求本身的完成事件是宏任务，但其 `.then()` 回调是微任务）。
+  - **UI 渲染**：浏览器中页面的重绘和重排。
+  - **`MessageChannel`**：跨浏览器 / Node.js 的消息通信。
+  - **`requestAnimationFrame()`**：动画帧回调（在某些实现中，它被视为宏任务的一种特殊形式，或者在下次重绘前执行）。
+
+示例代码：
+
+```JS
+console.log('Script start'); // 同步任务 1
+
+setTimeout(() => {
+  console.log('setTimeout callback (Macro A)'); // 宏任务 A
+}, 0);
+
+setTimeout(() => {
+  console.log('setTimeout callback (Macro B)'); // 宏任务 B
+}, 0);
+
+console.log('Script end'); // 同步任务 2
+```
+
+1. `'Script start'` 同步执行。
+2. 两个 `setTimeout` 回调被注册为宏任务，并进入宏任务队列。
+3. `'Script end'` 同步执行。
+4. 主线程（调用栈）空闲。事件循环开始。
+5. 事件循环从宏任务队列中取出**第一个**宏任务 (Macro A) 并执行。
+6. 事件循环从宏任务队列中取出**第二个**宏任务 (Macro B) 并执行。
+
+输出结果：
+
+```JS
+Script start
+Script end
+setTimeout callback (Macro A)
+setTimeout callback (Macro B)
+```
+
+
+
+#### 微任务队列
+
+微任务是在当前宏任务执行结束后、下一个宏任务开始之前执行的任务。它们具有更高的优先级。
+
+**微任务的特点：**
+
+- **执行时机**：在每个宏任务执行完毕后，JavaScript 引擎会立即检查微任务队列，并**一次性执行完所有**在队列中的微任务。只有当微任务队列清空后，事件循环才会考虑执行下一个宏任务。
+- **优先级**：**高优先级**。
+- **常见来源**：
+  - **`Promise` 的回调**：`.then()`, `.catch()`, `.finally()`。
+  - **`MutationObserver`**：用于观察 DOM 树变化的 API。
+  - **`queueMicrotask()`**：显式地将一个函数添加到微任务队列。
+  - **`async/await` 中的 `await` 后的代码**（`await` 后面的部分会作为微任务执行）。
+
+示例代码：
+
+```JS
+console.log('Script start'); // 同步任务 1
+
+setTimeout(() => {
+  console.log('setTimeout callback (Macro A)'); // 宏任务 A
+}, 0);
+
+Promise.resolve()
+  .then(() => {
+    console.log('Promise.then callback (Micro B)'); // 微任务 B
+  })
+  .then(() => {
+    console.log('Promise.then callback 2 (Micro C)'); // 微任务 C
+  });
+
+console.log('Script end'); // 同步任务 2
+```
+
+1. `'Script start'` 同步执行。
+2. `setTimeout` 回调被注册为宏任务 (Macro A)，进入宏任务队列。
+3. `Promise.resolve()` 立即解决，其 `.then()` 回调 (Micro B) 被注册为微任务，进入微任务队列。
+4. Micro B 内部的 `.then()` 又注册了一个微任务 (Micro C)，进入微任务队列。
+5. `'Script end'` 同步执行。
+6. 主线程（调用栈）空闲。事件循环开始。
+7. **首先清空微任务队列**：执行 Micro B，然后执行 Micro C。
+8. 微任务队列清空。
+9. 事件循环从宏任务队列中取出**下一个**宏任务 (Macro A) 并执行。
+
+输出结果：
+
+```JS
+Script start
+Script end
+Promise.then callback (Micro B)
+Promise.then callback 2 (Micro C)
+setTimeout callback (Macro A)
+```
+
+## 类型化数组
+
+### 概述
+
+在 JavaScript 中，**类型化数组 (Typed Arrays)** 是一种专门用于处理**二进制数据**的数组状结构。它们提供了一种高效的方式来存储和操作固定大小的数值数据，例如字节、整数、浮点数等。
+
+与常规的 JavaScript 数组（它们可以存储任何类型的值，并且是动态大小的）不同，类型化数组是：
+
+- **定长 (Fixed-length)**：一旦创建，其长度就不能改变。
+- **同构 (Homogeneous)**：所有元素都必须是同一种特定的数值类型（例如，都是 32 位整数，或者都是 64 位浮点数）。
+- **直接的内存访问**：它们直接操作底层的二进制数据缓冲区，这使得它们在处理大量数值数据时效率远高于常规数组。
+
+类型化数组通常用于高性能场景，例如：
+
+- **WebGL 和 Canvas 2D 图像处理**：操作像素数据。
+- **音频和视频处理**：处理原始音频样本或视频帧。
+- **WebSocket 和 WebRTC**：发送和接收二进制数据。
+- **WebAssembly (Wasm)**：与 WebAssembly 模块进行高效的数据交换。
+- **文件操作**：在浏览器或 Node.js 中处理文件流。
+
+### 组成部分
+
+#### ArrayBuffer(原始二进制数据缓冲区)
+
+`ArrayBuffer` 是一个**固定长度的原始二进制数据缓冲区**。它本身不直接存储任何数据，也无法直接读写。它就像一块内存区域，你需要通过视图来访问其中的数据。
+
+```JS
+const buffer = new ArrayBuffer(16); // 创建一个 16 字节的 ArrayBuffer
+console.log(buffer.byteLength); // 16
+```
+
+#### DataView(数据视图)
+
+`DataView` 允许你以**不同类型**（如 8 位整数、16 位浮点数等）和**自定义字节序**（大端序或小端序）来读写 `ArrayBuffer` 中的数据。它提供了对缓冲区的精细控制，但相对不那么方便批量操作。
+
+```JS
+const buffer = new ArrayBuffer(16);
+const view = new DataView(buffer);
+
+view.setInt32(0, 12345678, false); // 在偏移量 0 处写入一个 32 位整数 (大端序)
+console.log(view.getInt32(0, false)); // 12345678 (读取大端序)
+
+view.setFloat64(4, 3.14159, true); // 在偏移量 4 处写入一个 64 位浮点数 (小端序)
+console.log(view.getFloat64(4, true)); // 3.14159 (读取小端序)
+```
+
+#### Typed Array View(类型化数组视图)
+
+类型化数组视图是**最常用**的方式来操作 `ArrayBuffer`。它们提供了一种像普通数组一样便捷的接口，来操作特定类型的数值数据。每个视图都绑定到一个 `ArrayBuffer`，并自动处理字节序和数据类型。
+
+##### 构造函数一览表
+
+| 类型              | 每个元素大小（字节） | 范围                           | 用途                             |
+| ----------------- | -------------------- | ------------------------------ | -------------------------------- |
+| Int8Array         | 1                    | -128 ~ 127                     | 有符号 8 位整数                  |
+| Uint8Array        | 1                    | 0 ~ 255                        | 无符号 8 位整数（最常用）        |
+| Uint8ClampedArray | 1                    | 0 ~ 255                        | 超出范围时“夹住”（用于图像像素） |
+| Int16Array        | 2                    | -32,768 ~ 32,767               | 16 位整数                        |
+| Uint16Array       | 2                    | 0 ~ 65,535                     | 无符号 16 位整数                 |
+| Int32Array        | 4                    | -2,147,483,648 ~ 2,147,483,647 | 32 位整数                        |
+| Uint32Array       | 4                    | 0 ~ 4,294,967,295              | 无符号 32 位整数                 |
+| Float32Array      | 4                    | 单精度浮点数                   | WebGL 顶点坐标                   |
+| Float64Array      | 8                    | 双精度浮点数                   | 高精度计算                       |
+
+##### 创建方式
+
+###### 直接创建
+
+创建一个新的内部 `ArrayBuffer`
+
+```JS
+const uint8 = new Uint8Array(5); // 创建一个包含 5 个 8 位无符号整数的数组，默认值为 0
+console.log(uint8); // Uint8Array [0, 0, 0, 0, 0]
+uint8[0] = 255;
+uint8[1] = 100;
+console.log(uint8); // Uint8Array [255, 100, 0, 0, 0]
+```
+
+###### 从现有 `ArrayBuffer` 创建
+
+```JS
+const buffer = new ArrayBuffer(12); // 12 字节
+const int32View = new Int32Array(buffer); // 12字节 / 4字节/Int32 = 3个Int32
+console.log(int32View.length); // 3
+
+int32View[0] = 10;
+int32View[1] = 20;
+int32View[2] = 30;
+console.log(int32View); // Int32Array [10, 20, 30]
+
+// 不同的视图可以共享同一个 ArrayBuffer
+const uint8View = new Uint8Array(buffer); // 12个8位无符号整数
+console.log(uint8View.length); // 12
+console.log(uint8View[0]); // 10 (因为 int32View[0] 的 10 占据了前 4 个字节)
+console.log(uint8View[4]); // 20 的第一个字节
+```
+
+###### 从其他类型化数组或数组状对象创建
+
+```JS
+const arr = [1, 2, 3, 256];
+const uint8FromArr = new Uint8Array(arr); // 256 会被截断到 0 (256 % 256)
+console.log(uint8FromArr); // Uint8Array [1, 2, 3, 0]
+
+const float32FromUint8 = new Float32Array(uint8FromArr);
+console.log(float32FromUint8); // Float32Array [1, 2, 3, 0]
+```
+
+
+

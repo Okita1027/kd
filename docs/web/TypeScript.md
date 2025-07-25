@@ -7,6 +7,7 @@ categories: [前端,TypeScript]
 tags: []
 ---
 ## 快速上手
+
 ### 问题引入
 ```javascript
 function test(obj) {    
@@ -43,31 +44,7 @@ function test(msg : Function) {
 ```
 
 - 限制了参数只能做函数那些事
-### 意义
-#### 更好理解框架
-现在越来越多的前端框架采用 typescript，如果懂 typescript 语法，可以更好地阅读框架代码
-```typescript
-const map = new Map<string, string>()
-map
-  .set("a", "b")
-  .set("c", "d")
 
-map.forEach((value,key,m)=>{
-  console.log(value, key)
-})
-```
-
-- 注意编译需要 `tsc --target es6 .\xxx.ts`
-#### 更好的提示
-例如，从服务器返回的一段 json，如果不用 typescript，则编辑器也不能给出准确的提示
-```typescript
-interface User {
-  name: string,
-  age: number
-}
-
-const user: User = JSON.parse(`{ "name":"张三", "age":18 }`)
-```
 ### 编译运行
 安装 typescript 编译器
 ```
@@ -182,6 +159,8 @@ const c1: Cat = { name: '小白', age: 1 }
 const c2: Cat = { name: '小花' }					  // 错误: 缺少 age 属性
 const c3: Cat = { name: '小黑', age: 1, sex: '公' } // 错误: 多出 sex 属性
 ```
+> [!note]
+>
 > 中文出现乱码解决方案：Help -> Edit Custom VM Options -> 添加：-Dfile.encoding=utf-8
 
 #### interface
@@ -208,13 +187,72 @@ const c3: Cat = { name: '小黑', age: 1, sex: '公' } // 错误: 多出 sex 属
 #### type 对比 interface
 interface（接口）和 type（类型别名）的对比： 
 
-- 相同点：都可以给对象指定类型。 
+- 相同点:
+
+   - 都可以定义对象的结构
+   - 都可以用于函数类型定义
+   - 都可以被`implements`
+
+   ```ts
+   type Person = { name: string; age: number };
+   interface Person { name: string; age: number }
+   
+   type SayHi = (name: string) => void;
+   interface SayHi { (name: string): void; }
+   
+   class Student implements Person {
+     name = "Tom";
+     age = 20;
+   }
+   ```
+
 - 不同点： 
-   - 接口，只能为对象指定类型。 
-   - 类型别名，不仅可以为对象指定类型，实际上可以为任意类型指定别名。
+
+   - `interface` 支持 **继承**（extends）和多继承：
+
+      ```ts
+      interface A { a: string }
+      interface B { b: number }
+      interface C extends A, B { c: boolean }
+      ```
+
+   - `type` 只能通过交叉类型（`&`）组合：
+
+     ```ts
+     type A = { a: string }
+     type B = { b: number }
+     type C = A & B & { c: boolean }
+     ```
+
+   - `interface` 可以多次声明并**自动合并**：
+
+      ```ts
+      interface Animal {
+        name: string;
+      }
+      interface Animal {
+        age: number;
+      }
+      
+      const dog: Animal = { name: "Dog", age: 3 };
+      ```
+
+   - `type` 不能重复声明同名类型，否则会报错：
+
+      ```ts
+      type Animal = { name: string };
+      // ❌ 报错：重复标识符
+      // type Animal = { age: number };
+      ```
+
+   - `interface`，只能为对象指定类型。 
+
+   - `type`别名，不仅可以为对象指定类型，实际上可以为任意类型指定别名。
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171447897.png)
+
 #### 对象类型
+
 JS 中的对象是由属性和方法构成的，而 TS 中对象的类型就是在描述对象的结构（有什么类型的属性和方法）。对象类型的写法：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171447645.png)
 解释：
@@ -280,7 +318,9 @@ console.log(obj);
 ```
 #### 字面量类型
 思考以下代码，两个变量的类型分别是什么？
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171448481.png)
+
 通过 TS 类型推论机制，可以得到答案：
 
 1. 变量 str1 的类型为：string。
@@ -310,7 +350,7 @@ printText('hello', 'aaa') // 错误: 取值只能是 left | right | center
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171448484.png)
 解释：
 
-1. 使用 `**enum**`** **关键字定义枚举。
+1. 使用 `enum`关键字定义枚举。
 2. 约定枚举名称、枚举中的值以大写字母开头。
 3. 枚举中的多个值之间通过 ,（逗号）分隔。
 4. 定义好枚举后，直接使用枚举名称作为类型注解。
@@ -396,8 +436,8 @@ function kun(value:a) {
       break
     case 'rap':
       break
-      // case '篮球':
-      // break
+    //case '篮球':
+    //break
     default:
       // 兜底逻辑
       const error :never = value // 此时报错
@@ -429,12 +469,10 @@ test()
 
 - x?: string | null 表示可能是 undefined 或者是 string 或者是 null
 #### Symbol
-##### 基本使用
 Symbol 是一种基本数据类型，用于创建独一无二的标识符。它是 ECMAScript 6（ES6）引入的新特性，并且也被 TypeScript 支持。 Symbol 可以用于创建对象属性、类成员、和其他上下文中，以确保它们的唯一性，从而避免命名冲突和混淆。
 
-1. 使用 Symbol() 函数可以创建一个新的 Symbol。每个 Symbol 都是唯一的，不能通过常规的 
+1. 使用 Symbol() 函数可以创建一个新的 Symbol。每个 Symbol 都是唯一的，不能通过常规的方法进行比较。 
 
-方法进行比较。 
 ```typescript
 let a1:symbol = Symbol(1)
 let a2:symbol = Symbol(1)
@@ -495,7 +533,7 @@ const obj = {
 const symbolKeys = Object.getOwnPropertySymbols(obj);
 console.log(obj[symbolKeys[0]]); // Output: This is a Symbol property
 ```
-##### 生成器
+### 生成器
 ```typescript
 function * generator() {
  yield Promise.resolve('xx')
@@ -510,7 +548,7 @@ console.log(man.next()); // { value: 2, done: false }
 console.log(man.next()); // { value: '3', done: false }
 console.log(man.next()); // { value: undefined, done: true }
 ```
-##### 迭代器
+### 迭代器
 ```typescript
 const myArray = [1, 2, 3];
 const iterator = myArray[Symbol.iterator]();
@@ -554,10 +592,11 @@ const each = (value:any) => {
 each(map) // [ [ 1, 2, 4 ], 'xx' ] 输出 key value 的数组
 each(set) // 1 2 3
 ```
-###### 语法糖
+#### 语法糖
 
-1.  **for...of 循环**：
+##### `for...of` 循环
 `for...of` 循环是一种用于遍历可迭代对象的语法糖形式，它会自动调用迭代器的 `next()` 方法来遍历对象的元素。使用 `for...of` 循环可以避免手动调用 `next()` 方法，并且代码更加简洁易读。例如： 
+
 ```typescript
 const myArray = [1, 2, 3];
 for (const item of myArray) {
@@ -565,16 +604,18 @@ for (const item of myArray) {
 }
 ```
 
-2.  **扩展运算符（Spread Operator）**：
+##### 扩展运算符`...`
 扩展运算符 `...` 可以将可迭代对象展开成独立的元素，从而可以方便地在函数调用、数组字面量等地方使用。扩展运算符在实现迭代器时尤其有用。例如： 
+
 ```typescript
 const myArray = [1, 2, 3];
 const newArray = [...myArray];
 console.log(newArray);  // 输出: [1, 2, 3]
 ```
 
-3.  **解构赋值**：
+##### 解构赋值
 解构赋值可以从可迭代对象中提取值并赋值给变量，这样可以方便地获取迭代器返回的元素。例如： 
+
 ```typescript
 const myArray = [1, 2, 3];
 const [first, second, third] = myArray;
@@ -585,7 +626,9 @@ console.log(third);    // 输出: 3
 ### 类型别名
 类型别名（自定义类型）：为任意类型起别名。
 使用场景：当同一类型（复杂）被多次使用时，可以通过类型别名，简化该类型的使用。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171449009.png)
+
 解释：
 
 1. 使用 **type** 关键字来创建类型别名。
@@ -667,7 +710,6 @@ var User = /** @class */ (function () {
 var u = new User('张三');
 ```
 所以 js 中的 class，并不等价于 java 中的 class，它还是基于原型实现的。
-#### 
 ##### 方法
 ```typescript
 class User {
@@ -799,6 +841,7 @@ f.study()
 #### 成员可见性
 类成员可见性：可以使用 TS 来控制 class 的方法或属性对于 class 外的代码是否可见。 
 可见性修饰符包括：1 public（公有的） 2 protected（受保护的） 3 private（私有的）。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171450353.png)
 
 1. public：表示公有的、公开的，公有成员可以被任何地方访问，默认可见性。
@@ -925,7 +968,9 @@ const c1 并没有声明类型为 Cat，但它与 Cat 类型有一样的属性�
 - 不同点：两种方式实现类型组合时，对于同名属性之间，处理类型冲突的方式不同。
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171451368.png)
-说明：以上代码，接口继承会报错（类型不兼容）；交叉类型没有错误，可以简单的理解为：![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171451195.png)
+说明：以上代码，接口继承会报错（类型不兼容）；交叉类型没有错误，可以简单的理解为：
+
+![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171451195.png)
 
 ### 泛型
 #### 基本使用
@@ -994,13 +1039,16 @@ let numbersGeneric: Array<number> = [1, 2, 3, 4, 5];
 技巧：可以通过 Ctrl + 鼠标左键（Mac：option + 鼠标左键）来查看具体的类型信息。
 #### 泛型约束
 泛型约束：默认情况下，泛型函数的类型变量 Type 可以代表多个类型，这导致无法访问任何属性。 比如，id('a') 调用函数时获取参数的长度：
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171451632.png)
+
 解释：Type 可以代表任意类型，无法保证一定存在 length 属性，比如 number 类型就没有 length。 此时，就需要为泛型添加约束来**收缩类型**（缩窄类型取值范围)
 添加泛型约束收缩类型，主要有以下两种方式：1->指定更加具体的类型 2->添加约束。
 
 1. **指定更加具体的类型**
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171451660.png)
+
 比如，将类型修改为 Type[]（Type 类型的数组)，因为只要是数组就一定存在 length 属性，因此就可以访问了。
 
 2. **添加约束**
@@ -1039,19 +1087,28 @@ type PersonKeys = keyof Person;
 4. `Record<Keys, Type>`
 ##### ``Partial<Type>``
 ``Partial<Type>`` 用来构造（创建）一个类型，将 Type 的所有属性设置为可选。 
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452342.png)
+
 解释：构造出来的新类型 PartialProps 结构和 Props 相同，但所有属性都变为可选的。
 
 ##### `Readonly<Type>`
 `Readonly<Type>` 用来构造一个类型，将 Type 的所有属性都设置为 readonly（只读）。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452243.png) 
+
 解释：构造出来的新类型 ReadonlyProps 结构和 Props 相同，但所有属性都变为只读的。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452716.png)
+
 当我们想重新给 id 属性赋值时，就会报错：无法分配到 "id" ，因为它是只读属性。
 
 ##### `Pick<Type, Keys>`
 `Pick<Type, Keys>` 从 Type 中选择一组属性来构造新类型。
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452091.png)解释：
+
+![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452091.png)
+
+解释：
 
 1. Pick 工具类型有两个类型变量：1->表示**选择谁的属性** 2->表示**选择哪几个属性**。
 2. 其中第二个类型变量，如果只选择一个则只传入该属性名即可。
@@ -1059,6 +1116,7 @@ type PersonKeys = keyof Person;
 4. 构造出来的新类型 PickProps，只有 id 和 title 两个属性类型。
 ##### Record<Keys, Type>
 `Record<Keys,Type>` 构造一个对象类型，属性键为 Keys，属性类型为 Type。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452942.png)
 解释：
 
@@ -1340,7 +1398,6 @@ declare 关键字：用于类型声明，为其他地方（比如，.js 文件�
   "listEmittedFiles": true, // 打印输出文件
   "listFiles": true// 打印编译的文件(包括引用的声明文件)
 }
-
 ```
 ## 命名空间
 在 TypeScript 中，命名空间（Namespace）是一种用于组织和管理代码的机制，它可以避免全局作用域下的命名冲突， 并将相关的代码封装在一个命名空间内。 
