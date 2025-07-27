@@ -146,32 +146,92 @@ console.log(Object.getPrototypeOf(Object.prototype) === null);               // 
 ES6 引入的 `class` 语法（`class MyClass extends BaseClass {}`）仅仅是原型继承的**语法糖**。在底层，JavaScript 依然使用原型和原型链来实现继承。
 
 ```JS
-class Animal {
-  constructor(name) {
-    this.name = name;
-  }
-  speak() {
-    console.log(`${this.name} makes a sound.`);
-  }
+class Person {
+    constructor(name) {
+        this.name = name;
+    }
+
+    sayHello() {
+        console.log(`你好, 我是 ${this.name}`);
+    }
+
+    static create(name: string) {
+        return new Person(name);
+    }
 }
 
-class Dog extends Animal {
-  constructor(name, breed) {
-    super(name); // 调用父类构造函数
-    this.breed = breed;
-  }
-  bark() {
-    console.log(`${this.name} barks!`);
-  }
+class Student extends Person {
+    constructor(name, grade) {
+        super(name);
+        this.grade = grade;
+    }
+    study() {
+        console.log(`${this.name}的年级是${this.grade}`);
+    }
 }
 
-const fluffy = new Dog('Fluffy', 'Poodle');
-
-console.log(Object.getPrototypeOf(Dog.prototype) === Animal.prototype); // true
-console.log(fluffy.speak()); // Fluffy makes a sound.
+const student = new Student('小明', '3');
+console.log(Object.getPrototypeOf(Student.prototype) === Person.prototype); // true
 ```
 
 这表明 `class` 语法并没有改变 JavaScript 的继承本质，只是提供了一种更符合传统面向对象语言习惯的写法。
+
+function + 原型链写法：
+
+```JS
+// 父类（Person）：类声明与构造函数
+function Person(name) {
+    this.name = name;
+    
+    // 私有变量（闭包）
+    const privateAge = 30;
+    this.getAge = function () {
+        return privateAge; // 只能通过方法访问
+    };
+}
+
+// 静态方法
+Person.create = function (name) {
+    return new Person(name);
+};
+
+// 父类方法（挂载到 prototype）
+Person.prototype.sayHello = function () {
+    console.log(`你好，我是${this.name}`);
+};
+
+// 子类（Student）
+function Student(name, grade) {
+    // 调用父类构造函数（相当于 super(name)）
+    Person.call(this, name);
+    this.grade = grade;
+}
+
+// 继承父类原型（实现 extends）
+Student.prototype = Object.create(Person.prototype);
+// Student.prototype.constructor = Student;
+
+// 子类方法
+Student.prototype.study = function () {
+    console.log(`${this.name}的年级是${this.grade}`);
+};
+
+// 测试
+const student = new Student('小明', '3');
+student.sayHello();
+student.study();
+```
+
+---
+
+| 特性           | `class` 语法         | `function` + `prototype` 实现         |
+| :------------- | :------------------- | :------------------------------------ |
+| **构造函数**   | `constructor()`      | `function Person(name) { ... }`       |
+| **方法定义**   | `sayHello() { ... }` | `Person.prototype.sayHello = ...`     |
+| **继承**       | `extends`            | `Object.create` + `Parent.call(this)` |
+| **静态方法**   | `static method()`    | `Person.staticMethod = ...`           |
+| **私有字段**   | `#字段名`            | 闭包函数                              |
+| **super 调用** | `super.method()`     | `Parent.prototype.method.call(this)`  |
 
 ## 属性的可枚举性和所有权
 
