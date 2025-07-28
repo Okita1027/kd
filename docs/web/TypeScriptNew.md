@@ -1330,3 +1330,58 @@ function f(...args: [boolean, ...string[]]) {
 
 
 #### 只读参数
+
+
+
+## 对象
+
+### 属性名的索引类型
+
+索引签名有两种主要形式：**字符串索引签名** 和 **数字索引签名**。
+
+```TS
+interface MyObject {
+  // 字符串索引签名
+  [key: string]: number;
+
+  // 数字索引签名 (通常用于表示类数组对象或字典，键为数字)
+  // [index: number]: string; // 示例：键是数字，值是字符串
+}
+```
+
+`[key: string]`: 这部分定义了**键（属性名）的类型**。它可以是 `string` 或 `number`（或 `symbol`，但较少用作通用索引）。
+
+`: number`: 这部分定义了**值（属性值）的类型**。
+
+#### 字符串索引签名
+
+字符串索引签名是最常见的形式，它表示一个对象可以有任意数量的字符串属性，并且这些属性的值都必须是指定类型。
+
+示例：定义一个字符串到数字的字典
+
+```TS
+interface StringToNumberDictionary {
+  [key: string]: number; // 任何字符串键都对应一个数字值
+  length?: number; // 可以有其他明确定义的属性，但其类型必须与索引签名兼容
+  // name: string; // Error: Property 'name' of type 'string' is not assignable to 'string' index type 'number'.
+                   // 如果 name 属性存在，它的值类型必须是 number，因为索引签名规定了所有字符串属性的值都是 number。
+}
+
+let scores: StringToNumberDictionary = {
+  "math": 95,
+  "english": 88,
+  "science": 92
+};
+
+console.log(scores["math"]); // 95
+scores.history = 78;          // OK
+// scores.chemistry = "ninety"; // Error: Type 'string' is not assignable to type 'number'.
+
+// 也可以有可选属性，只要其类型兼容
+scores.length = 3; // OK
+```
+
+
+
+#### 数字索引签名
+
