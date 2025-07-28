@@ -93,7 +93,7 @@ type ClassDecorator = (
 
 类装饰器接受两个参数：`value`（当前类本身）和`context`（上下文对象）。其中，`context`对象的`kind`属性固定为字符串`class`。
 
-类装饰器一般用来对类进行操作，可以不返回任何值，请看下面的例子。
+类装饰器一般用来对类进行操作，可以不返回任何值，请看下面的例子：
 
 ```TS
 function Greeter(value, context) {
@@ -193,7 +193,7 @@ const robin = Person('Robin');
 robin.name // 'Robin'
 ```
 
-上面示例中，类装饰器`@functionCallable`返回一个新的构造方法，里面判断`new.target`是否不为空，如果是的，就表示通过`new`命令调用，从而报错。
+上面示例中，类装饰器`@functionCallable`返回一个新的构造方法，里面判断`new.target`是否不为空，如果是，就表示通过`new`命令调用，从而报错。
 
 类装饰器的上下文对象`context`的`addInitializer()`方法，用来定义一个类的初始化函数，在类完全定义结束后执行。
 
@@ -265,7 +265,7 @@ class C {
   }
 }
 
-// `@trace` 等同于
+// @trace` 等同于
 // C.prototype.toString = trace(C.prototype.toString);
 ```
 
