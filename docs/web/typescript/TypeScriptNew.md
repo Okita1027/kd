@@ -3247,6 +3247,8 @@ class Person {
 
 ### keyof
 
+#### 基本使用
+
 keyof 是一个单目运算符，接受一个对象类型作为参数，返回该对象的所有键名组成的联合类型。
 
 ```TS
@@ -3350,8 +3352,6 @@ const obj = { a: 123 };
 if ("a" in obj) console.log("found a");
 ```
 
-
-
 ### []
 
 方括号运算符（`[]`）用于取出对象的键值类型，比如`T[K]`会返回对象`T`的属性`K`的类型。
@@ -3434,7 +3434,7 @@ type Age = Person['a' + 'g' + 'e']; // 报错
 
 上面两个示例，方括号里面都涉及值的运算，编译时不会进行这种运算，所以会报错
 
-### extends ? : 与 infer
+### T `extends` Pattern<`infer` U> `?` U`:` OtherType 
 
 `infer` 关键字是 TypeScript 条件类型中的一个核心组件，它允许你：
 

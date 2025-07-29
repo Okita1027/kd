@@ -20,29 +20,29 @@ CMD执行命令：`npm create vite@latest react-typescript -- --template react-t
 配置步骤：
 
 1. 安装craco：`npm i -D @craco/craco`
-2. 项目根目录下创建配置文件：craco.config.js
+2. 项目根目录下创建配置文件：`craco.config.js`
 3. 配置文件中添加路径解析配置
 ```javascript
 const path = require('path')
 
 module.exports = {
-  // webpack配置
-  webpack: {
-    // 配置别名
-    alias: {
-      // 约定：使用@表示src 文件所在路径
-      '@': path.resolve(__dirname, 'src/'),
+    // webpack配置
+    webpack: {
+        // 配置别名
+        alias: {
+            // 约定：使用@表示src 文件所在路径
+            '@': path.resolve(__dirname, 'src/'),
+        },
     },
-  },
 }
 ```
 
 4. 包文件中配置启动和打包命令
 ```json
-  "scripts": {
+"scripts": {
     "start": "craco start",
     "build": "craco build"
-  }
+}
 ```
 #### Vite-ts
 ```typescript
@@ -52,12 +52,12 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    plugins: [react()],
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './src'),
+        },
     },
-  },
 })
 
 ```
@@ -69,40 +69,39 @@ export default defineConfig({
 2. 添加路径提示配置
 ```json
 {
-  "compilerOptions": {
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["src/*"]
+    "compilerOptions": {
+        "baseUrl": "./",
+        "paths": {
+            "@/*": ["src/*"]
+        }
     }
-  }
 }
 ```
 #### Vite-ts
 安装node类型包：`npm i @types/node -D`
 ```json
 {
-  "baseUrl": ".",
-  "paths": {
-    "@/*": [
-      "src/*"
-    ]
-  },
+    "baseUrl": ".",
+    "paths": {
+        "@/*": [
+            "src/*"
+        ]
+    },
 }
 ```
 ## React基础
 ### JSX基础
-#### 概念
 JSX是JavaScript和XMl(HTML)的缩写，表示在JS代码中编写HTML模版结构，它是React中构建UI的方式。
 ```jsx
 const message = 'this is message'
 
 function App(){
-  return (
-    <div>
-      <h1>this is title</h1>
-      {message}
-    </div>
-  )
+    return (
+        <div>
+            <h1>this is title</h1>
+            {message}
+        </div>
+    )
 }
 ```
 优势：
@@ -118,20 +117,20 @@ JSX不是标准的JS语法，它是JS的语法扩展，浏览器本身不能识�
 ```jsx
 const message = "this is message"
 function App() {
-	return (
-		<div>
-			{/* 使用引号传递字符串 */}
-			{"This is a div!"}
-			{/* 使用JS变量 */}
-			{message}
-			{/* 函数调用 */}
-			{getMessage()}
-			{/* 方法调用 */}
-			{new Date().toString()}
-			{/* 使用JS对象 */}
-			<div style={{ color: "red" }}>This is a div!</div>
-		</div>
-	);
+    return (
+        <div>
+            {/* 使用引号传递字符串 */}
+            {"This is a div!"}
+            {/* 使用JS变量 */}
+            {message}
+            {/* 函数调用 */}
+            {getMessage()}
+            {/* 方法调用 */}
+            {new Date().toString()}
+            {/* 使用JS对象 */}
+            <div style={{ color: "red" }}>This is a div!</div>
+        </div>
+    );
 }
 
 export default App;
@@ -144,23 +143,24 @@ export default App;
 
 ```jsx
 const list = [
-  {id:1001, name:'Vue'},
-  {id:1002, name: 'React'},
-  {id:1003, name: 'Angular'}
+    {id:1001, name:'Vue'},
+    {id:1002, name: 'React'},
+    {id:1003, name: 'Angular'}
 ]
 
 function App() {
-  return (
-			{/* 列表渲染 */}
-			<ul>
-				{list.map((item) => (
-					<li key={item.id}>{item.name}</li>
-				))}
-			</ul>
-  )
+    return (
+        {/* 列表渲染 */}
+        <ul>
+            {list.map((item) => (
+                <li key={item.id}>{item.name}</li>
+            ))}
+        </ul>
+    )
 }
 ```
-`key={item.id}`能夠優化渲染速度
+> `key={item.id}`能够优化渲染速度
+
 #### 条件渲染
 逻辑运算符与三目运算符
 
@@ -210,7 +210,7 @@ function App(){
 }
 ```
 ### 事件绑定
-#### 基础实现
+#### 基本用法
 React中的事件绑定，通过语法 `on + 事件名称 = { 事件处理程序 }`，整体上遵循驼峰命名法。
 ```jsx
 function App(){
@@ -224,7 +224,7 @@ function App(){
 }
 ```
 #### 事件参数
-在事件回调函数中设置形参`e`即可
+在事件回调函数中设置形参`e`即可（名字随意，e、eve、event都可以）
 ```jsx
 function App(){
   const clickHandler = (e)=>{
@@ -235,7 +235,14 @@ function App(){
   )
 }
 ```
+> 这里的 `e` 是一个 **合成事件对象**
+>
+> - **跨浏览器兼容性**：它封装了不同浏览器之间原生事件的差异，确保你的代码在各种浏览器中行为一致。
+> - **性能优化**：React 会对事件对象进行“事件池”管理。事件处理函数执行完毕后，合成事件对象会被重新放回池中，而不是每次都创建新的，从而提高性能。这意味着，如果你需要异步访问 `e` 的属性，你需要调用 `e.persist()`，否则 `e` 的属性可能会被重置为 `null`。
+> - **提供了与原生事件相同的接口**：虽然是合成的，但它提供了与原生 DOM 事件对象相似的属性和方法，例如 `e.target`（触发事件的 DOM 元素）、`e.currentTarget`（事件绑定的 DOM 元素）、`e.preventDefault()`（阻止默认行为）、`e.stopPropagation()`（阻止事件冒泡）等。
+
 #### 自定义参数
+
 事件绑定的位置改造成箭头函数的写法，在执行`clickHandler`实际处理业务函数的时候传递实参。
 ```jsx
 function App(){
@@ -247,7 +254,19 @@ function App(){
   )
 }
 ```
-> 注意：不能直接写函数调用，这里事件绑定需要一个函数引用。
+> [!important]
+>
+> 不能直接写函数调用，因为事件绑定需要一个函数引用！
+>
+> 当你写 `onClick={clickHandler('jack')}` 时，`clickHandler('jack')` 会**立即执行**。这意味着在组件渲染的时候，`clickHandler` 函数就会被调用，并且它的返回值（在本例中是 `undefined`，因为 `clickHandler` 没有显式返回任何东西）会被赋值给 `onClick` 属性。这样一来，当你点击按钮时，实际上就没有函数可以被调用了。
+>
+> 可以把 `onClick={clickHandler('jack')}` 想象成：
+>
+> 1. 组件渲染。
+> 2. `clickHandler('jack')` 被执行。
+> 3. `console.log('button按钮点击了，姓名为', 'jack')` 会立即打印到控制台。
+> 4. `onClick` 属性的值现在是 `undefined`。
+> 5. 当你点击按钮时，没有任何事情发生。
 
 #### 同时传递事件对象和自定义参数
 在事件绑定的位置传递事件实参`e`和自定义参数，`clickHandler`中声明形参，**注意顺序对应。**
@@ -270,7 +289,7 @@ function App(){
 一个组件就是**首字母大写的函数**，内部存放了组件的逻辑和视图UI, 渲染组件只需要把组件当成标签书写即可
 #### 状态管理
 ##### 基础使用
-`useState` 是一个 React Hook（函数），它允许我们向组件添加一个`状态变量`, 从而控制影响组件的渲染结果
+`useState` 是一个 React Hook（函数），它允许我们向组件添加一个`状态变量`, 从而控制影响组件的渲染结果。
 
 和普通JS变量不同的是，状态变量一旦发生变化组件的视图UI也会跟着变化（数据驱动视图）
 
@@ -293,10 +312,10 @@ function App(){
 ![左（×） 右（√）](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504209.png "左（×） 右（√）")
 
 ```jsx
-	const [count, setCount] = React.useState(0);
-  const handlerClick = () => {
-		setCount(count + 1);
-	};
+const [count, setCount] = React.useState(0);
+const handlerClick = () => {
+    setCount(count + 1);
+};
 ```
 ##### 修改对象状态
 对于对象类型的状态变量，应该始终给set方法一个**全新的对象**来进行修改
@@ -304,32 +323,32 @@ function App(){
 ![左（×） 右（√）](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504913.png "左（×） 右（√）")
 
 ```jsx
-	const [form, setForm] = useState({
-		name: "Jack",
-	});
-	const handleChangeName = () => {
-		setForm({
-			...form,	// ...用于创建对象的浅拷贝，它可以复制对象中的所有可枚举属性到新对象中
-			name: "John",
-		});
-	};
+const [form, setForm] = useState({
+    name: "Jack",
+});
+const handleChangeName = () => {
+    setForm({
+        ...form,	// ...用于创建对象的浅拷贝，它可以复制对象中的所有可枚举属性到新对象中
+        name: "John",
+    });
+};
 ```
 #### 基础样式处理
 ##### 行内样式
 ```jsx
 const style = {
-	color: "red",
-  fontSize: "20px"	// 注意要写成 驼峰形式
+    color: "red",
+    fontSize: "20px"	// 注意要写成 驼峰形式
 };
 
 function App() {
-	return (
-		<div>
-      {/* 行内样式控制 */}
-      <div style={{ fontSize: "25px", color: "green" }}>this is div tag</div>
-      <span style={style}>This is span tag</span>
-		</div>
-	);
+    return (
+        <div>
+            {/* 行内样式控制 */}
+            <div style={{ fontSize: "25px", color: "green" }}>this is div tag</div>
+            <span style={style}>This is span tag</span>
+        </div>
+    );
 }
 ```
 ##### class类名控制
@@ -343,88 +362,14 @@ function App() {
 import "./index.css";
 
 function App() {
-	return (
-		<div>
-      {/* 通过class类名控制样式 */}
-      <span className="foo">This is class foo</span>
-		</div>
-	);
+    return (
+        <div>
+            {/* 通过class类名控制样式 */}
+            <span className="foo">This is class foo</span>
+        </div>
+    );
 }
 ```
-### 工具库
-#### lodush
-[Lodash 简介 | Lodash中文文档 | Lodash中文网](https://www.lodashjs.com/)
-Lodash 是一个 JavaScript 实用工具库，提供了许多实用的功能，帮助开发者在编写 JavaScript 代码时更高效、更方便。它提供了对数组、对象、函数、字符串等数据类型的处理方法，同时还提供了许多实用的工具函数，用于简化常见的编程任务。
-```shell
-npm install --save lodush
-```
-```jsx
-import _ from 'lodash'
-```
-#### classnames
-`classnames` 是一个 JavaScript 工具库，用于动态生成 HTML 元素的 class 字符串。它通常在 React 应用程序中用于简化条件性地应用 CSS 类名。
-`classnames` 可以更方便地处理动态 class 名称的拼接，特别是在有多个条件需要考虑时，代码会更加清晰和简洁。
-
-1.  **安装**`classnames`：
-你可以使用 npm 或者 yarn 来安装 `classnames`： 
-```bash
-npm install classnames
-```
-
-2.  **基本用法**： 
-```javascript
-import classNames from 'classnames';
-
-const buttonClass = classNames({
-  'btn': true,
-  'btn-primary': true,
-  'btn-large': false
-});
-
-// buttonClass 的值为 'btn btn-primary'
-```
-在这个例子中，`classNames` 接受一个对象作为参数，对象的 key 是 class 名称，value 是一个布尔值，表示是否应该包含该 class。`classNames` 会将 value 为 true 的 class 名称添加到最终的 class 字符串中。 
-
-3.  **条件性应用 class**： 
-```javascript
-import classNames from 'classnames';
-
-const active = true;
-const buttonClass = classNames('btn', {
-  'btn-primary': active,
-  'btn-large': !active
-});
-
-// buttonClass 的值为 'btn btn-primary'
-```
-本例中，`btn` class 总会被添加，而 `btn-primary` 或 `btn-large` 则根据 `active` 变量的值进行条件性添加。
-
-4.  **数组作为参数**： 
-```javascript
-import classNames from 'classnames';
-
-const size = 'small';
-const buttonClass = classNames('btn', ['btn-primary', 'btn-large'], {
-  'btn-small': size === 'small',
-  'btn-medium': size === 'medium',
-  'btn-large': size === 'large'
-});
-
-// 如果 size 为 'small'，则 buttonClass 的值为 'btn btn-primary btn-large btn-small'
-```
-本例展示了如何将数组作为参数传递给 `classnames`，数组中的每个元素都会被添加到最终的 class 字符串中。 
-#### UUID
-[GitHub - uuidjs/uuid: Generate RFC-compliant UUIDs in JavaScript](https://github.com/uuidjs/uuid)
-```shell
-npm install uuid
-```
-```javascript
-import { v4 as uuidv4 } from 'uuid';
-uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
-```
-#### days
-[Day.js中文网](https://dayjs.fenxianglu.cn/)
-处理日期时间
 ### 表单控制
 #### 受控绑定
 在受控组件中，表单元素的值由 React 的 state 控制。当用户输入时，React 通过更新组件的 state 来反映输入的变化。受控组件中的值始终由 React 控制，并通过 props 将当前值传递给表单元素。
@@ -435,13 +380,13 @@ uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 import { useState } from "react";
 
 function App() {
-  // 声明一个React状态
+  	// 声明一个React状态
 	const [value, setValue] = useState("");
 	return (
 		<input
 			type="text"
 			value={value}   // 通过value属性绑定react状态
-      // 绑定onChange事件 通过事件参数e拿到输入框最新的值
+      		// 绑定onChange事件 通过事件参数e拿到输入框最新的值
 			onChange={(e) => setValue(e.target.value)}
 		/>
 	);
@@ -1435,789 +1380,102 @@ class App extends Component {
 export default App
 ```
 
+### 工具库
 
-## Redux
-### 介绍
-Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（Vuex），可以独立于框架运行
-作用：通过集中管理的方式管理应用的状态
+#### lodush
 
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505216.png)
+[Lodash 简介 | Lodash中文文档 | Lodash中文网](https://www.lodashjs.com/)
+Lodash 是一个 JavaScript 实用工具库，提供了许多实用的功能，帮助开发者在编写 JavaScript 代码时更高效、更方便。它提供了对数组、对象、函数、字符串等数据类型的处理方法，同时还提供了许多实用的工具函数，用于简化常见的编程任务。
 
-**为什么要使用Redux？**
-
-1. 独立于组件，无视组件之间的层级关系，简化通信问题
-2. 单项数据流清晰，易于定位bug
-3. 调试工具配套良好，方便调试
-### 快速体验
-需求：不和任何框架绑定，不使用任何构建工具，使用纯Redux实现计数器
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505561.png)
-
-使用步骤：
-
-1. 定义一个 reducer 函数 （根据当前想要做的修改返回一个新的状态）
-2. 使用createStore方法传入 reducer函数 生成一个store实例对象
-3. 使用store实例的 subscribe方法 订阅数据的变化（数据一旦变化，可以得到通知）
-4. 使用store实例的 dispatch方法提交action对象 触发数据变化（告诉reducer你想怎么改数据）
-5. 使用store实例的 getState方法 获取最新的状态数据更新到视图中
-```html
-<button id="decrement">-</button>
-<span id="count">0</span>
-<button id="increment">+</button>
-
-<script src="https://unpkg.com/redux@latest/dist/redux.min.js"></script>
-
-<script>
-  // 定义reducer函数 
-  // 内部主要的工作是根据不同的action 返回不同的state
-  function counterReducer (state = { count: 0 }, action) {
-    switch (action.type) {
-      case 'INCREMENT':
-        return { count: state.count + 1 }
-      case 'DECREMENT':
-        return { count: state.count - 1 }
-      default:
-        return state
-    }
-  }
-  // 使用reducer函数生成store实例
-  const store = Redux.createStore(counterReducer)
-
-  // 增
-  const inBtn = document.getElementById('increment')
-  inBtn.addEventListener('click', () => {
-    store.dispatch({
-      type: 'INCREMENT'
-    })
-  })
-  // 减
-  const dBtn = document.getElementById('decrement')
-  dBtn.addEventListener('click', () => {
-    store.dispatch({
-      type: 'DECREMENT'
-    })
-  })
-</script>
-```
-### 数据流架构
-Redux的难点是理解它对于数据修改的规则, 下图动态展示了在整个数据的修改中，数据的流向
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505001.png)
-
-为了职责清晰，Redux代码被分为三个核心的概念，学redux，其实就是学这三个核心概念之间的配合，三个概念分别是:
-
-1. state:  一个对象 存放着我们管理的数据
-2. action:  一个对象 用来描述你想怎么改数据
-3. reducer:  一个函数 根据action的描述更新state
-### 环境准备
-Redux虽然是一个框架无关可以独立运行的插件，但是社区通常还是把它与React绑定在一起使用，以一个计数器案例体验一下Redux + React 的基础使用
-#### 调试工具
-Redux官方提供了针对于Redux的调试工具，支持实时state信息展示，action提交信息查看等
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506556.png)
-
-#### 配套工具
-在React中使用redux，官方要求安装俩个其他插件：`Redux Toolkit` 和 `react-redux`
-
-1.  Redux Toolkit（RTK）- 官方推荐编写Redux逻辑的方式，是一套工具的集合集，简化书写方式 
-2.  react-redux - 用来 链接 Redux 和 React组件 的中间件 
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506264.png)
-#### 配置基础环境
-
-1. 使用 CRA 快速创建 React 项目
-```bash
-npx create-react-app react-redux
-```
-
-2. 安装配套工具
-```bash
-npm i @reduxjs/toolkit  react-redux
-```
-
-3. 启动项目
-```bash
-npm run start
-```
-#### store目录结构设计
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506517.png)
-
-1.  通常集中状态管理的部分都会单独创建一个单独的 `store` 目录 
-2.  应用通常会有很多个子store模块，所以创建一个 `modules` 目录，在内部编写业务分类的子store 
-3.  store中的入口文件 `index.js` 的作用是组合modules中所有的子模块，并导出store 
-### Redux与React案例
-案例：实现计数器
-#### 整体路径
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506931.png)
-#### 使用React Toolkit 创建 counterStore
-```javascript
-import { createSlice } from "@reduxjs/toolkit";
-
-const counterStore = createSlice({
-	// 模块名称独一无二
-	name: "counter",
-	// 初始数据
-	initialState: {
-		count: 1,
-	},
-	// 修改数据的同步方法
-	reducers: {
-		increment(state) {
-			state.count++;
-		},
-		decrement(state) {
-			state.count--;
-		},
-	},
-});
-
-// 解构出actionCreater
-const { increment, decrement } = counterStore.actions;
-
-// 获取reducer函数
-const counterReducer = counterStore.reducer;
-
-// 导出
-export { increment, decrement };
-export default counterReducer;
-```
-```javascript
-import { configureStore } from "@reduxjs/toolkit";
-import counterReducer from "./modules/counterStore";
-
-// 创建根store组合子模块
-const store = configureStore({
-	reducer: {
-		// 注册子模块
-		counter: counterReducer,
-	},
-});
-
-export default store;
-```
-#### 为React注入store
-react-redux负责把Redux和React 链接 起来，内置 Provider组件 通过 store 参数把创建好的store实例注入到应用中，链接正式建立
-```jsx
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-// 导入store
-import store from "./store";
-// 导入store提供组件Provider
-import { Provider } from "react-redux";
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-	// 提供store数据
-	<Provider store={store}>
-		<App />
-	</Provider>
-);
-```
-#### React组件使用store中的数据
-在React组件中使用store中的数据，需要用到一个钩子函数`useSelector`，它的作用是把store中的数据映射到组件中，使用样例如下：
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506407.png)
-
-#### React组件修改store中的数据
-React组件中修改store中的数据需要借助另外一个hook函数`useDispatch`，它的作用是生成提交action对象的dispatch函数，使用样例如下：
-```jsx
-import { useDispatch, useSelector } from "react-redux";
-// 导入actionCreator
-import { increment, decrement } from "./store/modules/counterStore";
-function App() {
-  // useSelector:把store中的数据映射到组件中
-	const { count } = useSelector(state => state.counter);
-  // 得到dispatch函数
-	const dispatch = useDispatch();
-	return (
-		<div>
-      {/* 调用dispatch提交action对象 */}
-			<button onClick={() => dispatch(decrement())}>-</button>
-			{count}
-			<button onClick={() => dispatch(increment())}>+</button>
-		</div>
-	);
-}
-
-export default App;
-```
-### 提交action传参
-需求：组件中有俩个按钮 `add to 10` 和 `add to 20` 可以直接把count值修改到对应的数字，目标count值是在组件中传递过去的，需要在提交action的时候传递参数
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506487.png)
-
-实现方式：在reducers的同步修改方法中添加action对象参数，在调用actionCreater的时候传递参数，参数会被传递到action对象payload属性上
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506458.png)
-
-### 异步action处理
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506856.png)
-
-实现步骤
-
-1. 创建store的写法保持不变，配置好同步修改状态的方法
-2. 单独封装一个函数，在函数内部return一个新函数，在新函数中
-   1. 封装异步请求获取数据
-   2. 调用同步actionCreater传入异步数据生成一个action对象，并使用dispatch提交
-3. 组件中dispatch的写法保持不变
-```javascript
-import { createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const channelStore = createSlice({
-	name: "channel",
-	initialState: {
-		channelList: [],
-	},
-	reducers: {
-		setChannelList(state, action) {
-			state.channelList = action.payload;
-		},
-	},
-});
-
-// 创建异步
-const { setChannelList } = channelStore.actions;
-const url = "http://geek.itheima.net/v1_0/channels";
-// 封装一个函数，在函数中return一个新函数，在新函数中封装异步
-// 得到数据之后通过dispatch函数 触发修改
-const fetchChannelList = () => {
-	return async (dispatch) => {
-		const res = await axios.get(url);
-		dispatch(setChannelList(res.data.data.channels));
-	};
-};
-
-export { fetchChannelList };
-
-const channelReducer = channelStore.reducer;
-export default channelReducer;
-```
-```javascript
-import { configureStore } from "@reduxjs/toolkit";
-import channelReducer from "./modules/channelStore";
-
-// 创建根store组合子模块
-const store = configureStore({
-	reducer: {
-		// 注册子模块
-		channel: channelReducer,
-	},
-});
-
-export default store;
-```
-```jsx
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-// 导入actionCreator
-import { fetchChannelList } from "./store/modules/channelStore";
-function App() {
-	// useSelector:把store中的数据映射到组件中
-	const { channelList } = useSelector((state) => state.channel);
-
-	// 得到dispatch函数
-	const dispatch = useDispatch();
-
-	useEffect(() => {
-		dispatch(fetchChannelList());
-	}, [dispatch]);
-	
-	return (
-		<div>
-			<ul>
-				{channelList.map((task) => (
-					<li key={task.id}>{task.name}</li>
-				))}
-			</ul>
-		</div>
-	);
-}
-
-export default App;
-```
-## Router
-[React Router6 中文文档 | React Router6 中文文档](https://baimingxuan.github.io/react-router6-doc/)
-[ReactRouter6快速上手.md](https://www.yuque.com/attachments/yuque/0/2024/md/32600948/1714046226329-0b3e1e2c-76da-49c4-bd1d-88fbcc1cf93e.md?_lake_card=%7B%22src%22%3A%22https%3A%2F%2Fwww.yuque.com%2Fattachments%2Fyuque%2F0%2F2024%2Fmd%2F32600948%2F1714046226329-0b3e1e2c-76da-49c4-bd1d-88fbcc1cf93e.md%22%2C%22name%22%3A%22ReactRouter6%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B.md%22%2C%22size%22%3A11636%2C%22ext%22%3A%22md%22%2C%22source%22%3A%22%22%2C%22status%22%3A%22done%22%2C%22download%22%3Atrue%2C%22taskId%22%3A%22udb2f3c03-821e-4c7d-a6bb-81c99a082fd%22%2C%22taskType%22%3A%22upload%22%2C%22type%22%3A%22%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22ue682333f%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%2C%22card%22%3A%22file%22%7D)
-### 环境准备
 ```shell
-npm create vite@latest
-【键入工程名】
-【选择react项目】
-【选择语言模板】
+npm install --save lodush
 ```
-```powershell
-npm i
-npm i react-router-dom
+
+```jsx
+import _ from 'lodash'
 ```
+
+#### classnames
+
+`classnames` 是一个 JavaScript 工具库，用于动态生成 HTML 元素的 class 字符串。它通常在 React 应用程序中用于简化条件性地应用 CSS 类名。
+`classnames` 可以更方便地处理动态 class 名称的拼接，特别是在有多个条件需要考虑时，代码会更加清晰和简洁。
+
+1.  **安装**`classnames`：
+    你可以使用 npm 或者 yarn 来安装 `classnames`： 
+
+```bash
+npm install classnames
+```
+
+2.  **基本用法**： 
+
+```javascript
+import classNames from 'classnames';
+
+const buttonClass = classNames({
+  'btn': true,
+  'btn-primary': true,
+  'btn-large': false
+});
+
+// buttonClass 的值为 'btn btn-primary'
+```
+
+在这个例子中，`classNames` 接受一个对象作为参数，对象的 key 是 class 名称，value 是一个布尔值，表示是否应该包含该 class。`classNames` 会将 value 为 true 的 class 名称添加到最终的 class 字符串中。 
+
+3.  **条件性应用 class**： 
+
+```javascript
+import classNames from 'classnames';
+
+const active = true;
+const buttonClass = classNames('btn', {
+  'btn-primary': active,
+  'btn-large': !active
+});
+
+// buttonClass 的值为 'btn btn-primary'
+```
+
+本例中，`btn` class 总会被添加，而 `btn-primary` 或 `btn-large` 则根据 `active` 变量的值进行条件性添加。
+
+4.  **数组作为参数**： 
+
+```javascript
+import classNames from 'classnames';
+
+const size = 'small';
+const buttonClass = classNames('btn', ['btn-primary', 'btn-large'], {
+  'btn-small': size === 'small',
+  'btn-medium': size === 'medium',
+  'btn-large': size === 'large'
+});
+
+// 如果 size 为 'small'，则 buttonClass 的值为 'btn btn-primary btn-large btn-small'
+```
+
+本例展示了如何将数组作为参数传递给 `classnames`，数组中的每个元素都会被添加到最终的 class 字符串中。 
+
+#### UUID
+
+[GitHub - uuidjs/uuid: Generate RFC-compliant UUIDs in JavaScript](https://github.com/uuidjs/uuid)
+
 ```shell
-npm run dev
-```
-### 快速上手
-
-![需求说明](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506418.png "需求说明")
-
-![文件目录结构](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506485.png "文件目录结构")
-
-```jsx
-const Article = () => {
-	return <div>我是文章页</div>;
-};
-
-export default Article;
-```
-```jsx
-const Login = () => {
-	return <div>我是登录页</div>;
-};
-
-export default Login;
-```
-```jsx
-import Login from "../page/Login";
-import Article from "../page/Article";
-import { createBrowserRouter } from "react-router-dom";
-
-const router = createBrowserRouter([
-	{
-		path: "/login",
-		element: <Login />,
-	},
-	{
-		path: "/article",
-		element: <Article />,
-	},
-]);
-
-export default router;
-```
-```jsx
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-// 1.创建router实例对象并配置路由对应关系
-import router from "./router";
-ReactDOM.createRoot(document.getElementById("root")).render(
-	<React.StrictMode>
-		{/* 2.路由绑定 */}
-		<RouterProvider router={router}></RouterProvider>
-	</React.StrictMode>
-);
-```
-### 路由懒加载
-#### router/index.jsx
-```jsx
-import React, { lazy, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-```
-```jsx
-const Home = lazy(() => import('./pages/Home'));
-const About = lazy(() => import('./pages/About'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-```
-```jsx
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Root />,
-    children: [
-      {
-        index: true,
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <Home />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'about',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <About />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'dashboard',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <Dashboard />
-          </Suspense>
-        ),
-      },
-    ],
-  },
-]);
-```
-#### main.jsx
-```jsx
-import { Fragment } from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-// 1.创建router实例对象并配置路由对应关系
-import router from "./router";
-ReactDOM.createRoot(document.getElementById("root")).render(
-	// RouterProvider标签外面必须包一层东西
-	// Fragment作用是替换空标签<></>
-	<Fragment>
-		{/* 2.路由绑定 */}
-		<RouterProvider router={router}></RouterProvider>
-	</Fragment>
-);
-```
-### 路由导航
-路由系统中的多个路由之间需要进行路由跳转，并且在跳转的同时有可能需要传递参数进行通信
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506558.png)
-
-#### 声明式导航
-声明式导航是指通过在模版中通过 `<Link/>` 组件描述出要跳转到哪里去，比如后台管理系统的左侧菜单通常使用这种方式进行
-
-`<Link to="/article">文章</Link>`
-语法说明：通过给组件的to属性指定要跳转到路由path，组件会被渲染为浏览器支持的a链接，如果需要传参直接通过字符串拼接的方式拼接参数即可
-
-#### 编程式导航
-编程式导航是指通过 `useNavigate` 钩子得到导航方法，然后通过调用方法以命令式的形式进行路由跳转，比如想在登录请求完毕之后跳转就可以选择这种方式，更加灵活
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507297.png)
-
-语法说明：通过调用`navigate`方法传入地址path实现跳转
-
-#### 导航传参
-
- ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507570.png)
-
-##### searchParams传参
-
-```jsx
-import { useNavigate } from "react-router-dom";
-
-const Login = () => {
-	const navigate = useNavigate();
-	return (
-		<div>
-			<button onClick={() => navigate('/article?id=1001&name=jack')}>跳转到“文章”页(searchParams传参)</button>
-		</div>
-	)
-};
-
-export default Login;
-```
-```jsx
-import Login from "../page/Login";
-import Article from "../page/Article";
-import { createBrowserRouter } from "react-router-dom";
-
-const router = createBrowserRouter([
-	{
-		path: "/login",
-		element: <Login />,
-	},
-	{
-		path: "/article",
-		element: <Article />,
-	},
-]);
-
-export default router;
-```
-```jsx
-import { useSearchParams } from "react-router-dom";
-
-const Article = () => {
-	const [params] = useSearchParams();
-	let id = params.get('id')
-	let name = params.get('name')
-	return (
-		<div>我是文章页{id}-{name}</div>
-	)
-};
-
-export default Article;
-```
-##### params传参
-```jsx
-import { useNavigate } from "react-router-dom";
-
-const Login = () => {
-	const navigate = useNavigate();
-	return (
-		<div>
-			<button onClick={() => navigate('/article/1002/Marry')}>跳转到“文章”页(params传参)</button>
-		</div>
-	)
-};
-
-export default Login;
-```
-```jsx
-import Login from "../page/Login";
-import Article from "../page/Article";
-import { createBrowserRouter } from "react-router-dom";
-
-const router = createBrowserRouter([
-	{
-		path: "/login",
-		element: <Login />,
-	},
-	{
-		path: "/article/:id/:name",
-		element: <Article />,
-	},
-]);
-
-export default router;
-```
-```jsx
-import { useParams } from "react-router-dom";
-
-const Article = () => {
-	const params = useParams();
-	let id = params.id;
-	let name = params.name;
-	return (
-		<div>我是文章页{id}-{name}</div>
-	)
-};
-
-export default Article;
-```
-### 嵌套路由
-#### 概念
-在一级路由中又内嵌了其他路由，这种关系就叫做嵌套路由，嵌套至一级路由内的路由又称作二级路由
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508067.png)
-
-#### 嵌套路由配置
-实现步骤
-
-1. 使用`children`属性配置路由嵌套关系  
-2. 使用`<Outlet/>`组件配置二级路由渲染位置
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508913.png)
-```jsx
-import { Link, Outlet } from "react-router-dom";
-
-const Layout = () => {
-	return (
-		<div>
-			我是Layout页面(一级)
-			<Link to="/board">面板(二级)</Link>
-			<Link to="/about">关于(二级)</Link>
-            
-			{/* 二级路由出口 */}
-			<Outlet />
-		</div>
-	);
-};
-
-export default Layout;
-```
-```jsx
-import Layout from "../page/Layout";
-import Board from "../page/Board";
-import About from "../page/About";
-import { createBrowserRouter } from "react-router-dom";
-
-const router = createBrowserRouter([
-	{
-		path: '/',
-		element: <Layout />,
-		children: [
-			{
-				path: 'board',
-				element: <Board />
-			},
-			{
-				path: 'about',
-				element: <About />
-			}
-		]
-	}
-]);
-
-export default router;
-```
-#### 默认二级路由
-当访问的是一级路由时，默认的二级路由组件可以得到渲染，只需要在二级路由的位置去掉`path`，设置`index`属性为`true`
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508338.png)
-
-#### 404路由配置
-场景：当浏览器输入url的路径在整个路由配置中都找不到对应的 `path`，为了用户体验，可以配置兜底组件渲染
-实现步骤：
-
-1. 准备一个NotFound组件
-2. 在路由表数组的末尾，以`*`号作为路由`path`配置路由
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508873.png)
-#### 2种路由模式
-各个主流框架的路由常用的路由模式有俩种，history模式和hash模式, ReactRouter分别由 `createBrowerRouter` 和 `createHashRouter` 函数负责创建
-
-| 路由模式 | url表现 | 底层原理 | 是否需要后端支持 |
-| --- | --- | --- | --- |
-| history | url/login | history对象 + pushState事件 | 需要 |
-| hash | url/#/login | 监听hashChange事件 | 不需要 |
-
-## Zustand
-[ZUSTAND 中文文档 | ZUSTAND](https://awesomedevin.github.io/zustand-vue/)
-### 快速上手
-安装依赖：`npm i zustand`
-```jsx
-import { create } from "zustand";
-
-const useStore = create((set) => {
-	return {
-		count: 1,
-		inc: () => {
-			set((state) => ({ count: state.count + 1 }));
-		},
-		dec: () => {
-			set((state) => ({ count: state.count - 1 }));
-		},
-	};
-});
-
-export default useStore;
-```
-```jsx
-import useCounterStore from "./store/useCounterStore";
-
-function App() {
-	const { count, inc, dec } = useCounterStore();
-	return (
-		<div>
-			<button onClick={dec}>-</button>
-			{count}
-			<button onClick={inc}>+</button>
-		</div>
-	);
-}
-
-export default App;
-```
-### 异步支持
-对于异步操作的支持不需要特殊的操作，直接在函数中编写异步逻辑，最后把接口的数据放到set函数中返回即可
-```jsx
-import { create } from "zustand";
-
-const URL = "http://geek.itheima.net/v1_0/channels";
-
-const useChannelStore = create((set) => {
-	return {
-		channelList: [],
-		fetchChannelList: async () => {
-			const res = await fetch(URL);
-			const jsonData = await res.json();
-			set({ channelList: jsonData.data.channels });
-		},
-	};
-});
-
-export default useChannelStore;
-```
-```jsx
-import { useEffect } from "react";
-import useChannelStore from "./store/useChannelStore";
-
-function App() {
-	const { channelList, fetchChannelList } = useChannelStore();
-
-	useEffect(() => {
-		fetchChannelList();
-	}, [fetchChannelList]);
-	return (
-		<div>
-			<ul>
-				{channelList.map((item) => (
-					<li key={item.id}>{item.name}</li>
-				))}
-			</ul>
-		</div>
-	);
-}
-
-export default App;
-```
-### 切片模式
-切片模式(Slice Pattern)是一种组织和模块化状态管理逻辑的方式,它可以更好地将复杂的状态划分为多个独立的"切片"。这种模式有助于提高代码的可维护性、可重用性和可测试性。
-```jsx
-const URL = "http://geek.itheima.net/v1_0/channels";
-
-const useChannelStore = (set) => {
-	return {
-		channelList: [],
-		fetchChannelList: async () => {
-			const res = await fetch(URL);
-			const jsonData = await res.json();
-			set({ channelList: jsonData.data.channels });
-		},
-	};
-};
-
-export default useChannelStore;
-
-```
-```jsx
-const useCounterStore = (set) => {
-	return {
-		count: 1,
-		inc: () => {
-			set((state) => ({ count: state.count + 1 }));
-		},
-		dec: () => {
-			set((state) => ({ count: state.count - 1 }));
-		},
-	};
-};
-
-export default useCounterStore;
-```
-```jsx
-import { create } from "zustand";
-
-import useCounterStore from "./useCounterStore";
-import useChannelStore from "./useChannelStore";
-
-const useStore = create((set, get) => ({
-	...useCounterStore(set, get),
-	...useChannelStore(set, get),
-}));
-
-export default useStore;
-```
-### 对接DevTools
-> 简单的调试我们可以安装一个 名称为 simple-zustand-devtools 的调试工具
-
-1. 安装
-
-`npm i simple-zustand-devtools -D`
-
-2. 配置
-```jsx
-import create from 'zustand'
-
-// 导入核心方法
-import { mountStoreDevtool } from 'simple-zustand-devtools'
-
-// 省略部分代码...
-
-
-// 开发环境开启调试
-if (process.env.NODE_ENV === 'development') {
-  mountStoreDevtool('channelStore', useChannelStore)
-}
-
-
-export default useChannelStore
+npm install uuid
 ```
 
-3. 使用
+```javascript
+import { v4 as uuidv4 } from 'uuid';
+uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+```
 
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508204.png)
+#### days
+
+[Day.js中文网](https://dayjs.fenxianglu.cn/)
+处理日期时间
+
 ## React&TypeScript
+
 ### useState
 #### 简单场景
 > 简单场景下，可以使用TS的自动推断机制，不用特殊编写类型注解，运行良好
@@ -2419,47 +1677,5 @@ function App(){
     </>
   )
 }
-```
-
-## Ant Design
-[组件总览 - Ant Design](https://ant-design.antgroup.com/components/overview-cn)
-
-## Ant Design Mobile
-### 主题定制
-[主题 - Ant Design Mobile](https://ant-design-mobile.antgroup.com/zh/guide/theming)
-
-![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508031.png)
-
-```javascript
-import {Button} from "antd-mobile";
-
-const Layout = () => {
-    return (
-        <div>
-            {/* 测试样式配置 */}
-            <div className="purple-theme">
-                // 紫色 
-                <Button color={"primary"}>局部测试</Button>	
-            </div>
-            // 绿色
-            <Button color={"primary"}>测试</Button>
-        </div>
-    )
-}
-
-export default Layout;
-```
-```css
-/*全局定制*/
-:root:root {
-    --adm-color-primary: rgb(105, 174, 120);;
-}
-/*局部定制*/
-.purple-theme {
-    --adm-color-primary: purple;
-}
-```
-```javascript
-import './theme.css'
 ```
 
