@@ -1042,7 +1042,7 @@ let numbersGeneric: Array<number> = [1, 2, 3, 4, 5];
 解释：当我们在使用数组时，TS 会根据数组的不同类型，来自动将类型变量设置为相应的类型。 
 技巧：可以通过 Ctrl + 鼠标左键（Mac：option + 鼠标左键）来查看具体的类型信息。
 #### 泛型约束
-泛型约束：默认情况下，泛型函数的类型变量 Type 可以代表多个类型，这导致无法访问任何属性。 比如，id('a') 调用函数时获取参数的长度：
+默认情况下，泛型函数的类型变量 Type 可以代表多个类型，这导致无法访问任何属性。 比如，id('a') 调用函数时获取参数的长度：
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171451632.png)
 
@@ -1140,7 +1140,9 @@ type PersonKeys = keyof Person;
 
 在 JS 中数组是一类特殊的对象，特殊在**数组的键（索引）是数值类型**。
 并且，数组也可以出现任意多个元素。所以，在数组对应的泛型接口中，也用到了索引签名类型。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452674.png)
+
 解释：
 
 1. MyArray 接口模拟原生的数组接口，并使用`[n: number]`来作为索引签名类型。
@@ -1151,7 +1153,9 @@ type PersonKeys = keyof Person;
 比如，类型 PropKeys 有 x/y/z，另一个类型 Type1 中也有 x/y/z，并且 Type1 中 x/y/z 的类型相同：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452593.png)
 这样书写没错，但 x/y/z 重复书写了两次。像这种情况，就可以使用映射类型来进行简化。	
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171452935.png)
+
 解释：
 
 1. 映射类型是基于索引签名类型的，所以，该语法类似于索引签名类型，也使用了 []。
@@ -1214,7 +1218,7 @@ TS 中有两种文件类型：1->`.ts` 文件	2->`.d.ts` 文件。
    1. **既包含类型信息又可执行代码**。
    2. 可以被编译为 .js 文件，然后，执行代码。
    3. 用途：编写程序代码的地方。
-- 文件：
+- .d.ts文件：
    4. 只包含类型信息的类型声明文件。
    5. **不会生成 .js 文件**，仅用于**提供类型信息**。
    6. 用途：为 JS 提供类型信息。
@@ -1248,6 +1252,7 @@ TS 中有两种文件类型：1->`.ts` 文件	2->`.d.ts` 文件。
 1. 库自带类型声明文件：比如，axios。
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/typescript/202406171453888.png)
+
 解释：这种情况下，正常导入该库，**TS 就会自动加载库自己的类型声明文件**，以提供该库的类型声明。
 
 2. 由 DefinitelyTyped 提供。

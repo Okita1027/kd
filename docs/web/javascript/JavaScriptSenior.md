@@ -141,7 +141,7 @@ console.log(Object.getPrototypeOf(Object.prototype) === null);               // 
 
 简而言之：**`prototype` 是一个函数的属性，它指向一个将被用作实例原型的对象。`[[Prototype]]` 是一个对象的内部链接，它指向该对象的原型。**
 
-### class与原型链
+### class类与原型链
 
 ES6 引入的 `class` 语法（`class MyClass extends BaseClass {}`）仅仅是原型继承的**语法糖**。在底层，JavaScript 依然使用原型和原型链来实现继承。
 

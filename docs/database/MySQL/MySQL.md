@@ -1,6 +1,11 @@
 ---
-title: MySQL
-order: 4
+title: 高级篇
+shortTitle: 高级篇
+description: 高级篇
+date: 2024-05-21 17:26:07
+categories: [数据库, MySQL]
+tags: [SQL]
+order: 6
 ---
 ## 查询语句
 ### Union

@@ -2462,5 +2462,1508 @@ var Weekdays;
 })(Weekdays || (Weekdays = {}));
 ```
 
+## 装饰器
+
+**装饰器（Decorators）** 是一种特殊类型的声明，它能够**附加到类声明、方法、访问器、属性或参数上**。它们本质上是**函数**，在运行时被调用，并能够**修改或扩展**其所附加声明的行为。
+
+可以把装饰器想象成一个“包装器”或“元数据注入器”。它们让你可以在**不修改原始类/方法代码**的情况下，为其添加额外的功能、修改其元数据或观察其行为。
+
+- **语法**：装饰器使用 `@expression` 这种形式，其中 `expression` 必须求值为一个函数。这个函数会在运行时被调用，并获得被装饰声明的信息。
+- **执行时机**：装饰器在**运行时**执行，但它们是在**编译时**（TypeScript 编译成 JavaScript 时）被处理和注入的。
+
+### 启用装饰器
+
+由于装饰器是实验性特性，你需要在 `tsconfig.json` 中进行配置才能使用它们：
+
+```JSON
+{
+  "compilerOptions": {
+    "target": "ES5",             /* 或更高版本，如 ES2015 */
+    "experimentalDecorators": true, /* 启用实验性装饰器 */
+    "emitDecoratorMetadata": true  /* (可选) 启用发射装饰器元数据，用于反射，如 TypeORM、Angular DI */
+  }
+}
+```
+
+### 装饰器结构
+
+```TS
+type Decorator = (
+  value: DecoratedValue,
+  context: {
+    kind: string;
+    name: string | symbol;
+    addInitializer?(initializer: () => void): void;
+    static?: boolean;
+    private?: boolean;
+    access: {
+      get?(): unknown;
+      set?(value: unknown): void;
+    };
+  }
+) => void | ReplacementValue;
+```
+
+上面代码中，`Decorator`是装饰器的类型定义。它是一个函数，使用时会接收到`value`和`context`两个参数。
+
+- `value`：所装饰的对象。
+- `context`：上下文对象，TypeScript 提供一个原生接口`ClassMethodDecoratorContext`，描述这个对象。
+
+```TS
+function decorator(value: any, context: ClassMethodDecoratorContext) {
+  // ...
+}
+```
+
+上面是一个装饰器函数，其中第二个参数`context`的类型就可以写成`ClassMethodDecoratorContext`。
+
+`context`对象的属性，根据所装饰对象的不同而不同，其中只有两个属性（`kind`和`name`）是必有的，其他都是可选的。
+
+（1）`kind`：字符串，表示所装饰对象的类型，可能取以下的值。
+
+- 'class'
+- 'method'
+- 'getter'
+- 'setter'
+- 'field'
+- 'accessor'
+
+这表示一共有六种类型的装饰器。
+
+（2）`name`：字符串或者 Symbol 值，所装饰对象的名字，比如类名、属性名等。
+
+（3）`addInitializer()`：函数，用来添加类的初始化逻辑。以前，这些逻辑通常放在构造函数里面，对方法进行初始化，现在改成以函数形式传入`addInitializer()`方法。注意，`addInitializer()`没有返回值。
+
+（4）`private`：布尔值，表示所装饰的对象是否为类的私有成员。
+
+（5）`static`：布尔值，表示所装饰的对象是否为类的静态成员。
+
+（6）`access`：一个对象，包含了某个值的 get 和 set 方法。
+
+### 类装饰器
+
+类装饰器的类型描述如下。
+
+```TS
+type ClassDecorator = (
+  value: Function,
+  context: {
+    kind: "class";
+    name: string | undefined;
+    addInitializer(initializer: () => void): void;
+  }
+) => Function | void;
+```
+
+类装饰器接受两个参数：`value`（当前类本身）和`context`（上下文对象）。其中，`context`对象的`kind`属性固定为字符串`class`。
+
+类装饰器一般用来对类进行操作，可以不返回任何值，请看下面的例子：
+
+```TS
+function Greeter(value, context) {
+  if (context.kind === "class") {
+    value.prototype.greet = function () {
+      console.log("你好");
+    };
+  }
+}
+
+@Greeter
+class User {}
+
+let u = new User();
+u.greet(); // "你好"
+```
+
+上面示例中，类装饰器`@Greeter`在类`User`的原型对象上，添加了一个`greet()`方法，实例就可以直接使用该方法。
+
+类装饰器可以返回一个函数，替代当前类的构造方法:
+
+```TS
+function countInstances(value: any, context: any) {
+  let instanceCount = 0; // ① 闭包变量，用于跟踪实例数量
+
+  const wrapper = function (...args: any[]) { // ② 替代原始构造函数的新构造函数
+    instanceCount++; // 每次调用新构造函数时，实例计数递增
+    const instance = new value(...args); // ③ 使用原始构造函数创建实际实例
+    instance.count = instanceCount; // ④ 为新实例添加一个 'count' 属性
+    return instance;
+  } as unknown as typeof MyClass; // ⑤ 类型断言，确保 TypeScript 认为这是 MyClass 的构造函数
+
+  wrapper.prototype = value.prototype; // ⑥ 关键一步：将新构造函数的原型指向原始构造函数的原型
+  return wrapper; // ⑦ 返回新构造函数，替换掉原始类
+}
+
+@countInstances
+class MyClass {}
+
+const inst1 = new MyClass();
+inst1 instanceof MyClass; // true
+inst1.count; // 1
+```
+
+> [!NOTE]
+>
+> 上例为了确保新构造方法继承定义在`MyClass`的原型之上的成员，特别加入`A`行，确保两者的原型对象是一致的。否则，新的构造函数`wrapper`的原型对象，与`MyClass`不同，通不过`instanceof`运算符。
+
+类装饰器也可以返回一个新的类，替代原来所装饰的类：
+
+```TS
+function countInstances(value: any, context: any) {
+  let instanceCount = 0;
+
+  return class extends value {
+    constructor(...args: any[]) {
+      super(...args);
+      instanceCount++;
+      this.count = instanceCount;
+    }
+  };
+}
+
+@countInstances
+class MyClass {}
+
+const inst1 = new MyClass();
+inst1 instanceof MyClass; // true
+inst1.count; // 1
+```
+
+上面示例中，`@countInstances`返回一个`MyClass`的子类。
+
+下面的例子是通过类装饰器，禁止使用`new`命令新建类的实例:
+
+```TS
+function functionCallable(
+  value as any, {kind} as any
+) {
+  if (kind === 'class') {
+    return function (...args) {
+      if (new.target !== undefined) {
+        throw new TypeError('This function can’t be new-invoked');
+      }
+      return new value(...args);
+    }
+  }
+}
+
+@functionCallable
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+}
+const robin = Person('Robin');
+robin.name // 'Robin'
+```
+
+上面示例中，类装饰器`@functionCallable`返回一个新的构造方法，里面判断`new.target`是否不为空，如果是，就表示通过`new`命令调用，从而报错。
+
+类装饰器的上下文对象`context`的`addInitializer()`方法，用来定义一个类的初始化函数，在类完全定义结束后执行。
+
+```TS
+function customElement(name: string) {
+  return <Input extends new (...args: any) => any>(
+    value: Input,
+    context: ClassDecoratorContext
+  ) => {
+    context.addInitializer(function () {
+      customElements.define(name, value);
+    });
+  };
+}
+
+@customElement("hello-world")
+class MyComponent extends HTMLElement {
+  constructor() {
+    super();
+  }
+  connectedCallback() {
+    this.innerHTML = `<h1>Hello World</h1>`;
+  }
+}
+```
+
+上面示例中，类`MyComponent`定义完成后，会自动执行类装饰器`@customElement()`给出的初始化函数，该函数会将当前类注册为指定名称（本例为`<hello-world>`）的自定义 HTML 元素。
+
+### 方法装饰器
+
+方法装饰器用来装饰类的方法（method）。它的类型描述如下:
+
+```TS
+type ClassMethodDecorator = (
+  value: Function,
+  context: {
+    kind: "method";
+    name: string | symbol;
+    static: boolean;
+    private: boolean;
+    access: { get: () => unknown };
+    addInitializer(initializer: () => void): void;
+  }
+) => Function | void;
+```
+
+根据上面的类型，方法装饰器是一个函数，接受两个参数：`value`和`context`。
+
+参数`value`是方法本身，参数`context`是上下文对象，有以下属性。
+
+- `kind`：值固定为字符串`method`，表示当前为方法装饰器。
+- `name`：所装饰的方法名，类型为字符串或 Symbol 值。
+- `static`：布尔值，表示是否为静态方法。该属性为只读属性。
+- `private`：布尔值，表示是否为私有方法。该属性为只读属性。
+- `access`：对象，包含了方法的存取器，但是只有`get()`方法用来取值，没有`set()`方法进行赋值。
+- `addInitializer()`：为方法增加初始化函数。
+
+方法装饰器会改写类的原始方法，实质等同于下面的操作:
+
+```TS
+function trace(decoratedMethod) {
+  // ...
+}
+
+class C {
+  @trace
+  toString() {
+    return "C";
+  }
+}
+
+// @trace` 等同于
+// C.prototype.toString = trace(C.prototype.toString);
+```
+
+上面示例中，`@trace`是方法`toString()`的装饰器，它的效果等同于最后一行对`toString()`的改写。
+
+如果方法装饰器返回一个新的函数，就会替代所装饰的原始函数。
+
+```TS
+function replaceMethod() {
+  return function () {
+    return `How are you, ${this.name}?`;
+  };
+}
+
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+
+  @replaceMethod
+  hello() {
+    return `Hi ${this.name}!`;
+  }
+}
+
+const robin = new Person("Robin");
+
+robin.hello(); // 'How are you, Robin?'
+```
+
+上面示例中，装饰器`@replaceMethod`返回的函数，就成为了新的`hello()`方法。
+
+下面是另一个例子。
+
+```TS
+class Person {
+  name: string;
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  @log
+  greet() {
+    console.log(`Hello, my name is ${this.name}.`);
+  }
+}
+
+function log(originalMethod: any, context: ClassMethodDecoratorContext) {
+  const methodName = String(context.name);
+
+  function replacementMethod(this: any, ...args: any[]) {
+    console.log(`LOG: Entering method '${methodName}'.`);
+    const result = originalMethod.call(this, ...args);
+    console.log(`LOG: Exiting method '${methodName}'.`);
+    return result;
+  }
+
+  return replacementMethod;
+}
+
+const person = new Person("张三");
+person.greet();
+// "LOG: Entering method 'greet'."
+// "Hello, my name is 张三."
+// "LOG: Exiting method 'greet'."
+```
+
+上面示例中，装饰器`@log`的返回值是一个函数`replacementMethod`，替代了原始方法`greet()`。在`replacementMethod()`内部，通过执行`originalMethod.call()`完成了对原始方法的调用。
+
+利用方法装饰器，可以将类的方法变成延迟执行。
+
+```TS
+function delay(milliseconds: number = 0) {
+  return function (value, context) {
+    if (context.kind === "method") {
+      return function (...args: any[]) {
+        setTimeout(() => {
+          value.apply(this, args);
+        }, milliseconds);
+      };
+    }
+  };
+}
+
+class Logger {
+  @delay(1000)
+  log(msg: string) {
+    console.log(`${msg}`);
+  }
+}
+
+let logger = new Logger();
+logger.log("Hello World");
+```
+
+上面示例中，方法装饰器`@delay(1000)`将方法`log()`的执行推迟了 1 秒（1000 毫秒）。这里真正的方法装饰器，是`delay()`执行后返回的函数，`delay()`的作用是接收参数，用来设置推迟执行的时间。这种通过高阶函数返回装饰器的做法，称为“工厂模式”，即可以像工厂那样生产出一个模子的装饰器。
+
+方法装饰器的参数`context`对象里面，有一个`addInitializer()`方法。它是一个钩子方法，用来在类的初始化阶段，添加回调函数。这个回调函数就是作为`addInitializer()`的参数传入的，它会在构造方法执行期间执行，早于属性（field）的初始化。
+
+下面是`addInitializer()`方法的一个例子。我们知道，类的方法往往需要在构造方法里面，进行`this`的绑定。
+
+```TS
+class Person {
+  name: string;
+  constructor(name: string) {
+    this.name = name;
+
+    // greet() 绑定 this
+    this.greet = this.greet.bind(this);
+  }
+
+  greet() {
+    console.log(`Hello, my name is ${this.name}.`);
+  }
+}
+
+const g = new Person("张三").greet;
+g(); // "Hello, my name is 张三."
+```
+
+上面例子中，类`Person`的构造方法内部，将`this`与`greet()`方法进行了绑定。如果没有这一行，将`greet()`赋值给变量`g`进行调用，就会报错了。
+
+`this`的绑定必须放在构造方法里面，因为这必须在类的初始化阶段完成。现在，它可以移到方法装饰器的`addInitializer()`里面。
+
+```TS
+function bound(originalMethod: any, context: ClassMethodDecoratorContext) {
+  const methodName = context.name;
+  if (context.private) {
+    throw new Error(`不能绑定私有方法 ${methodName as string}`);
+  }
+  context.addInitializer(function () {
+    this[methodName] = this[methodName].bind(this);
+  });
+}
+```
+
+上面示例中，绑定`this`转移到了`addInitializer()`方法里面。
+
+下面再看一个例子，通过`addInitializer()`将选定的方法名，放入一个集合。
+
+```TS
+function collect(value, { name, addInitializer }) {
+  addInitializer(function () {
+    if (!this.collectedMethodKeys) {
+      this.collectedMethodKeys = new Set();
+    }
+    this.collectedMethodKeys.add(name);
+  });
+}
+
+class C {
+  @collect
+  toString() {}
+
+  @collect
+  [Symbol.iterator]() {}
+}
+
+const inst = new C();
+inst.collectedMethodKeys; // new Set(['toString', Symbol.iterator])
+```
+
+上面示例中，方法装饰器`@collect`会将所装饰的成员名字，加入一个 Set 集合`collectedMethodKeys`。
+
+### 属性装饰器
+
+属性装饰器用来装饰定义在类顶部的属性（field）。它的类型描述如下：
+
+```TS
+type ClassFieldDecorator = (
+  value: undefined,
+  context: {
+    kind: "field";
+    name: string | symbol;
+    static: boolean;
+    private: boolean;
+    access: { get: () => unknown; set: (value: unknown) => void };
+    addInitializer(initializer: () => void): void;
+  }
+) => (initialValue: unknown) => unknown | void;
+```
+
+> [!NOTE]
+>
+> 装饰器的第一个参数`value`的类型是`undefined`，这意味着这个参数实际上没用的，装饰器不能从`value`获取所装饰属性的值。另外，第二个参数`context`对象的`kind`属性的值为字符串`field`，而不是“property”或“attribute”，这一点是需要注意的。
+
+属性装饰器要么不返回值，要么返回一个函数，该函数会自动执行，用来对所装饰属性进行初始化。该函数的参数是所装饰属性的初始值，该函数的返回值是该属性的最终值。
+
+```TS
+function logged(value, context) {
+  const { kind, name } = context;
+  if (kind === "field") {
+    return function (initialValue) {
+      console.log(`initializing ${name} with value ${initialValue}`);
+      return initialValue;
+    };
+  }
+}
+
+class Color {
+  @logged name = "green";
+}
+
+const color = new Color();
+// "initializing name with value green"
+```
+
+上面示例中，属性装饰器`@logged`装饰属性`name`。`@logged`的返回值是一个函数，该函数用来对属性`name`进行初始化，它的参数`initialValue`就是属性`name`的初始值`green`。新建实例对象`color`时，该函数会自动执行。
+
+属性装饰器的返回值函数，可以用来更改属性的初始值:
+
+```TS
+function twice() {
+  return (initialValue) => initialValue * 2;
+}
+
+class C {
+  @twice
+  field = 3;
+}
+
+const inst = new C();
+inst.field; // 6
+```
+
+上面示例中，属性装饰器`@twice`返回一个函数，该函数的返回值是属性`field`的初始值乘以 2，所以属性`field`的最终值是 6。
+
+属性装饰器的上下文对象`context`的`access`属性，提供所装饰属性的存取器，请看下面的例子:
+
+```TS
+let acc;
+
+function exposeAccess(value, { access }) {
+  acc = access;
+}
+
+class Color {
+  @exposeAccess
+  name = "green";
+}
+
+const green = new Color();
+green.name; // 'green'
+
+acc.get(green); // 'green'
+
+acc.set(green, "red");
+green.name; // 'red'
+```
+
+上面示例中，`access`包含了属性`name`的存取器，可以对该属性进行取值和赋值。
+
+### getter/setter装饰器
+
+getter 装饰器和 setter 装饰器，是分别针对类的取值器（getter）和存值器（setter）的装饰器。它们的类型描述如下:
+
+```TS
+type ClassGetterDecorator = (
+  value: Function,
+  context: {
+    kind: "getter";
+    name: string | symbol;
+    static: boolean;
+    private: boolean;
+    access: { get: () => unknown };
+    addInitializer(initializer: () => void): void;
+  }
+) => Function | void;
+
+type ClassSetterDecorator = (
+  value: Function,
+  context: {
+    kind: "setter";
+    name: string | symbol;
+    static: boolean;
+    private: boolean;
+    access: { set: (value: unknown) => void };
+    addInitializer(initializer: () => void): void;
+  }
+) => Function | void;
+```
+
+> [!NOTE]
+>
+> getter 装饰器的上下文对象`context`的`access`属性，只包含`get()`方法；setter 装饰器的`access`属性，只包含`set()`方法。
+
+这两个装饰器要么不返回值，要么返回一个函数，取代原来的取值器或存值器。
+
+下面的例子是将取值器的结果，保存为一个属性，加快后面的读取:
+
+```TS
+class C {
+  @lazy
+  get value() {
+    console.log("正在计算……");
+    return "开销大的计算结果";
+  }
+}
+
+function lazy(value: any, { kind, name }: any) {
+  // `value`: 被装饰的 getter 方法本身（即 C 类的 get value() 函数）
+  // `context`: 装饰器上下文对象
+  //   `context.kind`: 指示被装饰的成员类型，这里是 "getter"
+  //   `context.name`: 被装饰成员的名称，这里是 "value"
+
+  if (kind === "getter") { // 确认装饰器应用于 getter
+    // 装饰器返回一个新的函数，这个函数将替换原始的 getter
+    return function (this: any) {
+      console.log("正在计算……"); // 原始的计算逻辑
+      const result = value.call(this); // ① 调用原始的 getter 方法获取结果
+
+      // ② 关键步骤：用一个普通的数据属性替换掉 getter
+      Object.defineProperty(this, name, {
+        value: result,    // 新属性的值就是第一次计算的结果
+        writable: false,  // 设置为不可写，防止外部修改
+      });
+
+      return result; // ③ 返回计算结果
+    };
+  }
+  return; // 如果不是 getter，则不进行任何操作
+}
+
+const inst = new C();
+inst.value;
+// 正在计算……
+// '开销大的计算结果'
+inst.value;
+// '开销大的计算结果'
+```
+
+上面示例中，第一次读取`inst.value`，会进行计算，然后装饰器`@lazy`将结果存入只读属性`value`，后面再读取这个属性，就不会进行计算了。
+
+### accessor装饰器
+
+```TS
+class C {
+  accessor x = 1;
+}
+```
+
+上面示例中，`accessor`修饰符等同于为属性`x`自动生成取值器和存值器，它们作用于私有属性`x`。也就是说，上面的代码等同于下面的代码。
+
+```TS
+class C {
+  #x = 1;
+
+  get x() {
+    return this.#x;
+  }
+
+  set x(val) {
+    this.#x = val;
+  }
+}
+```
+
+accessor 装饰器的类型如下。
+
+```TS
+type ClassAutoAccessorDecorator = (
+  value: {
+    get: () => unknown;
+    set: (value: unknown) => void;
+  },
+  context: {
+    kind: "accessor";
+    name: string | symbol;
+    access: { get(): unknown; set(value: unknown): void };
+    static: boolean;
+    private: boolean;
+    addInitializer(initializer: () => void): void;
+  }
+) => {
+  get?: () => unknown;
+  set?: (value: unknown) => void;
+  init?: (initialValue: unknown) => unknown;
+} | void;
+```
+
+accessor 装饰器的`value`参数，是一个包含`get()`方法和`set()`方法的对象。该装饰器可以不返回值，或者返回一个新的对象，用来取代原来的`get()`方法和`set()`方法。此外，装饰器返回的对象还可以包括一个`init()`方法，用来改变私有属性的初始值。
+
+示例：
+
+```TS
+class C {
+  @logged accessor x = 1;
+}
+
+function logged(value, { kind, name }) {
+  if (kind === "accessor") {
+    let { get, set } = value;
+
+    return {
+      get() {
+        console.log(`getting ${name}`);
+
+        return get.call(this);
+      },
+
+      set(val) {
+        console.log(`setting ${name} to ${val}`);
+
+        return set.call(this, val);
+      },
+
+      init(initialValue) {
+        console.log(`initializing ${name} with value ${initialValue}`);
+        return initialValue;
+      },
+    };
+  }
+}
+
+let c = new C();
+
+c.x;
+// getting x
+
+c.x = 123;
+// setting x to 123
+```
+
+上面示例中，装饰器`@logged`为属性`x`的存值器和取值器，加上了日志输出。
+
+### 装饰器的执行顺序
+
+装饰器的执行分为两个阶段。
+
+（1）评估（evaluation）：计算`@`符号后面的表达式的值，得到的应该是函数。
+
+（2）应用（application）：将评估装饰器后得到的函数，应用于所装饰对象。
+
+也就是说，装饰器的执行顺序是，先评估所有装饰器表达式的值，再将其应用于当前类。
+
+应用装饰器时，顺序依次为方法装饰器和属性装饰器，然后是类装饰器。
+
+示例：
+
+```TS
+function d(str: string) {
+  console.log(`评估 @d(): ${str}`);
+  return (value: any, context: any) => console.log(`应用 @d(): ${str}`);
+}
+
+function log(str: string) {
+  console.log(str);
+  return str;
+}
+
+@d("类装饰器")
+class T {
+  @d("静态属性装饰器")
+  static staticField = log("静态属性值");
+
+  @d("原型方法")
+  [log("计算方法名")]() {}
+
+  @d("实例属性")
+  instanceField = log("实例属性值");
+}
+```
+
+上面示例中，类`T`有四种装饰器：类装饰器、静态属性装饰器、方法装饰器、属性装饰器。
+
+它的运行结果如下:
+
+```TS
+// "评估 @d(): 类装饰器"
+// "评估 @d(): 静态属性装饰器"
+// "评估 @d(): 原型方法"
+// "计算方法名"
+// "评估 @d(): 实例属性"
+// "应用 @d(): 原型方法"
+// "应用 @d(): 静态属性装饰器"
+// "应用 @d(): 实例属性"
+// "应用 @d(): 类装饰器"
+// "静态属性值"
+```
+
+可以看到，类载入的时候，代码按照以下顺序执行。
+
+（1）装饰器评估：这一步计算装饰器的值，首先是类装饰器，然后是类内部的装饰器，按照它们出现的顺序。
+
+注意，如果属性名或方法名是计算值（本例是“计算方法名”），则它们在对应的装饰器评估之后，也会进行自身的评估。
+
+（2）装饰器应用：实际执行装饰器函数，将它们与对应的方法和属性进行结合。
+
+原型方法的装饰器首先应用，然后是静态属性和静态方法装饰器，接下来是实例属性装饰器，最后是类装饰器。
+
+> [!NOTE]
+>
+> “实例属性值”在类初始化的阶段并不执行，直到类实例化时才会执行。
+
+如果一个方法或属性有多个装饰器，则内层的装饰器先执行，外层的装饰器后执行。
+
+```TS
+class Person {
+  name: string;
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  @bound
+  @log
+  greet() {
+    console.log(`Hello, my name is ${this.name}.`);
+  }
+}
+```
+
+上面示例中，`greet()`有两个装饰器，内层的`@log`先执行，外层的`@bound`针对得到的结果再执行。
+
+## 类型运算符
+
+### keyof
+
+keyof 是一个单目运算符，接受一个对象类型作为参数，返回该对象的所有键名组成的联合类型。
+
+```TS
+type MyObj = {
+  foo: number;
+  bar: string;
+};
+
+type Keys = keyof MyObj; // 'foo'|'bar'
+```
+
+```TS
+interface T {
+  0: boolean;
+  a: string;
+  b(): void;
+}
+
+type KeyT = keyof T; // 0 | 'a' | 'b'
+```
+
+
+
+如果想取出键值组成的联合类型，可以像下面这样写:
+
+```TS
+type MyObj = {
+  foo: number;
+  bar: string;
+};
+
+type Keys = keyof MyObj;
+
+type Values = MyObj[Keys]; // number|string
+```
+
+上面示例中，`Keys`是键名组成的联合类型，而`MyObj[Keys]`会取出每个键名对应的键值类型，组成一个新的联合类型，即`number|string`。
+
+
+
+由于 JavaScript 对象的键名只有三种类型，所以对于任意对象的键名的联合类型就是`string|number|symbol`:
+
+```TS
+// string | number | symbol
+type KeyT = keyof any;
+```
+
+对于没有自定义键名的类型使用 keyof 运算符，返回`never`类型，表示不可能有这样类型的键名:
+
+```TS
+// 由于object类型没有自身的属性，也就没有键名，所以keyof object返回never类型。
+type KeyT = keyof object; // never
+```
+
+#### 数组、元组
+
+如果 keyof 运算符用于数组或元组类型，得到的结果可能出人意料。
+
+```TS
+type Result = keyof ["a", "b", "c"];
+// 返回 number | "0" | "1" | "2"
+// | "length" | "pop" | "push" | ···
+```
+
+上面示例中，keyof 会返回数组的所有键名，包括数字键名和继承的键名。
+
+#### 联合类型
+
+对于联合类型，keyof 返回成员共有的键名。
+
+```TS
+type A = { a: string; z: boolean };
+type B = { b: string; z: boolean };
+
+// 返回 'z'
+type KeyT = keyof (A | B);
+```
+
+#### 交叉类型
+
+对于交叉类型，keyof 返回所有键名。
+
+```TS
+type A = { a: string; x: boolean };
+type B = { b: string; y: number };
+
+// 返回 'a' | 'x' | 'b' | 'y'
+type KeyT = keyof (A & B);
+
+// 相当于
+keyof (A & B) ≡ keyof A | keyof B
+```
+
+### in
+
+`in`运算符用来确定对象是否包含某个属性名。
+
+```TS
+const obj = { a: 123 };
+
+if ("a" in obj) console.log("found a");
+```
+
+
+
+### []
+
+方括号运算符（`[]`）用于取出对象的键值类型，比如`T[K]`会返回对象`T`的属性`K`的类型。
+
+```TS
+type Person = {
+  age: number;
+  name: string;
+  alive: boolean;
+};
+
+// Age 的类型是 number
+type Age = Person["age"];
+```
+
+上面示例中，`Person['age']`返回属性`age`的类型，本例是`number`。
+
+方括号的参数如果是联合类型，那么返回的也是联合类型:
+
+```TS
+type Person = {
+  age: number;
+  name: string;
+  alive: boolean;
+};
+
+// number|string
+type T = Person["age" | "name"];
+
+// number|string|boolean
+type A = Person[keyof Person];
+```
+
+上面示例中，方括号里面是属性名的联合类型，所以返回的也是对应的属性值的联合类型。
+
+如果访问不存在的属性，会报错:
+
+```TS
+type T = Person["notExisted"]; // 报错
+```
+
+方括号运算符的参数也可以是属性名的索引类型:
+
+```TS
+type Obj = {
+  [key: string]: number;
+};
+
+// number
+type T = Obj[string];
+```
+
+上面示例中，`Obj`的属性名是字符串的索引类型，所以可以写成`Obj[string]`，代表所有字符串属性名，返回的就是它们的类型`number`。
+
+这个语法对于数组也适用，可以使用`number`作为方括号的参数:
+
+```TS
+// MyArray 的类型是 { [key:number]：string }
+const MyArray = ["a", "b", "c"];
+
+// 等同于 (typeof MyArray)[number]
+// 返回 string
+type Person = (typeof MyArray)[number];
+```
+
+上面示例中，`MyArray`是一个数组，它的类型实际上是属性名的数值索引，而`typeof MyArray[number]`的`typeof`运算优先级高于方括号，所以返回的是所有数值键名的键值类型`string`。
+
+> [!NOTE]
+>
+> 方括号里面不能有值的运算。
+
+```TS
+// 示例一
+const key = 'age';
+type Age = Person[key]; // 报错
+
+// 示例二
+type Age = Person['a' + 'g' + 'e']; // 报错
+```
+
+上面两个示例，方括号里面都涉及值的运算，编译时不会进行这种运算，所以会报错
+
+### extends ? : 与 infer
+
+`infer` 关键字是 TypeScript 条件类型中的一个核心组件，它允许你：
+
+1. **动态地从现有类型中推断和提取新的类型变量。**
+2. **构建强大的类型转换工具和实用程序类型。**
+3. **实现更高级的类型操作和模式匹配。**
+
+#### 语法格式
+
+`infer` 总是出现在条件类型的 `extends` 关键字的右侧，用于模式匹配：
+
+```TS
+type MyConditionalType<T> = T extends SomePattern<infer U> ? U : NeverType;
+```
+
+- `T extends SomePattern<infer U>`:
+  - `T`: 待检查的类型。
+  - `SomePattern<infer U>`: 这是一个类型模式。`infer U` 表示“如果 `T` 符合 `SomePattern` 的结构，那么请推断出 `SomePattern` 中的泛型参数，并把它命名为 `U`”。
+- `? U`: 如果匹配成功，条件类型的结果就是推断出的 `U` 类型。
+- `: NeverType`: 如果匹配失败，则返回 `NeverType`（或你定义的其他类型）。
+
+#### 常见用法
+
+##### 提取函数返回类型
+
+```TS
+type ReturnType<T> = T extends (...args: any[]) => infer R ? R : any;
+
+function greet(): string {
+  return "Hello";
+}
+
+function add(a: number, b: number): number {
+  return a + b;
+}
+
+const obj = {
+  id: 1,
+  getName(): string { return "test"; }
+};
+
+type GreetReturnType = ReturnType<typeof greet>; // type GreetReturnType = string
+type AddReturnType = ReturnType<typeof add>;     // type AddReturnType = number
+type GetNameReturnType = ReturnType<typeof obj.getName>; // type GetNameReturnType = string
+
+// 如果不是函数类型，则为 any (根据上面的定义)
+type NonFunctionReturnType = ReturnType<number>; // type NonFunctionReturnType = any
+```
+
+- `T extends (...args: any[]) => infer R`:
+  - 检查 `T` 是否是一个函数类型。
+  - 如果 `T` 是一个函数类型，那么 `infer R` 会推断出这个函数的**返回值类型**，并将其赋值给类型变量 `R`。
+- `? R`: 如果 `T` 确实是函数，那么 `ReturnType<T>` 的结果就是这个推断出的 `R`。
+
+##### 提取函数参数类型
+
+```TS
+type Parameters<T> = T extends (...args: infer P) => any ? P : never;
+
+function printInfo(name: string, age: number): void {
+  console.log(`Name: ${name}, Age: ${age}`);
+}
+
+type PrintInfoParams = Parameters<typeof printInfo>; // type PrintInfoParams = [name: string, age: number]
+
+type AddParams = Parameters<typeof add>; // type AddParams = [a: number, b: number]
+
+type NoParams = Parameters<() => void>; // type NoParams = []
+
+// 如果不是函数类型，则为 never
+type NonFunctionParams = Parameters<string>; // type NonFunctionParams = never
+```
+
+- `T extends (...args: infer P) => any`:
+  - 检查 `T` 是否是一个函数类型。
+  - 如果 `T` 是一个函数类型，那么 `infer P` 会推断出这个函数的**参数列表**，并将其赋值给类型变量 `P`（通常是一个元组类型）。
+- `? P`: 如果 `T` 确实是函数，那么 `Parameters<T>` 的结果就是这个推断出的 `P`。
+
+##### 提取Promise的解析值类型
+
+在 TypeScript 4.5+ 中，`Awaited` 类型是内置的，但它的实现原理就依赖 `infer`。
+
+```TS
+// 简化版 Awaited 实现原理
+type MyAwaited<T> =
+  T extends PromiseLike<infer U> ? MyAwaited<U> : // 如果是 PromiseLike，则递归推断其解析值
+  T; // 否则直接返回 T
+
+type PromiseString = Promise<string>;
+type PromiseNumber = Promise<Promise<number>>; // 嵌套 Promise
+
+type Result1 = MyAwaited<PromiseString>; // type Result1 = string
+type Result2 = MyAwaited<PromiseNumber>; // type Result2 = number (会递归解开嵌套 Promise)
+type Result3 = MyAwaited<number>;        // type Result3 = number
+```
+
+##### 提取数组或元组的元素类型
+
+```TS
+type ArrayElementType<T> = T extends (infer U)[] ? U : T;
+
+type NumberArray = ArrayElementType<number[]>; // type NumberArray = number
+type StringTuple = ArrayElementType<[string, number]>; // type StringTuple = string | number (元组会被推断为联合类型)
+type SingleValue = ArrayElementType<boolean>; // type SingleValue = boolean (不匹配，返回原始类型)
+```
+
+##### 从对象属性类型中提取
+
+```TS
+type GetPropType<T, K extends keyof T> = T extends { [P in K]: infer V } ? V : never;
+
+interface User {
+  name: string;
+  age: number;
+}
+
+type UserName = GetPropType<User, 'name'>; // type UserName = string
+type UserAge = GetPropType<User, 'age'>;   // type UserAge = number
+// type UserInvalid = GetPropType<User, 'email'>; // Error: Type '"email"' is not assignable to type '"name" | "age"'.
+```
+
+---
+
+`infer` 经常与 `keyof`、`typeof` 以及其他高级类型操作符结合使用，来构建复杂的类型转换工具。
+
+例如，从一个对象类型中提取所有方法的名称和签名：
+
+```TS
+type MethodNames<T> = {
+  [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
+}[keyof T]; // 使用索引访问类型来获取联合类型
+
+type MethodParameters<T, M extends MethodNames<T>> = T[M] extends (...args: infer P) => any ? P : never;
+type MethodReturnType<T, M extends MethodNames<T>> = T[M] extends (...args: any[]) => infer R ? R : never;
+
+class Example {
+  foo(a: string, b: number): boolean { return true; }
+  bar(): string { return "hi"; }
+  baz: number = 10;
+}
+
+type ExampleMethodNames = MethodNames<Example>; // type ExampleMethodNames = "foo" | "bar"
+
+type FooParams = MethodParameters<Example, "foo">; // type FooParams = [a: string, b: number]
+type FooReturn = MethodReturnType<Example, "foo">; // type FooReturn = boolean
+
+type BarParams = MethodParameters<Example, "bar">; // type BarParams = []
+type BarReturn = MethodReturnType<Example, "bar">; // type BarReturn = string
+```
+
+
+
+### is
+
+`is` 关键字是 **类型谓词（Type Predicate）** 的一部分。它的作用是告诉 TypeScript 编译器，在一个函数执行后，某个变量的类型会变得**更加具体**。这对于缩小联合类型（Union Types）的范围，并实现更精确的类型检查至关重要。
+
+
+
+当你在函数返回类型的位置使用 `parameterName is Type` 这种形式时，你是在向 TypeScript 做出一个保证：
+
+- **编译时影响**：这个函数不仅会返回一个布尔值（`true` 或 `false`），而且如果它返回 `true`，那么在调用该函数的作用域内，TypeScript 编译器就会认为 `parameterName` 的类型已经缩小到 `Type`。
+- **运行时无影响**：`is` 关键字只存在于 TypeScript 的类型系统中，在编译成 JavaScript 后会被完全移除，不会产生任何运行时代码。
+
+
+
+```TS
+// 函数声明了 如果返回值为true，则该值一定是string类型
+function isString(value: number | string): value is string {
+  return typeof value === 'string';
+}
+
+function example(value: any) {
+  if (isString(value)) {
+    // 能够经过if条件判断，说明这里一定是string类型，所以能够使用string的方法
+    console.log(value.toUpperCase());
+  }
+}
+
+example('hello world');
+```
+
+
+
+## 类型映射
+
+### 自定义映射
+
+**类型映射（Mapped Types）**允许你基于一个现有的类型，通过遍历其属性并对其应用某种转换，来创建新的类型。你可以把它想象成对类型进行的一种“批量处理”或“数据转换”。
+
+类型映射的语法结构类似于 JavaScript 中的 `for...in` 循环，但它是在**类型层面**上操作的。它通过迭代源类型的所有属性键，并为每个键生成一个新的属性，从而构建出一个新的类型。
+
+~~~TS
+type NewType<T> = {
+  [P in keyof T]: /* 类型转换逻辑，基于 T[P] 或其他 */
+};
+~~~
+
+**`[P in keyof T]`**：这是映射类型的核心部分。
+
+- `keyof T`：获取类型 `T` 的所有公共属性名的联合类型（例如，如果 `T` 是 `{ a: string; b: number; }`，那么 `keyof T` 就是 `'a' | 'b'`）。
+- `P in ...`：迭代 `keyof T` 中的每一个属性名 `P`。
+
+**`:`**：冒号后面是你想要应用于每个属性的**类型转换逻辑**。`T[P]` 表示原始类型 `T` 中属性 `P` 对应的类型。
+
+| 概念     | 示例                                 | 说明                           |
+| -------- | ------------------------------------ | ------------------------------ |
+| 基本映射 | `[K in keyof T]: T[K]`               | 遍历 T 的所有键                |
+| 可选属性 | `[K in keyof T]?: T[K]`              | 将属性变成可选                 |
+| 只读属性 | `readonly [K in keyof T]: T[K]`      | 属性加 readonly                |
+| 键重命名 | `[K in keyof T as `new_${K}`]: T[K]` | 可以用模版字符串动态修改属性名 |
+| 键过滤   | `as K extends string ? K : never`    | 过滤出符合条件的键             |
+
+### 常见内置映射
+
+#### `Partial<T>`
+
+`Partial<T>` 会将类型 `T` 中的所有属性变为可选（`?`）。
+
+```TS
+interface UserInfo {
+  name?: string;
+  age?: number;
+}
+
+type RequiredUserInfo = Required<UserInfo>;
+/*
+等同于：
+type RequiredUserInfo = {
+  name: string;
+  age: number;
+};
+*/
+
+const user: RequiredUserInfo = { name: "Bob", age: 30 }; // 必须提供 name 和 age
+// const incompleteUser: RequiredUserInfo = { name: "Charlie" }; // Error: Property 'age' is missing
+```
+
+**实现原理：**
+
+```TS
+type Required<T> = {
+  [P in keyof T]-?: T[P]; // 注意这里的 -? 标记，表示移除可选属性
+};
+```
+
+**`-?` 符号**：这是一个特殊的修饰符，用于从属性中移除可选修饰符。类似地，`+?` （或不写）表示添加可选修饰符，`+readonly` 表示添加只读修饰符，`-readonly` 表示移除只读修饰符。
+
+#### `Readonly<T>`
+
+`Readonly<T>` 会将类型 `T` 中的所有属性变为只读（`readonly`）。
+
+```TS
+interface Product {
+  id: string;
+  price: number;
+}
+
+type ReadonlyProduct = Readonly<Product>;
+/*
+等同于：
+type ReadonlyProduct = {
+  readonly id: string;
+  readonly price: number;
+};
+*/
+
+const product: ReadonlyProduct = { id: "P101", price: 99.99 };
+// product.price = 100; // Error: Cannot assign to 'price' because it is a read-only property.
+```
+
+**实现原理：**
+
+~~~TS
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P]; // 注意这里的 readonly 标记
+};
+~~~
+
+#### `Pick<T, K>`
+
+`Pick<T, K>` 会从类型 `T` 中选择属性名在 `K` 联合类型中的属性，来创建新类型。
+
+```TS
+interface Car {
+  make: string;
+  model: string;
+  year: number;
+  color: string;
+}
+
+type CarSummary = Pick<Car, "make" | "model">;
+/*
+等同于：
+type CarSummary = {
+  make: string;
+  model: string;
+};
+*/
+
+const myCar: CarSummary = { make: "Toyota", model: "Camry" };
+// const invalidCar: CarSummary = { make: "Honda", year: 2020 }; // Error: Property 'year' does not exist
+```
+
+**实现原理：**
+
+```TS
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P]; // 只迭代 K 中指定的属性
+};
+```
+
+`K extends keyof T`：这个约束确保了你只能选择 `T` 中实际存在的属性。
+
+#### `Omit<T, K>`
+
+`Omit<T, K>` 会从类型 `T` 中排除属性名在 `K` 联合类型中的属性，来创建新类型。
+
+```TS
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  dueDate: Date;
+  completed: boolean;
+}
+
+type TaskWithoutIdAndDate = Omit<Task, "id" | "dueDate">;
+/*
+等同于：
+type TaskWithoutIdAndDate = {
+  title: string;
+  description: string;
+  completed: boolean;
+};
+*/
+
+const newTask: TaskWithoutIdAndDate = {
+  title: "Learn Mapped Types",
+  description: "Understand how they work.",
+  completed: false,
+};
+```
+
+**实现原理：**
+
+```TS
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+// Omit 是基于 Pick 和 Exclude 实现的
+// Exclude<UnionType, ExcludedMembers> 会从 UnionType 中移除 ExcludedMembers
+```
+
+## 注释指令
+
+**注释指令（Comment Directives）** 是一种特殊的注释形式，它们以特定的格式编写，旨在向 TypeScript 编译器（或相关的工具，如 ESLint、JSDoc 等）提供额外的指令或信息，而不是作为普通的解释性文本。它们在编译过程中被工具识别和处理，但不会成为最终 JavaScript 代码的一部分。
+
+### 三斜杠引用指令
+
+这是最古老且特定用途的注释指令，通常用于声明文件 (`.d.ts` 文件) 或在没有模块系统时引用其他文件。
+
+**`<reference path="..." />`**: 引用另一个 TypeScript 文件。当文件之间没有明确的 `import`/`export` 关系时使用，通常用于组织大型项目或早期的模块系统。编译器会查找并包含 `path` 指定的文件。
+
+```TS
+/// <reference path="./other.ts" />
+// 编译器会包含 other.ts 文件
+```
+
+**`<reference types="..." />`**: 引用一个类型声明包（通常是 `@types` 命名空间下的包）。这与 `tsconfig.json` 中的 `types` 配置或 `import` 语句有类似作用，但用于全局类型声明。
+
+```TS
+// index.ts 或 global.d.ts
+/// <reference types="node" />
+// 这样就可以在当前文件中使用 Node.js 的全局类型，如 process
+console.log(process.platform);
+```
+
+**`<reference lib="..." />`**: 显式地引用一个内置的类型库（如 `lib.dom.d.ts`, `lib.es2015.d.ts`）。这与 `tsconfig.json` 中的 `lib` 配置类似。
+
+```TS
+// my-dom-only-file.ts
+/// <reference lib="dom" />
+// 强制只包含 DOM 相关的类型，而不包含其他默认类型
+document.getElementById("app");
+```
+
+**`<reference no-default-lib="true"/>`**: 阻止编译器包含默认的标准库（通常是根据 `target` 配置推断的）。这在使用自定义标准库或在非常受限的环境中很有用。
+
+```TS
+/// <reference no-default-lib="true"/>
+// 不会包含任何 lib.*.d.ts 文件
+// console.log("hello"); // Error: Cannot find name 'console'.	
+```
+
+### TypeScript诊断指令
+
+#### `@ts-ignore`
+
+忽略下一行代码可能产生的所有 TypeScript 错误。这是一种“万能药”，通常建议谨慎使用，因为它们完全禁用了类型检查。
+
+```TS
+// @ts-ignore
+const value: number = "hello"; // 编译器不会报错，即使类型不匹配
+```
+
+#### `@ts-expect-error`
+
+如果下一行代码**期望出现一个错误**，并且确实出现了，那么编译器不会报错。如果下一行**没有错误**，`@ts-expect-error` 反而会报错。这对于测试和代码重构非常有用，确保你“期望”的错误确实存在。
+
+```TS
+// @ts-expect-error
+const num: number = "string"; // 编译器期望这里有错误，所以不报错
+
+// @ts-expect-error
+const str: string = "another string"; // Error: '/// @ts-expect-error' expects an error on the next line.
+```
+
+#### `@ts-nocheck`
+
+放置在文件顶部，告诉 TypeScript 编译器完全跳过对该文件的类型检查。这对于将大型 JavaScript 文件逐步迁移到 TypeScript 时很有用
+
+```TS
+// @ts-nocheck
+// 整个文件都不会进行类型检查
+function problematicJs(a, b) {
+    return a + b.something; // TypeScript 不会报错
+}
+```
+
+#### `@ts-check`
+
+与 `//@ts-nocheck` 相反，用于在默认不进行类型检查的 JavaScript 文件（通过 `allowJs` 和 `checkJs` 配置启用）中，强制对特定文件进行类型检查。
+
+```TS
+// @ts-check
+// 即使在 JS 文件中，也会进行类型检查
+/**
+ * @param {number} x
+ * @param {number} y
+ */
+function add(x, y) {
+    return x + y;
+}
+
+add(1, "2"); // 编译时报错：Argument of type 'string' is not assignable to parameter of type 'number'.
+```
+
+### JS Doc 注释指令
+
+JSDoc 是一种用于 JavaScript 代码的文档注释规范。TypeScript 能够理解大部分 JSDoc 标签，并将它们用于类型推断和生成文档。它们虽然不是严格的“TypeScript 独有”指令，但 TypeScript 编译器对其有特殊支持。
+
+#### `@typedef`
+
+定义一个类型别名。
+
+```TS
+/**
+ * @typedef {object} Point
+ * @property {number} x - The x coordinate.
+ * @property {number} y - The y coordinate.
+ */
+```
+
+#### `@param`
+
+描述函数参数。
+
+#### `@return/@returns`
+
+描述函数返回值
+
+```TS
+/**
+ * Adds two numbers.
+ * @param {number} a - The first number.
+ * @param {number} b - The second number.
+ * @returns {number} The sum of a and b.
+ */
+function add(a, b) {
+    return a + b;
+}
+```
+
+#### `@type`
+
+对变量、属性等进行类型声明。
+
+```TS
+/** @type {string} */
+const name = "Alice";
+```
+
+#### `@template`
+
+定义泛型参数。
+
+```TS
+/**
+ * @template T
+ * @param {T[]} arr - An array of type T.
+ * @returns {T} The first element.
+ */
+function getFirstElement(arr) {
+    return arr[0];
+}
+```
+
+- **`@implements`**: 指示一个类实现了一个接口。
+- **`@override`**: （TypeScript 4.3+）指示一个方法覆盖了父类的方法。
+
+### ES Lint注释指令
+
+如果你在项目中使用 ESLint 进行代码规范检查，ESLint 也有一套自己的注释指令，它们与 TypeScript 本身无关，但与项目开发流程紧密相关。
+
+- **`eslint-disable`**: 禁用所有规则。
+- **`eslint-disable-line`**: 禁用当前行的规则。
+- **`eslint-disable-next-line`**: 禁用下一行的规则。
+- **`eslint-enable`**: 重新启用规则。
+- **`eslint-env`**: 指定运行时环境。
+- **`eslint no-unused-vars`**: 针对特定规则禁用。
+
+```TS
+// eslint-disable-next-line no-console
+console.log("This will not trigger no-console rule.");
+
+/* eslint-disable */
+function everythingIsDisabled() {
+    // ...
+}
+/* eslint-enable */
+```
+
 
 

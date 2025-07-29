@@ -3,7 +3,7 @@ title: Vue
 shortTitle: Vue
 description: 
 date: 2024-06-16 22:30:39
-categories: [前端,Vue]
+categories: [前端, Vue]
 tags: [Vue]
 ---
 ## 准备知识
