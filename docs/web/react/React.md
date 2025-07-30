@@ -6,17 +6,17 @@ date: 2024-06-16 22:29:35
 categories: [前端,React]
 tags: []
 ---
-## 环境准备
-### 创建工程
+# 环境准备
+## 创建工程
 React浏览器开发插件：`React Developer Tools`
-#### webpack
+### webpack
 create-react-app是一个快速创建React开发环境的工具，底层由Webpack构件，封装了配置细节，开箱即用
 CMD执行命令：`npx create-react-app 工程文件名`
 
-#### Vite
+### Vite
 CMD执行命令：`npm create vite@latest react-typescript -- --template react-ts`
-### 路径解析配置
-#### webpack-js
+## 路径解析配置
+### webpack-js
 配置步骤：
 
 1. 安装craco：`npm i -D @craco/craco`
@@ -44,7 +44,7 @@ module.exports = {
     "build": "craco build"
 }
 ```
-#### Vite-ts
+### Vite-ts
 ```typescript
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -61,8 +61,8 @@ export default defineConfig({
 })
 
 ```
-### 联想路径配置
-#### webpack-js
+## 联想路径配置
+### webpack-js
 配置步骤：
 
 1. 根目录下新增配置文件 - jsconfig.json
@@ -77,7 +77,7 @@ export default defineConfig({
     }
 }
 ```
-#### Vite-ts
+### Vite-ts
 安装node类型包：`npm i @types/node -D`
 ```json
 {
@@ -89,8 +89,8 @@ export default defineConfig({
     },
 }
 ```
-## React基础
-### JSX基础
+# React基础
+## JSX基础
 JSX是JavaScript和XMl(HTML)的缩写，表示在JS代码中编写HTML模版结构，它是React中构建UI的方式。
 ```jsx
 const message = 'this is message'
@@ -108,12 +108,12 @@ function App(){
 
 1. HTML的声明式模版写法
 2. JavaScript的可编程能力
-#### 本质
+### 本质
 JSX不是标准的JS语法，它是JS的语法扩展，浏览器本身不能识别，需要通过解析工具做解析之后才能在浏览器中使用
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502660.png)
 
-#### JS表达式
+### JS表达式
 ```jsx
 const message = "this is message"
 function App() {
@@ -135,7 +135,7 @@ function App() {
 
 export default App;
 ```
-#### 列表渲染
+### 列表渲染
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502643.png)
 
@@ -161,7 +161,7 @@ function App() {
 ```
 > `key={item.id}`能够优化渲染速度
 
-#### 条件渲染
+### 条件渲染
 逻辑运算符与三目运算符
 
 ```mermaid
@@ -186,7 +186,7 @@ function App(){
   )
 }
 ```
-#### 复杂条件渲染
+### 复杂条件渲染
 `if……else` `if……else`
 ```jsx
 const type = 1  // 0|1|3
@@ -209,8 +209,8 @@ function App(){
   )
 }
 ```
-### 事件绑定
-#### 基本用法
+## 事件绑定
+### 基本用法
 React中的事件绑定，通过语法 `on + 事件名称 = { 事件处理程序 }`，整体上遵循驼峰命名法。
 ```jsx
 function App(){
@@ -223,7 +223,7 @@ function App(){
   )
 }
 ```
-#### 事件参数
+### 事件参数
 在事件回调函数中设置形参`e`即可（名字随意，e、eve、event都可以）
 ```jsx
 function App(){
@@ -241,7 +241,7 @@ function App(){
 > - **性能优化**：React 会对事件对象进行“事件池”管理。事件处理函数执行完毕后，合成事件对象会被重新放回池中，而不是每次都创建新的，从而提高性能。这意味着，如果你需要异步访问 `e` 的属性，你需要调用 `e.persist()`，否则 `e` 的属性可能会被重置为 `null`。
 > - **提供了与原生事件相同的接口**：虽然是合成的，但它提供了与原生 DOM 事件对象相似的属性和方法，例如 `e.target`（触发事件的 DOM 元素）、`e.currentTarget`（事件绑定的 DOM 元素）、`e.preventDefault()`（阻止默认行为）、`e.stopPropagation()`（阻止事件冒泡）等。
 
-#### 自定义参数
+### 自定义参数
 
 事件绑定的位置改造成箭头函数的写法，在执行`clickHandler`实际处理业务函数的时候传递实参。
 ```jsx
@@ -268,7 +268,7 @@ function App(){
 > 4. `onClick` 属性的值现在是 `undefined`。
 > 5. 当你点击按钮时，没有任何事情发生。
 
-#### 同时传递事件对象和自定义参数
+### 同时传递事件对象和自定义参数
 在事件绑定的位置传递事件实参`e`和自定义参数，`clickHandler`中声明形参，**注意顺序对应。**
 ```jsx
 function App(){
@@ -280,15 +280,15 @@ function App(){
   )
 }
 ```
-### 组件基础
+## 组件基础
 一个组件就是一个用户界面的一部分，它可以有自己的逻辑和外观，组件之间可以互相嵌套，也可以复用多次
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504045.png)
 
-#### 基本使用
+### 基本使用
 一个组件就是**首字母大写的函数**，内部存放了组件的逻辑和视图UI, 渲染组件只需要把组件当成标签书写即可
-#### 状态管理
-##### 基础使用
+### 状态管理
+#### 基础使用
 `useState` 是一个 React Hook（函数），它允许我们向组件添加一个`状态变量`, 从而控制影响组件的渲染结果。
 
 和普通JS变量不同的是，状态变量一旦发生变化组件的视图UI也会跟着变化（数据驱动视图）
@@ -306,7 +306,7 @@ function App(){
   )
 }
 ```
-##### 状态修改规则
+#### 状态修改规则
 状态被认为是只读的，我们应该始终**替换它而不是修改它**, 直接修改状态不能引发视图更新
 
 ![左（×） 右（√）](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504209.png "左（×） 右（√）")
@@ -317,7 +317,7 @@ const handlerClick = () => {
     setCount(count + 1);
 };
 ```
-##### 修改对象状态
+#### 修改对象状态
 对于对象类型的状态变量，应该始终给set方法一个**全新的对象**来进行修改
 
 ![左（×） 右（√）](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504913.png "左（×） 右（√）")
@@ -333,8 +333,8 @@ const handleChangeName = () => {
     });
 };
 ```
-#### 基础样式处理
-##### 行内样式
+### 基础样式处理
+#### 行内样式
 ```jsx
 const style = {
     color: "red",
@@ -351,7 +351,7 @@ function App() {
     );
 }
 ```
-##### class类名控制
+#### class类名控制
 ```css
 .foo {
     color: blue;
@@ -370,8 +370,8 @@ function App() {
     );
 }
 ```
-### 表单控制
-#### 受控绑定
+## 表单控制
+### 受控绑定
 在受控组件中，表单元素的值由 React 的 state 控制。当用户输入时，React 通过更新组件的 state 来反映输入的变化。受控组件中的值始终由 React 控制，并通过 props 将当前值传递给表单元素。
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504475.png)
@@ -393,7 +393,7 @@ function App() {
 }
 ```
 本例中，输入框的值受到 value 状态的控制，用户的输入会更新该状态，并且该状态的变化会被反映到输入框中。
-#### 非受控绑定
+### 非受控绑定
 在非受控组件中，表单元素的值不受 React state 的控制，而是由 DOM 元素自身来管理。React 组件只是在需要时获取 DOM 元素的值，而不直接控制其值的变化。
 ```jsx
 import { useRef } from "react";
@@ -417,7 +417,7 @@ function App() {
 	);
 }
 ```
-### 组件通信
+## 组件通信
 组件通信就是组件之间的数据传递, 根据组件嵌套关系的不同，有不同的通信手段和方法
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504351.png)
@@ -425,9 +425,9 @@ function App() {
 | A-B 父子通信 | B-C 兄弟通信 | A-E 跨层通信 |
 | :----------: | :----------: | :----------: |
 
-#### 父子通信——父传子
+### 父子通信——父传子
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504255.png)
-##### 基础实现
+#### 基本用法
 
 1. 父组件传递数据 - 在子组件标签上绑定属性
 2. 子组件接收数据 - 子组件通过props参数接收数据
@@ -445,14 +445,14 @@ function App(){
   )
 }
 ```
-##### props说明
+#### props说明
 **props可以传递任意的合法数据**，比如数字、字符串、布尔值、数组、对象、函数、JSX
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504840.png)
 
-**props是只读对象**子组件只能读取props中的数据，不能直接进行修改, 父组件的数据只能由父组件修改
+**props是只读对象**，子组件只能读取props中的数据，不能直接进行修改, 父组件的数据只能由父组件修改
 
-##### 特殊的prop-children
+#### 特殊的prop-children
 当把内容嵌套在组件的标签内部时，组件会自动在名为children的prop属性中接收该内容
 
 ```jsx
@@ -477,7 +477,7 @@ function App() {
   );
 }
 ```
-#### 父子通信——子传父
+### 父子通信——子传父
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504191.png)
 
@@ -505,7 +505,7 @@ function App() {
 	);
 }
 ```
-#### 兄弟通信
+### 兄弟通信
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504019.png)
 
 实现思路: 借助 **状态提升** 机制，通过共同的父组件进行兄弟之间的数据传递
@@ -609,7 +609,7 @@ function SiblingB({ name }) {
 
 export default SiblingB;
 ```
-#### 跨组件通信
+### 跨组件通信
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504342.png)
 
@@ -661,7 +661,7 @@ function App() {
 
 export default App
 ```
-#### 总结
+### 总结
 **组件间的关系**
 
 - 父子组件
@@ -685,13 +685,13 @@ export default App
 - 父子组件：props
 - 兄弟组件：消息订阅-发布、集中式管理
 - 祖孙组件（跨级组件）：消息订阅-发布、集中式管理、conText(开发用得少，封装插件用得多)
-### 副作用管理
-#### 概念
-`useEffect`是一个React Hook函数，用于在React组件中创建不是由事件引起而是由渲染本身引起的操作（副作用）, 比如发送AJAX请求、手动更改真实DOM、设置订阅/启动定时器
+## 副作用管理
+### 概念
+`useEffect`是一个React Hook函数，用于在React组件中创建不是由事件引起的，而是由渲染本身引起的操作（副作用）, 比如发送AJAX请求、手动更改真实DOM、设置订阅/启动定时器
 
 ![上面的组件中没有发生任何的用户事件，组件渲染完毕之后就需要和服务器要数据，整个过程属于“只由渲染引起的操作”](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505642.png "上面的组件中没有发生任何的用户事件，组件渲染完毕之后就需要和服务器要数据，整个过程属于“只由渲染引起的操作”")
 
-#### 基本使用
+### 基本使用
 语法：`useEffect(() => {}, [])`
 
 说明：
@@ -727,16 +727,16 @@ function App() {
 
 export default App;
 ```
-#### 依赖说明
+### 依赖说明
 useEffect副作用函数的执行时机存在多种情况，根据传入依赖项的不同，会有不同的执行表现
 
-| **依赖项** | **副作用功函数的执行时机** |
+| **依赖项** | **副作用函数的执行时机** |
 | --- | --- |
 | 没有依赖项 | 组件初始渲染 + 组件更新时执行 |
 | 空数组依赖 | 只在初始渲染时执行一次 |
 | 添加特定依赖项 | 组件初始渲染 + 依赖项变化时执行 |
 
-#### 清除副作用
+### 清除副作用
 在useEffect中编写的由渲染本身引起的对接组件外部的操作，社区也经常把它叫做副作用操作，比如在useEffect中开启了一个定时器，我们想在组件卸载时把这个定时器再清理掉，这个过程就是清理副作用
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505060.png)
@@ -774,11 +774,14 @@ function App() {
 
 export default App;
 ```
-### Hook函数
-#### useReducer
+## Hook函数
+
+> [React 内置 Hook – React 中文文档](https://zh-hans.react.dev/reference/react/hooks)
+
+### useReducer
 `useReducer`用于管理组件的state。它类似于`redux`中的reducer概念,允许我们基于当前的state和指定操作(action),计算出新的state。`useReducer`提供了一种管理复杂state逻辑的优雅方式,特别是在需要共享状态逻辑或引用追踪的场景下非常有用。
 
-**语法**
+#### 语法格式
 
 ```jsx
 const [state, dispatch] = useReducer(reducer, initialState, init);
@@ -834,7 +837,7 @@ function App() {
 
 export default App
 ```
-##### 对比useState
+#### 对比useState
 `useState`和`useReducer`都是React hooks中用于管理状态的钩子函数,但它们在使用场景和方式上存在一些差异:
 
 **useState**:
@@ -857,7 +860,7 @@ export default App
 
 - 如果状态逻辑很简单,只有几个状态需要管理,使用`useState`即可。
 - 如果有复杂的状态逻辑,多个子值需要共享逻辑、引用追踪等,使用`useReducer`会更加适合。
-#### useMemo
+### useMemo
 作用：缓存计算结果
 
 语法：`const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);`
@@ -898,7 +901,7 @@ function App() {
 
 export default App
 ```
-#### useCallback
+### useCallback
 `useCallback` 是另一个优化性能的 Hook。它用于缓存函数实例,避免在每次渲染时重新创建相同的函数。
 ```jsx
 const memoizedCallback = useCallback(
@@ -943,9 +946,15 @@ function App() {
 
 export default App
 ```
-#### useImperativeHandle
+### useImperativeHandle
 `useImperativeHandle` 是 React 提供的一个钩子,它可以与 `forwardRef` 一起使用,允许父组件获取子组件内部的一些命令或方法,从而控制子组件的行为。
+
+> [!important]
+>
+> 在React 19 中，forawrdRef已经过时了，请使用ref
+
 **语法**
+
 ```jsx
 useImperativeHandle(ref, createHandle, [deps])
 ```
@@ -957,6 +966,7 @@ useImperativeHandle(ref, createHandle, [deps])
 **使用场景**
 通常情况下,React 推荐使用自上而下的数据流,通过传递 props 控制子组件。但在某些情况下,父组件需要直接访问子组件的内部方法或状态,这时就可以使用 `useImperativeHandle`。
 **示例**
+
 ```jsx
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 
@@ -995,7 +1005,77 @@ const App = () => {
 3. 父组件 `App` 通过 `inputRef.current` 可以访问到子组件暴露的 `focus` 方法。
 4. 当点击按钮时,调用 `inputRef.current.focus()`  能够聚焦文本输入框。
 
-#### 自定义Hook
+### useDeferredValue
+
+`useDeferredValue` 是一个性能优化 Hook，它允许你**延迟更新 UI 的一部分**。它的核心思想是“推迟”某个值的变化，直到其他更紧急、更高优先级的渲染完成。这使得你的应用在处理复杂或耗时的计算时，仍能保持主界面的响应性。
+
+想象一下你有一个搜索框，用户每输入一个字，你就需要根据输入内容去过滤一个庞大的列表。如果每次输入都立即触发列表的重新过滤和渲染，UI 可能会卡顿。`useDeferredValue` 就能派上用场了。
+
+#### 基本语法
+
+```TSX
+const currentValue = useDeferredValue(value, initialValue?)
+```
+
+**参数：**
+
+- `value`: 你想延迟的值，可以是任何类型。
+- **可选的** `initialValue`: 组件初始渲染时使用的值。如果省略此选项，`useDeferredValue` 在初始渲染期间不会延迟，因为没有以前的版本可以渲染。
+
+**返回值：**
+
+- `currentValue`: 在初始渲染期间，返回的延迟值是 `initialValue` 或你提供的值。在更新期间，React 首先尝试使用旧值重新渲染（因此返回旧值），然后在后台尝试使用新值重新渲染（因此返回更新后的值）。
+
+**示例：**
+
+```TSX
+import React, { useState, useDeferredValue } from 'react';
+
+// 一个模拟耗时渲染的组件
+function ExpensiveList({ query }) {
+  const items = React.useMemo(() => {
+    console.log('--- 正在渲染耗时列表 ---', query);
+    const list = [];
+    for (let i = 0; i < 5000; i++) { // 模拟大量计算
+      list.push(<li key={i}>{query} - Item {i}</li>);
+    }
+    return list;
+  }, [query]); // 只有 query 变化时才重新渲染列表
+
+  return <ul>{items}</ul>;
+}
+
+function SearchComponent() {
+  const [inputValue, setInputValue] = useState('');
+  // 使用 useDeferredValue 延迟 inputValue 的更新
+  const deferredQuery = useDeferredValue(inputValue);
+
+  const isPending = inputValue !== deferredQuery; // 判断是否处于延迟更新中
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="快速输入，观察响应性"
+        style={{ width: '300px', padding: '10px' }}
+      />
+      {isPending && <div style={{ color: 'gray' }}>Updating results...</div>} {/* 显示延迟提示 */}
+      <hr />
+      {/* 传递延迟后的值给耗时组件 */}
+      <ExpensiveList query={deferredQuery} />
+    </div>
+  );
+}
+
+export default SearchComponent;
+```
+
+
+
+### 自定义Hook
+
 自定义Hook必须是以 `use`**开头的函数**，通过自定义Hook函数可以用来**实现逻辑的封装和复用**
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505964.png)
@@ -1041,10 +1121,264 @@ export default App;
 
 1. 只能在组件中或者其他自定义Hook函数中调用
 2. 只能在组件的顶层调用，不能嵌套在if、for、其它的函数中
-### React API
-#### memo
+
+## 组件
+
+### `<Fragment> (<>...</>)`
+
+#### 问题引入
+
+在 React 中，每个组件的 `render` 方法或函数组件的返回值**必须只有一个根元素**。例如，你不能直接返回两个并列的 `<div>`：
+
+```TSX
+// 错误示例：不能返回多个根元素
+function MyComponent() {
+  return (
+    <div>第一个 div</div>
+    <div>第二个 div</div> // 这样写会报错
+  );
+}
+```
+
+为了解决这个问题，你通常会把它们包裹在一个额外的 `div` 中：
+
+```TSX
+// 传统做法：用一个额外的 div 包裹
+function MyComponent() {
+  return (
+    <div>
+      <div>第一个 div</div>
+      <div>第二个 div</div>
+    </div>
+  );
+}
+```
+
+但是，这种做法会引入一个额外的、不必要的 DOM 节点到你的 HTML 结构中。这可能会：
+
+1. **增加 DOM 深度**：在某些情况下，过深的 DOM 树会影响性能。
+2. **影响布局**：额外的 `div` 可能会干扰 CSS 布局，尤其是在使用 Flexbox 或 Grid 时。
+
+`React.Fragment` 就是为了解决这个问题而生的。它允许你将多个子元素组合在一起，而**不会在 DOM 中创建额外的节点**。
+
+**`<Fragment>`特点：**
+
+- **不渲染额外的 DOM 元素**：这是它最大的优势。它只是一个逻辑上的分组，不会在最终的 HTML 输出中生成 `<div>` 或其他标签。
+- **可以有 `key` 属性（当使用完整语法时）**：如果你在一个列表渲染中使用 `Fragment`，并且需要为每个 `Fragment` 提供一个 `key`，那么你必须使用完整的 `<React.Fragment key={item.id}>` 语法。
+- **支持 JSX 的所有子元素类型**：你可以将任何合法的 React 元素、字符串、数字等作为其子元素。
+
+#### 使用方式
+
+1. 完整语法：`<React.Fragment>`
+
+> 使用时机：当你需要给 `Fragment` 添加 **`key` 属性**时（通常在渲染列表时）。
+
+```TSX
+function ItemsList({ items }) {
+  return (
+    <>
+      {items.map(item => (
+        <React.Fragment key={item.id}> {/* 必须使用完整语法来添加 key */}
+          <li>{item.name}</li>
+          <p>{item.description}</p>
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+```
+
+2. 简写形式:`<></>`
+
+```TSX
+function MyComponent() {
+  return (
+    <>
+      <h2>标题</h2>
+      <p>这是一个段落。</p>
+      <span>这是另一个元素。</span>
+    </>
+  );
+}
+```
+
+### `<Profiler>`
+
+`<Profiler>` 允许你编程式测量 React 树的渲染性能。
+
+可以把 `<Profiler>` 想象成一个“计时器”，它包裹住你想要测量性能的组件树。当包裹的组件渲染（或重新渲染）时，`<Profiler>` 会记录渲染时间，并把这些数据传递给你定义的一个回调函数。
+
+#### 基本用法
+
+1. 从 `react` 包中导入它。
+2. 给它一个必需的 `id` prop，用于标识这个 Profiler 区域。
+3. 给它一个必需的 `onRender` prop，这是一个回调函数，当被包裹的组件树完成一次“提交”（即渲染或重新渲染）时，React 会调用这个函数，并传入详细的性能数据。
+
+```TSX
+import React, { Profiler } from 'react';
+
+// onRender 回调函数接收的参数
+function onRenderCallback(
+  id, // 字符串：Profiler 树的“id”
+  phase, // "mount" (首次挂载) 或 "update" (后续更新)
+  actualDuration, // number：本次更新中渲染自身及子代所花费的实际时间
+  baseDuration, // number：在不使用记忆化的情况下，渲染自身及子代所花费的估计时间
+  startTime, // number：本次更新中 React 开始渲染的时间
+  commitTime, // number：本次更新中 React 提交更新的时间
+  interactions // Set：本次更新中包含的“interactions”（例如事件）
+) {
+  // 在这里处理性能数据
+  console.log(`Profiler ID: ${id}`);
+  console.log(`Phase: ${phase}`);
+  console.log(`Actual Duration: ${actualDuration.toFixed(2)}ms`);
+  console.log(`Base Duration: ${baseDuration.toFixed(2)}ms`);
+  // 可以根据需要打印更多数据或发送到性能监控服务
+}
+
+function App() {
+  return (
+    <div>
+      <h1>我的应用</h1>
+      {/* 使用 Profiler 包裹你想要测量的组件树 */}
+      <Profiler id="MySection" onRender={onRenderCallback}>
+        <ExpensiveComponent />
+        <OptimizedComponent />
+      </Profiler>
+      <Profiler id="AnotherSection" onRender={onRenderCallback}>
+        <AnotherExpensiveComponent />
+      </Profiler>
+    </div>
+  );
+}
+```
+
+#### `OnRender`的参数
+
+`onRender` 回调函数接收的参数：
+
+- **`id`**: 这是一个字符串，你在 `<Profiler>` 组件上定义的 `id` prop，用于标识你正在测量哪个部分。
+- **`phase`**:
+  - `"mount"`：表示组件树是首次被挂载（渲染到 DOM）时触发的。
+  - `"update"`：表示组件树是由于 `state` 或 `props` 变化而重新渲染时触发的。
+- **`actualDuration`**: **本次更新中渲染自身及其子代组件所花费的实际时间（毫秒）**。这是你最应该关注的指标之一，它反映了实际的渲染性能。
+- **`baseDuration`**: **在不使用任何记忆化优化的情况下，渲染自身及其子代组件所花费的估计时间（毫秒）**。这个值有助于你评估记忆化（如 `React.memo`, `useMemo`, `useCallback`）带来的效果。如果 `actualDuration` 远小于 `baseDuration`，说明你的记忆化优化是有效的。
+- **`startTime`**: React 开始渲染本次更新的时间戳。
+- **`commitTime`**: React 提交本次更新到 DOM 的时间戳。
+- **`interactions`**: 这是一个 `Set` 对象，包含了一组表示“交互”的对象。这是 React 团队用于追踪用户交互对渲染影响的实验性特性，通常用于更高级的性能追踪。
+
+### `StrictMode`
+
+`<StrictMode>` 帮助你在**开发过程中**尽早地发现组件中的常见错误。
+
+#### 使用方法
+
+你可以在应用的任何部分包裹 `<StrictMode>`。通常，为了全面检查，你会将其包裹在整个应用的根组件上。
+
+~~~TSX
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App'; // 你的根组件
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  // 将你的整个应用包裹在 StrictMode 中
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+~~~
+
+#### 主要作用
+
+`<StrictMode>` 会为它的后代组件做以下检查和警告（仅限开发模式）：
+
+1. **识别不安全的生命周期方法 (Identifying unsafe lifecycles)**:
+   - 警告你在类组件中使用一些老的、不安全的生命周期方法（例如 `componentWillMount`、`componentWillReceiveProps`、`componentWillUpdate`）。这些方法在异步渲染模式下可能会导致问题。
+2. **关于旧版字符串 ref 用法的警告 (Warning about legacy string ref API usage)**:
+   - 警告你使用已被弃用的字符串 `ref` 用法（例如 `<div ref="myRef">`），推荐使用 `createRef` 或 `useRef`。
+3. **关于废弃的 findDOMNode 用法的警告 (Warning about deprecated findDOMNode usage)**:
+   - `findDOMNode` 是一种直接获取 DOM 节点的方法，但它通常会导致一些问题。StrictMode 会警告你使用它，并推荐使用 `ref`。
+4. **检测意外的副作用 (Detecting unexpected side effects)**:
+   - 这是 `<StrictMode>` 最重要的功能之一。它会**有意地双重调用（或多次调用）**某些函数（如组件的 `render` 方法、`useState` 的更新函数、`useEffect` 的 `setup` 和 `cleanup` 函数），以帮助你发现副作用。
+   - 如果你的组件或 Hook 内部有不应该发生的副作用（例如在渲染阶段修改了外部变量或执行了不必要的网络请求），这种双重调用会让你更快地暴露和修复这些问题。
+5. **检测遗留 Context API 的使用 (Detecting legacy context API)**:
+   - 警告你使用旧版的 Context API，推荐使用新的 `React.createContext`。
+6. **确保可变状态不会被意外修改 (Ensuring reusable state)**: (React 18 及更高版本)
+   - 在并发模式下，React 可能会在内部多次挂载和卸载组件树。StrictMode 会帮助你检测组件在挂载、卸载、再挂载过程中是否正确处理了状态，例如 `useEffect` 的清理函数是否正确地清除了副作用。
+
+
+
+### `Suspense`
+
+`<Suspense>` 允许在子组件完成加载前展示后备方案。
+
+#### 基本用法
+
+`Suspense` 组件接受两个重要的 `props`：
+
+1. **`fallback` (必需)**:
+   - 这是一个 React 元素，它会在 `Suspense` 的子组件（或其深层子孙组件）处于等待状态时被渲染。
+   - 你可以放任何有效的 React 元素作为 `fallback`，例如一个加载指示器（loading spinner）、骨架屏（skeleton screen）或简单的文本。
+2. **`children`**:
+   - 这是你希望在加载完成后渲染的组件树。
+
+你可以使用 Suspense 边界包裹你应用的任何部分：
+
+```TSX
+<Suspense fallback={<Loading />}>
+  <Albums />
+</Suspense>
+```
+
+React 将展示 后备方案 直到  children  需要的所有代码和数据都加载完成。
+
+#### 同时展示内容
+
+默认情况下，Suspense 内部的整棵组件树都被视为一个单独的单元。例如，即使 **只有一个** 组件因等待数据而被挂起，Suspense 内部的整棵组件树中的 **所有** 的组件都将被替换为加载中指示器：
+
+```TSX
+<Suspense fallback={<Loading />}>
+  <Biography />
+  <Panel>
+    <Albums />
+  </Panel>
+</Suspense>
+```
+
+当它们都准备好展示时，它们将一起出现。
+
+#### 逐步加载内容
+
+当一个组件被挂起时，最近的父级 `Suspense` 组件会展示后备方案。这允许你嵌套多个 `Suspense` 组件创建一个加载序列。每个 `Suspense` 边界的后备方案都会在下一级内容可用时填充。例如，你可以给专辑列表设置自己的后备方案
+
+```TSX
+<Suspense fallback={<BigSpinner />}>
+  <Biography />
+  <Suspense fallback={<AlbumsGlimmer />}>
+    <Panel>
+      <Albums />
+    </Panel>
+  </Suspense>
+</Suspense>
+```
+
+调整之后，`Biography` 不需要“等待” `Albums` 加载完成就可以展示。
+
+加载序列将会是：
+
+1. 如果 `Biography` 没有加载完成，`BigSpinner` 会显示在整个内容区域的位置。
+2. 一旦 `Biography` 加载完成，`BigSpinner` 会被内容替换。
+3. 如果 `Albums` 没有加载完成，`AlbumsGlimmer` 会显示在 `Albums` 和它的父级 `Panel` 的位置。
+4. 最后，一旦 `Albums` 加载完成，它会替换 `AlbumsGlimmer`。
+
+## React API
+
+### memo
 作用：允许组件在props没有改变的情况下跳过重新渲染
 memo 是一个高阶组件(HOC),它用于包裹 React 组件,用于优化组件的渲染性能。memo 会缓存组件的渲染结果,当组件的 props 发生变化时,才会重新渲染组件,否则就直接复用上一次的渲染结果。
+
+#### 语法格式
+
 ```jsx
 import React, { memo } from 'react';
 
@@ -1064,19 +1398,19 @@ const MyComponent = memo(
   }
 );
 ```
-使用场景
+#### 使用场景
 
 - 当组件的渲染代价很高时，可以使用 `memo` 包裹组件，避免不必要的重渲染。
 - 当组件是一个纯组件(Pure Component)时，即组件的输出只依赖于 `props` 的变化。
 - 当组件被频繁重渲染时，使用 `memo` 可以减少不必要的重渲染。
 
-注意事项
+#### 注意事项
 
 - memo 只会对组件的 props 进行浅层比较,如果 props 中包含了复杂对象或数组,只有引用发生变化时才会触发重渲染,对象或数组内部数据的变化不会触发重渲染。
 - memo 不会比较组件的 state,因此如果组件的渲染依赖于 state,使用 memo 也不会阻止组件重渲染。
 - memo 不应该用于函数组件中的每一个渲染,这可能会导致意外的重渲染。通常只需要为大型组件或高开销的子组件使用 memo。
 - memo 只是一种性能优化的方式,并不是必需的,也不能滥用。
-##### 组件默认的渲染机制
+#### 组件默认的渲染机制
 默认机制：顶层组件发生重新渲染，这个组件树的子级组件都会被重新渲染
 ```jsx
 import { useState } from 'react'
@@ -1099,7 +1433,7 @@ function App() {
 
 export default App
 ```
-##### 使用React.memo优化
+#### 使用React.memo优化
 机制：只有props发生变化时才重新渲染
 下面的子组件通过 memo 进行包裹之后，返回一个新的组件MemoSon, 只有传给MemoSon的props参数发生变化时才会重新渲染
 ```jsx
@@ -1123,7 +1457,7 @@ function App() {
 
 export default App
 ```
-##### props的比较机制
+#### props的比较机制
 | 基本类型 | 对象/复杂/引用类型 |
 | --- | --- |
 | 比较数值  | 比较引用 |
@@ -1160,7 +1494,7 @@ export default App;
 
 - 第一个按钮修改了`num`的值，故子组件会重新渲染
 - 第二个按钮没有修改`list`的值，但是因为组件App俩次渲染生成了不同的对象引用list，所以传给MemoSon组件的props视为不同，子组件也会发生重新渲染
-##### 自定义比较函数
+#### 自定义比较函数
 如果上一小节的例子，我们不想通过引用来比较，而是完全比较数组的成员是否完全一致，则可以通过自定义比较函数来实现
 ```jsx
 import React, { useState } from 'react'
@@ -1201,69 +1535,11 @@ function App() {
 
 export default App
 ```
-#### forwardRef
-`forwardRef` 是 React 提供的一种底层技术,用于在组件渲染时重新绑定 ref 引用,让父组件可以引用子组件的实例,或访问子组件内部的DOM节点。
-**用法**
-```jsx
-const ChildComponent = React.forwardRef((props, ref) => {
-  // 使用 ref 访问组件实例或 DOM 节点
-  return <div ref={ref}>...</div>
-});
-```
-```jsx
-// 在父组件中引用子组件
-const ParentComponent = () => {
-  const childRef = useRef(null);
 
-  useEffect(() => {
-    // 访问子组件实例或 DOM 节点
-    console.log(childRef.current);
-  }, []);
-
-  return <ChildComponent ref={childRef} />;
-}
-```
-**使用场景**
-
-1. **操作子组件的实例**:通过 ref 获取子组件的实例,调用其方法或访问其成员。
-2. **访问子组件内部DOM节点**:获取子组件渲染的DOM元素的引用。
-3. **集成第三方库**:一些第三方库需要直接访问组件实例或DOM节点。
-
-**注意事项**
-
-- 不要过度使用`forwardRef`,因为它会增加组件的复杂性,影响可维护性。
-- `forwardRef`不能在函数式组件上使用,只能用于类组件或创建高阶组件。
-- 如果只需要操作DOM,使用`useRef`钩子获取ref更加方便。
-
-**示例**
-```jsx
-// 子组件使用 forwardRef
-const InputComponent = React.forwardRef((props, ref) => {
-  return <input type="text" ref={ref} />;
-});
-
-// 父组件获取子组件的 DOM 引用
-const ParentComponent = () => {
-  const inputRef = useRef(null);
-
-  const focusInput = () => {
-    // 访问子组件的实例、DOM节点
-    inputRef.current.focus();
-  };
-
-  return (
-    <div>
-      <InputComponent ref={inputRef} />
-      <button onClick={focusInput}>Focus Input</button>
-    </div>
-  );
-};
-```
-在这个例子中,父组件通过`forwardRef`获取了子组件渲染的`input`元素的 DOM 引用。当点击按钮时,可以调用`inputRef.current.focus()`方法来聚焦文本输入框。
-### Class API
+## Class API
 > 类式组件已过时！！！[Component – React 中文文档](https://zh-hans.react.dev/reference/react/Component)
 
-#### 基础体验
+### 基础体验
 ```jsx
 // class API
 import { Component } from 'react'
@@ -1298,10 +1574,10 @@ function App() {
 
 export default App
 ```
-#### 生命周期
+### 生命周期
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505947.png)
-#### 组件通信
-##### 父传子
+### 组件通信
+#### 父传子
 ```jsx
 // class API
 import { Component } from 'react'
@@ -1338,7 +1614,7 @@ class App extends Component {
 
 export default App
 ```
-##### 子传父
+#### 子传父
 ```jsx
 // class API
 import { Component } from 'react'
@@ -1380,9 +1656,9 @@ class App extends Component {
 export default App
 ```
 
-### 工具库
+## 工具库
 
-#### lodush
+### lodush
 
 [Lodash 简介 | Lodash中文文档 | Lodash中文网](https://www.lodashjs.com/)
 Lodash 是一个 JavaScript 实用工具库，提供了许多实用的功能，帮助开发者在编写 JavaScript 代码时更高效、更方便。它提供了对数组、对象、函数、字符串等数据类型的处理方法，同时还提供了许多实用的工具函数，用于简化常见的编程任务。
@@ -1395,7 +1671,7 @@ npm install --save lodush
 import _ from 'lodash'
 ```
 
-#### classnames
+### classnames
 
 `classnames` 是一个 JavaScript 工具库，用于动态生成 HTML 元素的 class 字符串。它通常在 React 应用程序中用于简化条件性地应用 CSS 类名。
 `classnames` 可以更方便地处理动态 class 名称的拼接，特别是在有多个条件需要考虑时，代码会更加清晰和简洁。
@@ -1456,7 +1732,7 @@ const buttonClass = classNames('btn', ['btn-primary', 'btn-large'], {
 
 本例展示了如何将数组作为参数传递给 `classnames`，数组中的每个元素都会被添加到最终的 class 字符串中。 
 
-#### UUID
+### UUID
 
 [GitHub - uuidjs/uuid: Generate RFC-compliant UUIDs in JavaScript](https://github.com/uuidjs/uuid)
 
@@ -1469,15 +1745,15 @@ import { v4 as uuidv4 } from 'uuid';
 uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 ```
 
-#### days
+### days
 
 [Day.js中文网](https://dayjs.fenxianglu.cn/)
 处理日期时间
 
-## React&TypeScript
+# React&TypeScript
 
-### useState
-#### 简单场景
+## useState
+### 简单场景
 > 简单场景下，可以使用TS的自动推断机制，不用特殊编写类型注解，运行良好
 
 ```typescript
@@ -1486,7 +1762,7 @@ const [val, toggle] = React.useState(false)
 // `val` 会被自动推断为布尔类型
 // `toggle` 方法调用时只能传入布尔类型
 ```
-#### 复杂场景
+### 复杂场景
 > 复杂数据类型，useState支持通过`泛型参数`指定初始参数类型以及setter函数的入参类型
 
 ```typescript
@@ -1502,7 +1778,7 @@ const [user, setUser] = React.useState<User>({
 setUser(newUser)
 // 这里newUser对象只能是User类型
 ```
-#### 没有具体默认值
+### 无默认值
 > 实际开发时，有些时候useState的初始值可能为null或者undefined，按照泛型的写法是不能通过类型校验的，此时可以通过完整的类型联合null或者undefined类型即可
 
 ```typescript
@@ -1522,13 +1798,12 @@ return (
   </div>
 )
 ```
-### useRef
-> 在TypeScript的环境下，`useRef` 函数返回一个`只读` 或者 `可变` 的引用
-> 只读的场景：常见于获取真实dom；
-> 可变的场景：常见于缓存一些数据，不跟随组件渲染；
+## useRef
+在TypeScript环境下，`useRef` 函数返回一个`只读` 或者 `可变` 的引用
+只读的场景：常见于获取真实dom；
+可变的场景：常见于缓存一些数据，不跟随组件渲染；
 
-下面分俩种情况说明：
-#### 获取DOM
+### 获取DOM
 > 获取DOM时，通过泛型参数指定具体的DOM元素类型即可
 
 ```tsx
@@ -1551,8 +1826,8 @@ const divRef = useRef<HTMLDivElement>(null!)
 // 不再需要检查`divRef.current` 是否为null
 doSomethingWith(divRef.current)
 ```
-#### 稳定引用存储器
-> 当做为可变存储容器使用的时候，可以通过`泛型参数`指定容器存入的数据类型, 在还未存入实际内容时通常把`null`作为初始值，所以依旧可以通过联合类型做指定
+### 稳定引用存储器
+> 当作为可变存储容器使用的时候，可以通过`泛型参数`指定容器存入的数据类型, 在还未存入实际内容时通常把`null`作为初始值，所以依旧可以通过联合类型做指定
 
 ```tsx
 interface User {
@@ -1567,39 +1842,38 @@ function App(){
       console.log('测试')
     },1000)
     
-    
     return ()=>clearInterval(timerRef.current)
   })
   return <div> this is app</div>
 }
 ```
-### Props
-#### 为Props添加类型
-> props作为React组件的参数入口，添加了类型之后可以限制参数输入以及在使用props有良好的类型提示
+## Props
+### 为Props添加类型
+props作为React组件的参数入口，添加了类型之后可以限制参数输入以及在使用props有良好的类型提示
 
-##### interface
+#### interface
 ```tsx
 interface Props {
   className: string
 }
 
-export const Button = (props:Props)=>{
+export const Button = (props: Props)=>{
   const { className } = props
   return <button className={ className }>Test</button>
 }
 ```
-##### Type
+#### type
 ```tsx
-type Props =  {
+type Props = {
   className: string
 }
 
-export const Button = (props:Props)=>{
+export const Button = (props: Props)=>{
   const { className } = props
   return <button className={ className }>Test</button>
 }
 ```
-#### 为Props的children属性添加类型
+### 为Props的children添加类型
 > children属性和props中其他的属性不同，它是React系统中内置的，其它属性我们可以自由控制其类型，children属性的类型最好由React内置的类型提供，兼容多种类型
 
 ```tsx
@@ -1613,7 +1887,7 @@ export const Button = (props: Props)=>{
 }
 ```
 **说明：**React.ReactNode是一个React内置的联合类型，包括 `React.ReactElement` 、`string`、`numberReact.ReactFragment` 、`React.ReactPortal` 、`boolean`、 `null` 、`undefined`
-#### 为事件prop添加类型
+### 为事件prop添加类型
 ```tsx
 // 定义 Props 接口，用于描述 Son 组件的 props 结构
 interface Props {
@@ -1657,7 +1931,7 @@ function App() {
 
 export default App;
 ```
-#### 为事件handle添加类型
+### 为事件handle添加类型
 > 为事件回调添加类型约束需要使用React内置的泛型函数来做，比如最常见的鼠标点击事件和表单输入事件
 
 ```tsx
