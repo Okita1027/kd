@@ -863,10 +863,14 @@ export default App
 ### useMemo
 作用：缓存计算结果
 
-语法：`const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);`
+语法：
 
-- computeExpensiveValue(a, b): 你需要缓存的那个"昂贵"计算的函数,它应该是一个纯函数。
-- [a, b]: 依赖数组,当a或b的值发生变化时,computeExpensiveValue(a, b)会重新执行。
+```TSX
+const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+```
+
+- `computeExpensiveValue(a, b)`: 你需要缓存的那个"昂贵"计算的函数,它应该是一个**纯函数**。
+- `[a, b]`: 依赖数组,当a或b的值发生变化时,computeExpensiveValue(a, b)会重新执行。
 ```jsx
 import React, {useMemo, useState} from 'react';
 
@@ -902,7 +906,10 @@ function App() {
 export default App
 ```
 ### useCallback
-`useCallback` 是另一个优化性能的 Hook。它用于缓存函数实例,避免在每次渲染时重新创建相同的函数。
+`useCallback` 是一个优化性能的 Hook。它用于缓存函数实例,避免在每次渲染时重新创建相同的函数。
+
+*语法格式：*
+
 ```jsx
 const memoizedCallback = useCallback(
   () => {
@@ -915,12 +922,13 @@ const memoizedCallback = useCallback(
 - 第一个参数是需要被缓存的函数。
 - 第二个参数是依赖数组,当依赖项发生变化时,函数实例会被重新创建。
 
-使用场景
+*使用场景:*
 
-- 作为回调函数传递给子组件：如果一个回调函数作为 prop 传递给子组件,则应该使用 useCallback 对其进行缓存,以防止子组件不必要的重渲染。
-- 在依赖项未发生变化时复用相同的函数实例：如果一个函数只依赖于某些状态或 props,那么只有在依赖项发生变化时才需要重新创建函数实例。
+- 作为回调函数传递给子组件：如果一个回调函数作为`prop`传递给子组件,则应该使用`useCallback`对其进行缓存,以防止子组件不必要的重渲染。
+- 在依赖项未发生变化时复用相同的函数实例：如果一个函数只依赖于某些状态或`props`,那么只有在依赖项发生变化时才需要重新创建函数实例。
 
-案例:
+*示例代码:*
+
 ```jsx
 import { memo, useCallback, useState } from 'react'
 
@@ -953,7 +961,7 @@ export default App
 >
 > 在React 19 中，forawrdRef已经过时了，请使用ref
 
-**语法**
+**语法格式：**
 
 ```jsx
 useImperativeHandle(ref, createHandle, [deps])
@@ -963,9 +971,9 @@ useImperativeHandle(ref, createHandle, [deps])
 - `createHandle` 是一个函数,返回一个对象,该对象暴露给父组件访问和操作子组件的命令。
 - `deps` 是一个可选的依赖数组,当依赖项变化时,`createHandle` 会重新执行。
 
-**使用场景**
+**使用场景：**
 通常情况下,React 推荐使用自上而下的数据流,通过传递 props 控制子组件。但在某些情况下,父组件需要直接访问子组件的内部方法或状态,这时就可以使用 `useImperativeHandle`。
-**示例**
+**示例：**
 
 ```jsx
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
@@ -1011,7 +1019,7 @@ const App = () => {
 
 想象一下你有一个搜索框，用户每输入一个字，你就需要根据输入内容去过滤一个庞大的列表。如果每次输入都立即触发列表的重新过滤和渲染，UI 可能会卡顿。`useDeferredValue` 就能派上用场了。
 
-#### 基本语法
+**语法:**
 
 ```TSX
 const currentValue = useDeferredValue(value, initialValue?)
@@ -1072,7 +1080,253 @@ function SearchComponent() {
 export default SearchComponent;
 ```
 
+### useId
 
+`useId()`可以生成传递给无障碍属性的唯一ID:
+
+```TSX
+const id = useId()
+```
+
+> [!important]
+>
+> **不要使用 `useId` 来生成列表中的 key**。[key 应该由你的数据生成](https://zh-hans.react.dev/learn/rendering-lists#where-to-get-your-key)。
+
+### useLayoutEffect
+
+`useLayoutEffect` 的语法与 `useEffect` 完全相同：
+
+```TSX
+useLayoutEffect(setup, dependencies?);
+```
+
+- `setup`：这是一个函数，包含你想要执行的副作用逻辑。它可以返回一个可选的清理函数（cleanup function）。
+- `dependencies` (可选)：一个依赖项数组。只有当数组中的任何一个值发生变化时，`setup` 函数才会重新执行。
+
+| 特性     | useLayoutEffect                                              | useEffect                                                    |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 执行时机 | DOM 更新后，浏览器绘制前（同步执行，会阻塞浏览器绘制）       | DOM 更新后，浏览器绘制后（异步执行，不会阻塞浏览器绘制）     |
+| 主用途   | 需要读取 DOM 布局信息（如元素尺寸、位置、滚动条）并同步修改 DOM，以避免视觉闪烁或不一致。 | 处理大多数副作用，如数据获取、订阅、设置定时器、日志记录等。不涉及 DOM 测量或需要同步修改 DOM 的场景。 |
+| 用户体验 | 如果内部操作耗时，可能导致页面卡顿或闪烁，因为它会阻塞浏览器的绘制流程。 | 通常更流畅，因为它不会阻塞浏览器绘制，用户能更快看到 UI 响应。 |
+
+### useOptimistic
+
+用于实现**乐观 UI 更新**：即用户操作立即反映到界面上（假装操作已经成功），然后再等待实际异步操作完成后同步数据。
+
+在实际开发中，经常需要这样一种体验：
+
+> 用户点击“点赞”按钮 → UI 立即+1 → 然后再异步发送请求 → 请求成功后确认更新
+
+如果不使用乐观更新，用户要等请求返回，UI 才更新，体验很差。
+
+**基本语法**
+
+```TSX
+const [optimisticState, addOptimistic] = useOptimistic(state, updateFn);
+```
+
+**参数**
+
+- `state`：初始时和没有挂起操作时要返回的值。
+- `updateFn(currentState, optimisticValue)`：一个函数，接受当前 `state` 和传递给 `addOptimistic` 的乐观值，并返回结果乐观状态。它必须是一个纯函数。`updateFn` 接受两个参数：`currentState` 和 `optimisticValue`。返回值将是 `currentState` 和 `optimisticValue` 的合并值。
+
+**返回值**
+
+- `optimisticState`：结果乐观状态。除非有操作挂起，否则它等于 `state`，在这种情况下，它等于 `updateFn` 返回的值。
+- `addOptimistic`：触发乐观更新时调用的 dispatch 函数。它接受一个可以是任何类型的参数 `optimisticValue`，并以 `state` 和 `optimisticValue` 作为参数来调用 `updateFn`。
+
+### useTransition
+
+`useTransition` 是一个 Hook，它允许你将某些状态更新标记为**“过渡（Transitions）”**。
+
+- **紧急更新（Urgent Updates）**：用户交互相关的更新，比如输入框打字、点击按钮后的即时反馈，这些更新应该立即响应，保持 UI 的流畅性。
+- **过渡更新（Transition Updates）**：非紧急的更新，例如在输入框输入后，根据输入内容过滤一个大型列表，或者点击一个选项卡后加载新数据。这些操作可能需要一些时间，如果立即处理，可能会导致 UI 卡顿。
+
+`useTransition` 的核心思想：**让 React 知道哪些状态更新可以放在后台执行，不阻塞用户的紧急交互。** 当一个过渡更新正在进行时，它不会阻止浏览器响应其他紧急更新（比如用户的输入），从而保持应用的响应性。
+
+#### 基本语法
+
+```TSX
+const [isPending, startTransition] = useTransition()
+```
+
+`useTransition` 没有参数，返回一个包含两个元素的数组：
+
+1. **`isPending`** (boolean): 一个布尔值，指示当前是否有**待处理的过渡更新**。
+2. **`startTransition`** (function): 一个函数，你用来**包裹**你想要标记为过渡的状态更新。
+
+#### useTransition示例
+
+```TSX
+import React, { useState, useTransition } from 'react';
+
+function MyComponent() {
+  const [isPending, startTransition] = useTransition(); // 获取 isPending 状态和 startTransition 函数
+  const [inputValue, setInputValue] = useState(''); // 紧急状态：用于输入框
+  const [displayValue, setDisplayValue] = useState(''); // 过渡状态：用于显示搜索结果等耗时操作
+
+  const handleChange = (e) => {
+    // 1. 紧急更新：立即更新输入框的值，保持响应
+    setInputValue(e.target.value);
+
+    // 2. 过渡更新：将耗时的操作包裹在 startTransition 中
+    startTransition(() => {
+      // 在这里执行可能耗时的状态更新，React 会将其视为低优先级
+      setDisplayValue(e.target.value);
+    });
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={inputValue} // 绑定到紧急状态，保证输入流畅
+        onChange={handleChange}
+        placeholder="快速输入，观察性能..."
+      />
+      {isPending && <div style={{ color: 'gray' }}>Loading results...</div>} {/* 当有过渡更新时显示加载状态 */}
+      <hr />
+      {/* displayValue 的更新可能滞后于 inputValue，但不会阻塞输入 */}
+      <ComplexDisplay value={displayValue} />
+    </div>
+  );
+}
+
+// 模拟一个渲染开销较大的组件
+function ComplexDisplay({ value }) {
+  const items = React.useMemo(() => {
+    console.log(`--- Rendering ComplexDisplay for: "${value}" ---`);
+    const list = [];
+    for (let i = 0; i < 10000; i++) { // 模拟大量计算
+      list.push(<li key={i}>{value} - Item {i}</li>);
+    }
+    return list;
+  }, [value]);
+
+  return (
+    <div>
+      <h3>Displaying: "{value}"</h3>
+      <ul>{items}</ul>
+    </div>
+  );
+}
+```
+
+在上面的 `SearchComponent` 例子中：
+
+1. 用户在 `<input>` 中打字：
+   - `setInputValue(e.target.value)` 是一个**紧急更新**。输入框会立即响应，保持流畅的打字体验。
+2. `startTransition(() => { setDisplayValue(e.target.value); })` 是一个**过渡更新**：
+   - `setDisplayValue` 会触发 `ComplexDisplay` 组件的重新渲染，而这个组件模拟了一个耗时的操作。
+   - 由于它被包裹在 `startTransition` 中，React 会将这个更新视为非紧急。
+   - 如果用户在 `ComplexDisplay` 还在渲染旧值时继续快速打字，新的 `setInputValue` 会被优先处理，而 `ComplexDisplay` 的渲染可能会被中断或延迟，以确保输入框的响应性。
+   - `isPending` 状态会在过渡开始时变为 `true`，并在过渡完成时变为 `false`，你可以用它来显示一个加载指示器，告诉用户后台有操作正在进行。
+
+#### 对比useDeferredValue
+
+`useDeferredValue` 和 `useTransition` 都是 React 为了解决「**慢数据导致的卡顿**」问题引入的**并发特性 Hook**。
+
+| Hook               | 作用                                                       |
+| ------------------ | ---------------------------------------------------------- |
+| `useDeferredValue` | 推迟某个值的更新，让 UI 先更新其他更重要的部分，减少卡顿。 |
+| `useTransition`    | 把某个状态更新标记为“低优先级”，UI可先响应，后台慢慢更新。 |
+
+| 特点           | `useDeferredValue`                   | `useTransition`                             |
+| -------------- | ------------------------------------ | ------------------------------------------- |
+| 用于           | **值** 的延迟                        | **状态更新函数** 的延迟                     |
+| 本质           | **“值” 的延迟读取**                  | **“更新” 的延迟执行**                       |
+| 用途           | 大型搜索结果延迟渲染、惰性组件加载等 | 表单输入、选项切换后触发慢查询等            |
+| 是否手动触发   | 否，自动推迟值                       | 是，必须用 `startTransition()` 包裹更新逻辑 |
+| 是否控制优先级 | 否                                   | 是，标记为「低优先级」更新                  |
+
+| 适用场景                                       | 推荐使用             |
+| ---------------------------------------------- | -------------------- |
+| 输入搜索时，搜索框要流畅、搜索结果慢点没关系   | ✅ `useTransition`    |
+| 点击筛选器，筛选项立即变化，但筛选结果慢点也行 | ✅ `useTransition`    |
+| 渲染大型组件树或图表，用户滑动或交互时卡顿     | ✅ `useDeferredValue` |
+
+#### useOptimistic与useTransition联合示例
+
+**目标场景：**
+
+1. 用户输入评论
+2. 点击发送后，**评论立即出现在列表中**
+3. 真实评论发送完毕后，乐观数据被替换
+
+```tsx
+import { useState, useTransition, useOptimistic } from 'react';
+
+// 评论数据类型定义
+type Comment = {
+    id: number;         // 评论唯一标识
+    content: string;     // 评论内容
+    isPending?: boolean; // 是否正在提交中（乐观更新标记）
+};
+
+// 模拟提交评论到服务器的函数
+function postCommentToServer(content: string): Promise<Comment> {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve({ id: Date.now(), content }); // 返回带时间戳ID的评论
+        }, 2000); // 模拟网络延迟
+    });
+}
+
+export default function CommentBox() {
+    const [commentText, setCommentText] = useState(''); // 输入框内容状态
+    const [comments, setComments] = useState<Comment[]>([]); // 服务器确认的评论列表
+    const [isPending, startTransition] = useTransition(); // 过渡更新相关状态
+
+    // 使用乐观更新hook创建本地即时显示的评论列表
+    const [optimisticComments, addOptimisticComment] = useOptimistic(
+        comments, // 基础状态
+        (state, newComment: Comment) => [...state, newComment] // 更新函数
+    );
+
+    const handleSubmit = async () => {
+        // 创建临时评论对象（带pending状态）
+        const tempComment: Comment = {
+            id: Date.now(), // 使用时间戳作为临时ID
+            content: commentText,
+            isPending: true, // 标记为待提交状态
+        };
+
+        addOptimisticComment(tempComment); // 立即显示乐观评论
+        setCommentText(''); // 清空输入框
+
+        // 在过渡中执行实际提交
+        startTransition(async () => {
+            const realComment = await postCommentToServer(tempComment.content);
+            setComments(prev => [...prev, realComment]); // 更新服务器确认的评论
+        });
+    };
+
+    return (
+        <div>
+            <h3>评论</h3>
+            <input
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder="写下你的评论..."
+            />
+            {/* 提交按钮（在提交中或空内容时禁用） */}
+            <button onClick={handleSubmit} disabled={isPending || !commentText.trim()}>
+                发送
+            </button>
+            {/* 评论列表（包含乐观更新和服务器确认的评论） */}
+            <ul>
+                {optimisticComments.map(comment => (
+                    <li key={comment.id}>
+                        {comment.content}
+                        {/* 显示提交中状态 */}
+                        {comment.isPending && <span style={{ color: 'gray' }}>（发送中...）</span>}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+```
 
 ### 自定义Hook
 
@@ -1124,7 +1378,7 @@ export default App;
 
 ## 组件
 
-### `<Fragment> (<>...</>)`
+### `<Fragment>`/`<>...</>`
 
 #### 问题引入
 
@@ -1202,7 +1456,7 @@ function MyComponent() {
 }
 ```
 
-### `<Profiler>`
+### `Profiler`
 
 `<Profiler>` 允许你编程式测量 React 树的渲染性能。
 
@@ -1312,7 +1566,7 @@ root.render(
 
 `<Suspense>` 允许在子组件完成加载前展示后备方案。
 
-#### 基本用法
+#### 基本语法
 
 `Suspense` 组件接受两个重要的 `props`：
 
@@ -1373,11 +1627,105 @@ React 将展示 后备方案 直到  children  需要的所有代码和数据都
 
 ## React API
 
+- [`createContext`](https://zh-hans.react.dev/reference/react/createContext) API 可以创建一个 context，你可以将其提供给子组件，通常会与 [`useContext`](https://zh-hans.react.dev/reference/react/useContext) 一起配合使用。
+- [`lazy`](https://zh-hans.react.dev/reference/react/lazy) 允许你延迟加载组件，直到该组件需要第一次被渲染。
+- [`memo`](https://zh-hans.react.dev/reference/react/memo) 允许你在 props 没有变化的情况下跳过组件的重渲染。通常 [`useMemo`](https://zh-hans.react.dev/reference/react/useMemo) 与 [`useCallback`](https://zh-hans.react.dev/reference/react/useCallback) 会一起配合使用。
+- [`startTransition`](https://zh-hans.react.dev/reference/react/startTransition) 允许你可以标记一个状态更新是不紧急的。类似于 [`useTransition`](https://zh-hans.react.dev/reference/react/useTransition)。
+- [`act`](https://zh-hans.react.dev/reference/react/act) 允许你在测试中包装渲染和交互，以确保在断言之前已完成更新。
+
+### lazy
+
+`React.lazy` 允许你定义一个组件，这个组件的**代码只有在它第一次被渲染时才会被加载**。这意味着，直到用户实际需要看到这个组件时，浏览器才会下载它对应的 JavaScript 代码。
+
+你可以把 `React.lazy` 想象成一个“动态导入器”：它不会在应用启动时一次性加载所有组件的代码，而是等待你明确地指示它“现在需要这个组件了”，它才会去下载相应的代码。
+
+#### 问题引入
+
+在传统的单页应用 (SPA) 中，所有的 JavaScript 代码通常会被打包成一个或几个大的文件。当用户首次访问应用时，即使他们只看到了一小部分界面，浏览器也可能需要下载整个应用的 JavaScript 包。这会导致：
+
+1. **初始加载时间过长**：用户等待时间变长，影响用户体验。
+2. **不必要的资源浪费**：下载了用户可能永远不会用到的代码。
+
+`React.lazy` 解决了这些问题，它允许你：
+
+- **减少初始加载大小**：将应用拆分成更小的代码块（chunks），只在需要时加载，从而加快应用的启动速度。
+- **优化用户体验**：让用户更快地看到应用的主界面，而不是长时间的白屏。
+- **实现按需加载**：例如，只有当用户点击某个按钮或导航到特定路由时，才加载对应的组件代码。
+
+#### 使用方法
+
+> [!important]
+>
+> `React.lazy` 必须与 **`<Suspense>` 组件** 结合使用。
+
+1. **定义懒加载组件**： `React.lazy` 接受一个函数作为参数。这个函数会返回一个 `import()` 语句，该语句会动态加载一个包含 React 组件的模块。
+
+```TSX
+import React, { lazy } from 'react';
+
+// MyComponent 的代码只会在它第一次被渲染时加载
+const MyComponent = lazy(() => import('./MyComponent'));
+```
+
+**`import('./MyComponent')`**：这是一个动态 `import()` 表达式，它会返回一个 Promise。当这个 Promise 解析时，它会得到一个模块对象，该模块对象的 `default` 属性就是你导出的 React 组件。
+
+2. **渲染懒加载组件**： 当你使用 `React.lazy` 定义的组件时，必须将其包裹在 **`<Suspense>`** 组件内部。`<Suspense>` 组件需要一个 `fallback` prop，它定义了在组件代码加载完成之前显示的内容（例如，一个加载指示器或骨架屏）。
+
+```TSX
+import React, { Suspense, lazy } from 'react';
+
+const MyLazyComponent = lazy(() => import('./MyLazyComponent'));
+const AnotherLazyComponent = lazy(() => import('./AnotherLazyComponent'));
+
+function App() {
+  return (
+    <div>
+      <h1>我的应用</h1>
+      <Suspense fallback={<div>Loading MyLazyComponent...</div>}>
+        <MyLazyComponent />
+      </Suspense>
+
+      <hr />
+
+      <Suspense fallback={<h2>Loading another section...</h2>}>
+        <AnotherLazyComponent />
+        {/* 你可以在同一个 Suspense 中包含多个懒加载组件 */}
+      </Suspense>
+    </div>
+  );
+}
+
+export default App;
+```
+
+#### 注意事项
+
+| 限制                                      | 说明                                |
+| ----------------------------------------- | ----------------------------------- |
+| 只适用于默认导出的组件                    | 懒加载文件必须使用 `export default` |
+| 必须包裹在 `<Suspense>` 内部              | 否则会抛出运行时错误                |
+| 不能和 `server-side rendering (SSR)` 混用 | React.lazy 不能直接用于服务端渲染   |
+
+`React.lazy` 目前只支持默认导出。如果你想懒加载一个命名导出，你可以创建一个中间模块来重新导出它作为默认导出：
+
+```TSX
+// utils.js
+export function NamedExportedComponent() { /* ... */ }
+
+// MyNamedLazyComponent.js (中间文件)
+import { NamedExportedComponent } from './utils';
+export default NamedExportedComponent;
+
+// App.js
+const MyNamedLazyComponent = lazy(() => import('./MyNamedLazyComponent'));
+```
+
 ### memo
+
 作用：允许组件在props没有改变的情况下跳过重新渲染
 memo 是一个高阶组件(HOC),它用于包裹 React 组件,用于优化组件的渲染性能。memo 会缓存组件的渲染结果,当组件的 props 发生变化时,才会重新渲染组件,否则就直接复用上一次的渲染结果。
 
-#### 语法格式
+**语法格式**
 
 ```jsx
 import React, { memo } from 'react';
@@ -1398,19 +1746,41 @@ const MyComponent = memo(
   }
 );
 ```
-#### 使用场景
+**使用场景**
 
 - 当组件的渲染代价很高时，可以使用 `memo` 包裹组件，避免不必要的重渲染。
 - 当组件是一个纯组件(Pure Component)时，即组件的输出只依赖于 `props` 的变化。
 - 当组件被频繁重渲染时，使用 `memo` 可以减少不必要的重渲染。
 
-#### 注意事项
+**注意事项**
 
 - memo 只会对组件的 props 进行浅层比较,如果 props 中包含了复杂对象或数组,只有引用发生变化时才会触发重渲染,对象或数组内部数据的变化不会触发重渲染。
 - memo 不会比较组件的 state,因此如果组件的渲染依赖于 state,使用 memo 也不会阻止组件重渲染。
 - memo 不应该用于函数组件中的每一个渲染,这可能会导致意外的重渲染。通常只需要为大型组件或高开销的子组件使用 memo。
 - memo 只是一种性能优化的方式,并不是必需的,也不能滥用。
+#### 对比`useMemo()`
+
+| 名称         | 一句话解释                                                  |
+| ------------ | ----------------------------------------------------------- |
+| `useMemo`    | 缓存函数组件内部的**计算结果**，避免每次渲染都重新计算。    |
+| `React.memo` | 缓存整个**函数组件的渲染结果**，避免 props 不变时重复渲染。 |
+
+| 对比点     | `useMemo`                        | `React.memo`                                            |
+| ---------- | -------------------------------- | ------------------------------------------------------- |
+| 类型       | Hook（只能在函数组件中使用）     | 高阶组件（HOC）                                         |
+| 缓存的内容 | 某个**值/计算结果**              | 整个**组件的渲染结果**                                  |
+| 用途       | 避免内部重复计算，如大数组过滤等 | 避免不必要的组件重新渲染                                |
+| 依赖项     | 传入依赖数组 `[dep1, dep2, ...]` | 自动对 `props` 进行浅比较，可配合 `areEqual` 自定义比较 |
+| 适合场景   | 重计算代价大的逻辑               | 父组件频繁更新，子组件 props 不变                       |
+
+| 场景                                      | 建议使用       |
+| ----------------------------------------- | -------------- |
+| 大型计算逻辑                              | `useMemo`      |
+| 子组件 props 不变时避免重新渲染           | `React.memo`   |
+| 两者一起用：父组件频繁更新 + 子组件耗性能 | ✅ 推荐组合使用 |
+
 #### 组件默认的渲染机制
+
 默认机制：顶层组件发生重新渲染，这个组件树的子级组件都会被重新渲染
 ```jsx
 import { useState } from 'react'
@@ -1536,7 +1906,269 @@ function App() {
 export default App
 ```
 
+### startTransition
+
+#### 使用方法
+
+`startTransition` 可以让你在后台渲染 UI 的一部分
+
+```TSX
+startTransition(action)
+```
+
+`startTransition` 函数可以将 state 更新标记为 transition:
+
+```TSX
+import { startTransition } from 'react';
+
+function TabContainer() {
+  const [tab, setTab] = useState('about');
+
+  function selectTab(nextTab) {
+    startTransition(() => {
+      setTab(nextTab);
+    });
+  }
+  // ...
+}
+```
+
+**参数**
+
+- `action`：调用一个或多个 [`set` 函数](https://zh-hans.react.dev/reference/react/useState#setstate) 来更新 state 的函数。React 会立即调用没有参数的 `action`，并将在 `action` 函数调用期间，调度所有的 state，并将同步更新标记为 transition。任何在 `action` 中等待的异步调用都将包含在 transition 中，但是目前需要将 `await` 之后的任何 `set` 函数包装在 `startTransition` 中 (查看 [故障排除](https://zh-hans.react.dev/reference/react/useTransition#react-doesnt-treat-my-state-update-after-await-as-a-transition) 了解更多)。被标记为 Transitions 的状态更新是 [非阻塞的](https://zh-hans.react.dev/reference/react/startTransition#marking-a-state-update-as-a-non-blocking-transition)，并且 [不会显示不想要的加载提示](https://zh-hans.react.dev/reference/react/useTransition#preventing-unwanted-loading-indicators)。
+
+**返回值**
+
+`startTransition` 不返回任何内容。
+
+**注意事项**
+
+- `startTransition` 没有提供一种跟踪 Transition 是否处于待定状态的方法。为了在 Transition 进行时显示一个待定状态的指示器，你需要使用 [`useTransition`](https://zh-hans.react.dev/reference/react/useTransition)。
+- 只有当你能访问某个 state 的 `set` 函数时，你才能将它的更新包裹到 Transition 中。如果你想根据 props 或自定义 Hook 的返回值来启动一个 transition，请尝试使用 [`useDeferredValue`](https://zh-hans.react.dev/reference/react/useDeferredValue)。
+- 你传递给 `startTransition` 的函数会立即被调用，并将其执行时发生的所有状态更新标记为 Transitions。如果你试图在 `setTimeout` 中进行状态更新，它们将不会被标记为 Transitions。
+- You must wrap any state updates after any async requests in another `startTransition` to mark them as Transitions. This is a known limitation that we will fix in the future (see [Troubleshooting](https://zh-hans.react.dev/reference/react/useTransition#react-doesnt-treat-my-state-update-after-await-as-a-transition)).
+- 一个被标记为 Transition 的 state 更新时将会被其他 state 更新打断。例如，如果你在 Transition 内部更新图表组件，但在图表重新渲染时在输入框中打字，则 React 将先处理输入 state 更新，之后才会重新启动对图表组件的渲染工作。
+- Transition 更新不能用于控制文本输入。
+- 如果有多个正在进行的 transition，目前 React 会将它们集中在一起处理。这是一个限制，在未来的版本中可能会被移除。
+
+#### 对比useTransition
+
+| 特性               | `startTransition`        | `useTransition`                      |
+| ------------------ | ------------------------ | ------------------------------------ |
+| 类型               | 函数                     | Hook                                 |
+| 使用场景           | 函数组件外部或异步逻辑中 | 在组件内部需要显示“加载中”状态时使用 |
+| 是否可追踪加载状态 | ❌ 无状态跟踪             | ✅ 提供 `isPending` 可判断加载状态    |
+
+### CreteContext
+
+使用 `createContext` 创建组件能够提供与读取的 [上下文（context）](https://zh-hans.react.dev/learn/passing-data-deeply-with-context)。
+
+```TSX
+const SomeContext = createContext(defaultValue)
+```
+
+### use
+
+`use(promise)` 让你在组件中“像同步写法一样”使用异步数据，**React 会自动 suspend（挂起）组件，直到 Promise 解析完毕**。
+
+#### 问题引入
+
+在 `use` Hook 出现之前，处理 React 组件中的异步数据通常涉及以下几种模式：
+
+1. **`useEffect` + `useState`**：这是最常见的模式，但在处理加载、错误状态和取消请求时，会引入大量的样板代码和复杂性。
+
+```TSX
+function OldWay() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/data');
+        const result = await response.json();
+        if (!ignore) {
+          setData(result);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err);
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+    fetchData();
+    return () => { ignore = true; };
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return <div>Data: {JSON.stringify(data)}</div>;
+}
+```
+
+这种方式需要手动管理加载、错误状态，并且在组件卸载时进行清理以避免内存泄漏。
+
+1. **第三方数据获取库**：如 React Query (TanStack Query), SWR, Apollo Client 等。这些库提供了更高级的抽象，但引入了额外的依赖和学习曲线。
+
+`use` Hook 的目标是简化这种模式，将异步操作的处理更紧密地集成到 React 的渲染生命周期中，并利用 **Suspense** 来管理加载状态。
+
+#### 基本用法
+
+`use` Hook 可以用于读取：
+
+1. **Promise 的值**
+2. **Context 的值** (行为类似于 `useContext`)
+
+##### 读取 Promise 
+
+当你在组件内部调用 `use(promise)` 时：
+
+- 如果 Promise 还没有解析（处于 pending 状态），React 会**暂停（suspend）**该组件的渲染。
+- React 会查找组件树上方最近的 `<Suspense>` 边界，并渲染其 `fallback` prop 定义的 UI。
+- 一旦 Promise 解析（fulfilled 状态），React 会使用解析后的值重新尝试渲染组件。
+- 如果 Promise 被拒绝（rejected 状态），React 会向上抛出错误，最近的 **错误边界 (Error Boundary)** 会捕获并处理这个错误。
+
+```TSX
+import React, { Suspense, ErrorBoundary, use } from 'react';
+
+// 模拟一个异步数据获取函数
+function fetchData(id) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve({ id: id, name: `Item ${id}`, description: `Details for item ${id}` });
+    }, 1000); // 模拟网络延迟
+  });
+}
+
+// 模拟一个错误的数据获取函数
+function fetchErrorData() {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Failed to load data!'));
+    }, 1000);
+  });
+}
+
+// 带有 use Hook 的数据展示组件
+function ItemDisplay({ itemId }) {
+  // 直接在组件内部使用 use() 来“等待” Promise 的解析
+  const item = use(fetchData(itemId)); // 当 Promise pending 时，组件会 suspend
+
+  return (
+    <div>
+      <h2>Item: {item.name}</h2>
+      <p>ID: {item.id}</p>
+      <p>{item.description}</p>
+    </div>
+  );
+}
+
+// 错误组件示例
+function ErrorItemDisplay() {
+  const errorResult = use(fetchErrorData()); // 这个 Promise 会拒绝
+  return <div>This should not be rendered if there's an error. {JSON.stringify(errorResult)}</div>;
+}
+
+// 应用结构
+function App() {
+  const [itemId, setItemId] = React.useState(1);
+
+  return (
+    <div>
+      <h1>React 19 `use` Hook 示例</h1>
+      <button onClick={() => setItemId(prev => prev === 1 ? 2 : 1)}>
+        切换 Item (ID: {itemId === 1 ? 2 : 1})
+      </button>
+      <hr />
+
+      {/* 使用 Suspense 包裹可能暂停的组件 */}
+      <Suspense fallback={<div>Loading Item...</div>}>
+        <ItemDisplay itemId={itemId} />
+      </Suspense>
+
+      <hr />
+
+      {/* 使用 ErrorBoundary 包裹可能抛出错误的组件 */}
+      <ErrorBoundary fallback={<div>Error loading item! Please try again.</div>}>
+        <Suspense fallback={<div>Loading Error Demo...</div>}>
+          <ErrorItemDisplay />
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  );
+}
+
+// ErrorBoundary 组件 (需要自己实现或使用库)
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error: error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Caught an error in ErrorBoundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+export default App;
+```
+
+**关键点：**
+
+- `use` Hook 必须在 **支持 Suspense 的组件** 中使用（函数组件顶层或自定义 Hook 内部）。
+- 它将数据获取和组件渲染更紧密地结合在一起，消除了许多 `useEffect` 和 `useState` 组合带来的状态管理复杂性。
+- 它**强制**你使用 Suspense 和错误边界来管理加载和错误状态，这是 React 并发模式的范式。
+
+##### 读取 Context
+
+`use` Hook 也可以用来读取 Context 的值。当它用于读取 Context 时，它的行为与 `useContext` 类似，但它在处理某些边界情况（例如 Context 更新）时可能提供不同的语义，尽管在大部分日常使用中，你可能仍然会选择 `useContext`。
+
+```TSX
+import React, { createContext, use } from 'react';
+
+const ThemeContext = createContext('light');
+
+function ThemedComponent() {
+  // 使用 use Hook 读取 Context 值
+  const theme = use(ThemeContext); // 行为类似于 useContext(ThemeContext)
+
+  return (
+    <div style={{ background: theme === 'dark' ? 'black' : 'white', color: theme === 'dark' ? 'white' : 'black' }}>
+      Current theme: {theme}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeContext.Provider value="dark">
+      <ThemedComponent />
+    </ThemeContext.Provider>
+  );
+}
+```
+
+
+
 ## Class API
+
 > 类式组件已过时！！！[Component – React 中文文档](https://zh-hans.react.dev/reference/react/Component)
 
 ### 基础体验
