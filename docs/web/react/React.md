@@ -2015,9 +2015,9 @@ function OldWay() {
 
 这种方式需要手动管理加载、错误状态，并且在组件卸载时进行清理以避免内存泄漏。
 
-1. **第三方数据获取库**：如 React Query (TanStack Query), SWR, Apollo Client 等。这些库提供了更高级的抽象，但引入了额外的依赖和学习曲线。
+2. **第三方数据获取库**：如 React Query (TanStack Query), SWR, Apollo Client 等。这些库提供了更高级的抽象，但引入了额外的依赖和学习曲线。
 
-`use` Hook 的目标是简化这种模式，将异步操作的处理更紧密地集成到 React 的渲染生命周期中，并利用 **Suspense** 来管理加载状态。
+`use`的目标是简化这种模式，将异步操作的处理更紧密地集成到 React 的渲染生命周期中，并利用 **Suspense** 来管理加载状态。
 
 #### 基本用法
 
