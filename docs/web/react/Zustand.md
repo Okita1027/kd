@@ -7,11 +7,11 @@ categories: [前端,React]
 tags: []
 ---
 
-## Zustand
+# Zustand(旧)
 
 [ZUSTAND 中文文档 | ZUSTAND](https://awesomedevin.github.io/zustand-vue/)
 
-### 快速上手
+## 快速上手
 
 安装依赖：`npm i zustand`
 
@@ -50,7 +50,7 @@ function App() {
 export default App;
 ```
 
-### 异步支持
+## 异步支持
 
 对于异步操作的支持不需要特殊的操作，直接在函数中编写异步逻辑，最后把接口的数据放到set函数中返回即可
 
@@ -97,7 +97,7 @@ function App() {
 export default App;
 ```
 
-### 切片模式
+## 切片模式
 
 切片模式(Slice Pattern)是一种组织和模块化状态管理逻辑的方式,它可以更好地将复杂的状态划分为多个独立的"切片"。这种模式有助于提高代码的可维护性、可重用性和可测试性。
 
@@ -116,7 +116,6 @@ const useChannelStore = (set) => {
 };
 
 export default useChannelStore;
-
 ```
 
 ```jsx
@@ -149,7 +148,7 @@ const useStore = create((set, get) => ({
 export default useStore;
 ```
 
-### 对接DevTools
+## 对接DevTools
 
 > 简单的调试我们可以安装一个 名称为 simple-zustand-devtools 的调试工具
 
@@ -161,18 +160,15 @@ export default useStore;
 
 ```jsx
 import create from 'zustand'
-
 // 导入核心方法
 import { mountStoreDevtool } from 'simple-zustand-devtools'
 
 // 省略部分代码...
 
-
 // 开发环境开启调试
 if (process.env.NODE_ENV === 'development') {
   mountStoreDevtool('channelStore', useChannelStore)
 }
-
 
 export default useChannelStore
 ```
@@ -181,4 +177,5 @@ export default useChannelStore
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508204.png)
 
-## 
+# Zustand(新)
+

@@ -93,7 +93,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
 ## 路由懒加载
 
-### router/index.jsx
+1. `router/index.jsx`
 
 ```jsx
 import React, { lazy, Suspense } from 'react';
@@ -141,7 +141,7 @@ const router = createBrowserRouter([
 ]);
 ```
 
-### main.jsx
+2. `main.jsx`
 
 ```jsx
 import { Fragment } from "react";
@@ -822,6 +822,20 @@ export default function App() {
 
 ### 渲染策略
 
+**CSR**
+
+- 网页初始只返回一个空的 HTML + JavaScript 包
+- 浏览器执行 JS，React 挂载组件并请求数据
+
+**SSR**
+
+- 用户请求页面时，服务器运行 React 组件并加载数据，生成完整 HTML 再发给浏览器
+
+**SSG**
+
+- 在构建阶段，把所有页面都预生成成 HTML 文件
+- 用户访问时是静态页面，不需要服务端计算
+
 | 渲染策略         | 页面生成时机         | 适合场景           | 推荐框架           | 使用方式说明             |
 | ---------------- | -------------------- | ------------------ | ------------------ | ------------------------ |
 | 客户端渲染 CSR   | **浏览器加载时**     | 注重交互、前端为主 | Vite / CRA + React | 默认使用 React Router    |
@@ -846,13 +860,162 @@ React Router 自身是 UI 层的路由库，不强制某种渲染策略。你可
 | Remix               | ✅ 原生支持 SSR、SSG    |
 | Next.js + React     | ❌（用它自带的 Router） |
 
+React Router v7（框架模式）就是为 **Remix 的 SSR 架构** 提供的支持：
+
+- `loader()`、`action()`：天然适配 SSR 或 SSG
+- `defer()`、`<Await>`：支持数据流式加载
+- `Hydration`：服务端和客户端协同渲染
+
 ### 数据加载
 
-| 数据加载方式 | 渲染模式 | 示例框架         | 使用方式           | 首屏性能 | SEO 支持 | 数据是否动态 |
-| ------------ | -------- | ---------------- | ------------------ | -------- | -------- | ------------ |
-| 客户端加载   | CSR      | Vite + React     | `useEffect()`      | 慢       | 差       | ✅            |
-| 服务端加载   | SSR      | Remix            | `loader()`         | 快       | 好       | ✅            |
-| 静态加载     | SSG      | Next.js / Gatsby | `getStaticProps()` | 快       | 好       | ❌（构建时）  |
+| 数据加载方式 | 渲染模式 | 示例框架         | 使用方式           | 加载时机       | 首屏性能 | SEO 支持 | 数据是否动态 |
+| ------------ | -------- | ---------------- | ------------------ | -------------- | -------- | -------- | ------------ |
+| 客户端加载   | CSR      | Vite + React     | `useEffect()`      | 用户进入页面后 | 慢       | 差       | ✅            |
+| 服务端加载   | SSR      | Remix            | `loader()`         | 在渲染组件前   | 快       | 好       | ✅            |
+| 静态加载     | SSG      | Next.js / Gatsby | `getStaticProps()` | 构建阶段       | 快       | 好       | ❌（构建时）  |
+
+#### 客户端加载
+
+```TSX
+import { useEffect, useState } from "react";
+
+function Blog() {
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/posts").then(res => res.json()).then(setPosts);
+  }, []);
+
+  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>;
+}
+```
+
+- 使用 `useEffect` 是传统 React SPA 加载数据的方式。
+- 缺点是首次渲染时没有数据，用户看到的是“加载中”。
+
+#### 服务端加载
+
+使用 `loader()` 函数提前加载数据，React Router 会 **在组件渲染之前执行 loader**
+
+```TSX
+// routes/blog.jsx
+export async function loader() {
+  const res = await fetch("/api/posts");
+  return res.json();
+}
+
+export default function Blog() {
+  const posts = useLoaderData(); // 从 loader 获取数据
+  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>;
+}
+```
+
+```TSX
+import { createBrowserRouter } from "react-router-dom";
+import Blog, { loader as blogLoader } from "./routes/blog";
+
+const router = createBrowserRouter([
+  {
+    path: "/blog",
+    element: <Blog />,
+    loader: blogLoader,
+  },
+]);
+```
+
+- 能在服务端执行（Remix / SSR）
+- 数据支持缓存、流式加载
+- 没有“闪一下空白”的问题
+
+#### 渐进式加载
+
+**`defer()`** 和 **`<Await>`** 允许你实现渐进式数据加载，页面可以先渲染结构，数据慢慢加载并渲染。
+
+```TSX
+// routes/dashboard.jsx
+import { defer, useLoaderData } from "react-router-dom";
+import { Suspense } from "react";
+
+// loader 中的 defer
+export function loader() {
+  return defer({
+    user: fetch("/api/user"),  // 渐进式加载
+    stats: fetch("/api/stats"),
+  });
+}
+
+export default function Dashboard() {
+  const { user, stats } = useLoaderData(); // 获取数据
+
+  return (
+    <div>
+      <h1>控制面板</h1>
+      <Suspense fallback={<p>用户数据加载中...</p>}>
+        <Await resolve={user}>
+          {(userData) => <p>欢迎，{userData.name}</p>}
+        </Await>
+      </Suspense>
+      
+      <Suspense fallback={<p>统计数据加载中...</p>}>
+        <Await resolve={stats}>
+          {(statsData) => <p>文章数：{statsData.articles}</p>}
+        </Await>
+      </Suspense>
+    </div>
+  );
+}
+```
+
+```TSX
+import { createBrowserRouter } from "react-router-dom";
+import Dashboard, { loader as dashboardLoader } from "./routes/dashboard";
+
+const router = createBrowserRouter([
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+    loader: dashboardLoader,
+  },
+]);
+```
+
+#### 静态加载
+
+对于 **React Router v7** 和 **Remix** 框架，通常会结合 `loader()` 和 `defer()` 来执行静态加载。
+
+但如果你在用 **Next.js** 或其他静态生成框架，可以使用类似 `getStaticProps()` 这样的 API 来进行静态数据加载。
+
+**在 Next.js 中使用 `getStaticProps`**：
+
+```TSX
+// pages/blog.jsx
+import { useState, useEffect } from "react";
+
+export async function getStaticProps() {
+  const res = await fetch("https://api.example.com/posts");
+  const posts = await res.json();
+
+  return {
+    props: {
+      posts, // 将静态数据传给页面
+    },
+  };
+}
+
+export default function Blog({ posts }) {
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+- **`getStaticProps()`**：Next.js 中用于静态数据加载，它会在构建时执行。`getStaticProps()` 通过返回数据让组件在构建时静态化。
+
+- 组件渲染时直接使用静态数据，不再需要客户端请求。
 
 ### Action
 
@@ -1155,6 +1318,8 @@ function ContactForm() {
   )
 }
 ```
+
+
 
 ## API
 
