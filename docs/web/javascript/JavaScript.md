@@ -2194,3 +2194,157 @@ console.log(float32FromUint8); // Float32Array [1, 2, 3, 0]
 
 
 
+## 模块化
+
+**模块化的核心理念:**
+
+- **隔离作用域**：每个模块都是一个独立的文件，所有在模块中声明的变量、函数、类等默认都是**私有的**，不会污染全局作用域。
+- **依赖管理**：通过 `import` 和 `export` 语法，模块之间可以清晰地声明依赖关系，这让代码组织更加结构化，也方便了构建工具进行静态分析。
+- **代码复用**：将通用的功能封装成模块，可以在项目的不同地方重复使用，避免了重复编写代码。
+
+### 导出
+
+`export` 关键字用于将模块内部的功能暴露给外部。
+
+它有两种主要形式：**命名导出（Named Exports）** 和 **默认导出（Default Export）**。
+
+| 比较点     | 命名导出 `export {}` | 默认导出 `export default` |
+| ---------- | -------------------- | ------------------------- |
+| 个数       | 多个                 | 只能一个                  |
+| 导入时名字 | 必须一致             | 可自定义                  |
+| 易用性     | 更明确               | 更方便                    |
+| 推荐       | ✅ 推荐（更清晰）     | 可用于主功能              |
+
+#### 命名导出
+
+定义：可以导出多个变量、函数或类。
+
+语法：在声明时直接导出，或者在文件末尾统一导出。
+
+```TS
+// 声明时导出
+export const PI = 3.14;
+
+export function add(a: number, b: number): number {
+  return a + b;
+}
+
+export class Calculator {
+  // ...
+}
+
+// 在文件末尾统一导出
+const userName = 'Alice';
+const age = 30;
+
+export { userName, age };
+```
+
+#### 默认导出
+
+每个模块只能有一个默认导出。默认导出通常用于导出模块的“主要”功能，比如一个组件、一个服务或一个函数。
+
+语法：使用`export default`关键字
+
+```TS
+// 导出一个默认的函数
+export default function multiply(a: number, b: number): number {
+  return a * b;
+}
+
+// 导出一个默认的类
+class UserService {
+  // ...
+}
+export default UserService;
+
+// 也可以直接导出一个值
+const DEFAULT_VALUE = 100;
+export default DEFAULT_VALUE;
+```
+
+### 导入
+
+`import` 关键字用于从其他模块中引入导出的功能。
+
+```JS
+import 默认导出名 from '模块路径';
+import { 名1, 名2 } from '模块路径';
+import * as 模块对象 from '模块路径'; // 导入整个模块对象
+import '模块路径'; // 只执行模块，不引入值
+```
+
+```JS
+import multiply from './math.js';      // 默认导入
+import { add, sub } from './utils.js'; // 命名导入
+import * as utils from './utils.js';   // utils.add(), utils.sub()
+import './init.js';                    // 初始化/副作用
+```
+
+#### 命名导入
+
+导入命名导出的模块时，需要使用大括号 `{}`，并使用与导出时完全相同的名称。
+
+**语法：**
+
+```TS
+import { PI, add } from './math.js';
+import { userName } from './user.js';
+
+console.log(PI);
+console.log(add(1, 2));
+```
+
+**别名导入：**如果导入的名称与当前作用域的变量名冲突，可以使用 `as` 关键字创建别名。
+
+```TS
+import { add as sum } from './math.js';
+console.log(sum(5, 5));
+```
+
+#### 默认导入
+
+导入默认导出的模块时，你不需要使用大括号 `{}`，并且可以为导入的内容自由命名。
+
+**语法：**
+
+```TS
+import myMultiplyFunction from './math.js';
+import User from './user-service.js';
+
+console.log(myMultiplyFunction(3, 4));
+
+const userService = new User();
+```
+
+> `myMultiplyFunction` 是一个任意名称，它会指向 `math.js` 模块中默认导出的函数。
+
+#### 混合导入
+
+在一个 `import` 语句中，你可以同时导入命名导出和默认导出。
+
+**语法：**
+
+```TS
+import myMultiplyFunction, { PI, add } from './math.js';
+
+console.log(myMultiplyFunction(1, 2));
+console.log(PI);
+console.log(add(1, 2));
+```
+
+#### 批量导入
+
+如果你想将一个模块的所有导出都导入为一个对象，可以使用 `*` 通配符。
+
+**语法：**
+
+```TS
+import * as math from './math.js';
+
+console.log(math.PI);
+console.log(math.add(1, 2));
+```
+
+> `math` 是一个包含了 `math.js` 所有导出（包括默认导出）的对象。
+

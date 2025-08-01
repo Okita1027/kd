@@ -1116,7 +1116,7 @@ export async function action({ params }) {
 | `useNavigate()` | 代码逻辑中控制跳转 | 登录后跳转       |
 | `redirect()`    | 表单提交后的跳转   | 提交数据后跳转   |
 
-#### 声明式导航：`<Link>`
+#### 声明式导航`<Link>`
 
 ```TSX
 import { Link } from "react-router-dom"
@@ -1127,7 +1127,7 @@ import { Link } from "react-router-dom"
 - `to` 是目标路径
 - 渲染为 `<a href="/about">`
 
-#### 带激活状态的导航:`<NavLink>`
+#### 带激活状态的导航`<NavLink>`
 
 ```TSX
 <NavLink to="/about">关于我们</NavLink>
@@ -1207,7 +1207,7 @@ import { Link } from "react-router-dom"
 | `/events/`  | ✅ 匹配      | ✅ 匹配       |
 | `/events/1` | ❌ 不匹配    | ✅ 匹配       |
 
-#### 编程式导航：`useNavigate()`
+#### 编程式导航`useNavigate()`
 
 ```TSX
 import { useNavigate } from "react-router-dom"
