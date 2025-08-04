@@ -59,7 +59,6 @@ export default defineConfig({
         },
     },
 })
-
 ```
 ## 联想路径配置
 ### webpack-js
@@ -298,12 +297,12 @@ function App(){
 ```jsx
 import React from "react";
 function App(){
-  const [ count, setCount ] = React.useState(0)
-  return (
-    <div>
-			<button onClick={() => setCount(count + 1)}>{count}</button>
-    </div>
-  )
+    const [ count, setCount ] = React.useState(0)
+    return (
+        <div>
+            <button onClick={() => setCount(count + 1)}>{count}</button>
+        </div>
+    )
 }
 ```
 #### 状态修改规则
