@@ -1,7 +1,7 @@
 ---
-title: TypeScript
-shortTitle: TypeScript
-description: 
+title: TypeScrit(2025)
+shortTitle: TS(2025)
+description: TypeScript(2025)
 date: 2024-06-16 22:30:07
 categories: [前端,TypeScript]
 tags: []

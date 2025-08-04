@@ -1,6 +1,6 @@
 ---
 title: JavaScript
-shortTitle: JavaScript高级篇
+shortTitle: 高级篇
 description: JavaScript高级篇
 date: 2025-07-25 15:33:07
 categories: [前端,JavaScript]

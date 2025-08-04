@@ -1,6 +1,6 @@
 ---
 title: JavaScript
-shortTitle: JavaScript基础篇
+shortTitle: 基础篇
 description: JavaScript基础篇
 date: 2024-06-16 22:30:07
 categories: [前端,JavaScript]
@@ -1297,7 +1297,7 @@ red.red = 0;
 console.log(red.red); // 255
 ```
 > [!note]
-> 在严格模式下，red.red = 0 这一行将抛出类型错误：“Cannot set property red of #<Color> which has only a getter”。在非严格模式下，赋值将被静默忽略。
+> 在严格模式下，red.red = 0 这一行将抛出类型错误：`“Cannot set property red of #<Color> which has only a getter”`。在非严格模式下，赋值将被静默忽略。
 
 ### (静态)公有字段/方法
 默认情况下，类的所有属性和方法都是公共的。这意味着它们可以从类的外部直接访问、读取和修改。

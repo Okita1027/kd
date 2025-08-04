@@ -1,6 +1,6 @@
 ---
 title: DbContext配置和初始化
-shortTitle: DbContext配置
+shortTitle: DbContext
 description: DbContext配置和初始化
 date: 2025-07-12 17:37:33
 categories: [.NET, EF CORE]
