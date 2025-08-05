@@ -993,9 +993,7 @@ B. `[['zustand/combine', CounterState, CounterActions]]`
 
 ### immer
 
-```BASH
-npm install immer
-```
+简化不可变的嵌套数据的修改
 
 ```TS
 const nextStateCreatorFn = immer(stateCreatorFn)
