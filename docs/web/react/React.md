@@ -332,7 +332,22 @@ const handleChangeName = () => {
     });
 };
 ```
+#### 对State进行保留和重置
+
+[对 state 进行保留和重置 – React 中文文档](https://react.docschina.org/learn/preserving-and-resetting-state)
+
+##### 相同位置的相同组件会使state被保留
+
+##### 相同位置的不同组件会使state重置
+
+##### 如何在相同位置重置相同组件的state
+
+###### 将组件渲染在不同的位置
+
+###### 使用key来重置state
+
 ### 基础样式处理
+
 #### 行内样式
 ```jsx
 const style = {
@@ -614,7 +629,7 @@ export default SiblingB;
 
 **实现步骤：**
 
-1. 使用 `createContext`方法创建一个上下文对象Ctx
+1. 使用 `createContext` 方法创建一个上下文对象Ctx
 2. 在顶层组件（App）中通过 `Ctx.Provider` 组件提供数据
 3. 在底层组件（B）中通过 `useContext` 钩子函数获取消费数据
 ```jsx
@@ -1329,6 +1344,8 @@ export default function CommentBox() {
 
 ### 自定义Hook
 
+#### 使用方式
+
 自定义Hook必须是以 `use`**开头的函数**，通过自定义Hook函数可以用来**实现逻辑的封装和复用**
 
 ![img](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505964.png)
@@ -1374,6 +1391,15 @@ export default App;
 
 1. 只能在组件中或者其他自定义Hook函数中调用
 2. 只能在组件的顶层调用，不能嵌套在if、for、其它的函数中
+
+#### 普通函数与Hook函数
+
+| 特性         | Hook 函数（以 use 开头）                                     | 普通函数                                                     |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| React 的认知 | React 知道这是 Hook。它会在 Hook 内部的调用规则、状态和副作用管理方面提供特殊支持。 | React 不知道这是 Hook。它会将其视为一个普通的 JavaScript 函数，不提供任何特殊支持。 |
+| 状态和副作用 | 可以在内部调用 useState、useEffect 等其他 Hooks，从而管理状态和副作用。 | 不能在内部调用 useState、useEffect 等 Hooks。如果你尝试这样做，React 会抛出错误。 |
+| 调用位置     | 只能在React 函数组件的顶层或其他自定义 Hook 的顶层调用。     | 可以在任何地方调用，比如在事件处理函数中、条件语句中、循环中。 |
+| 命名规则     | 强制以 use 开头。                                            | 没有任何限制，可以随意命名。                                 |
 
 ## 组件
 
@@ -1552,7 +1578,7 @@ root.render(
 3. **关于废弃的 findDOMNode 用法的警告 (Warning about deprecated findDOMNode usage)**:
    - `findDOMNode` 是一种直接获取 DOM 节点的方法，但它通常会导致一些问题。StrictMode 会警告你使用它，并推荐使用 `ref`。
 4. **检测意外的副作用 (Detecting unexpected side effects)**:
-   - 这是 `<StrictMode>` 最重要的功能之一。它会**有意地双重调用（或多次调用）**某些函数（如组件的 `render` 方法、`useState` 的更新函数、`useEffect` 的 `setup` 和 `cleanup` 函数），以帮助你发现副作用。
+   - 这是 `<StrictMode>` 最重要的功能之一。它会**有意地双重调用（或多次调用）**某些函数（如组件的 `render` 方法、`useState`、`useMemo`、`useReduce`的更新函数、`useEffect` 的 `setup` 和 `cleanup` 函数），以帮助你发现副作用。
    - 如果你的组件或 Hook 内部有不应该发生的副作用（例如在渲染阶段修改了外部变量或执行了不必要的网络请求），这种双重调用会让你更快地暴露和修复这些问题。
 5. **检测遗留 Context API 的使用 (Detecting legacy context API)**:
    - 警告你使用旧版的 Context API，推荐使用新的 `React.createContext`。
