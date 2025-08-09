@@ -11,6 +11,12 @@ jobs:
   docs:
     runs-on: ubuntu-latest
 
+    # 添加 GitHub Pages 的权限
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
         with:
