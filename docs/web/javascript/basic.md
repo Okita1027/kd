@@ -5,6 +5,7 @@ description: JavaScript基础篇
 date: 2024-06-16 22:30:07
 categories: [前端,JavaScript]
 tags: []
+order: 3
 ---
 
 [现代 JavaScript 教程](https://zh.javascript.info/)

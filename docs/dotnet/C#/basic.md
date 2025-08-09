@@ -1,6 +1,6 @@
 ---
 title: C#语法
-shortTitle: C#语法
+shortTitle: 语法
 description: C#语法
 date: 2025-07-12 18:56:33
 categories: [.NET, C#]

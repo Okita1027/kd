@@ -5,6 +5,7 @@ description: JavaScript高级篇
 date: 2025-07-25 15:33:07
 categories: [前端,JavaScript]
 tags: []
+order: 5
 ---
 
 ## 原型链

@@ -1,5 +1,5 @@
 ---
-title: Java虚拟机
+title: JVM
 index: false
 order: 3
 ---
