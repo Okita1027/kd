@@ -4,7 +4,7 @@ shortTitle: 高阶篇
 description: 2023高阶篇
 date: 2024-09-19 17:26:07
 categories: [数据库, Redis]
-tags: [Redis]
+tags: [NoSQL]
 order: 3
 ---
 

@@ -1,10 +1,11 @@
 ---
 title: React Router
-shortTitle: React Router
+shortTitle: Router
 description: React Router
 date: 2024-06-16 22:29:35
 categories: [前端,React]
 tags: []
+order: 2
 ---
 
 # Router（旧）

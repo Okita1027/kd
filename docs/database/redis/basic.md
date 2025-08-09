@@ -4,7 +4,7 @@ shortTitle: 基础篇
 description: 基础篇
 date: 2024-05-29 17:26:07
 categories: [数据库, Redis]
-tags: [Redis]
+tags: [NoS]
 order: 1
 ---
 ## 环境搭建

@@ -1,10 +1,11 @@
 ---
-title: React
-shortTitle: React
-description: 
+title: Redux
+shortTitle: Redux
+description: Redux
 date: 2024-06-16 22:29:35
 categories: [前端,React]
 tags: []
+order: 6
 ---
 
 ## Redux
