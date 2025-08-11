@@ -5,6 +5,7 @@ description: WPF
 date: 2025-07-12 17:36:33
 categories: [.NET, WPF]
 tags: [.NET]
+order: 3
 ---
 
 [电子书：深入浅出WPF](./深入浅出WPF.pdf)

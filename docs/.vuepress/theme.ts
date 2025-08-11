@@ -1,11 +1,11 @@
+import { shikiPlugin } from '@vuepress/plugin-shiki';
 import { hopeTheme } from "vuepress-theme-hope";
 
 export default hopeTheme({
-  // hostname: "https://vuepress-theme-hope-docs-demo.netlify.app",
-  //
+  // hostname: "https://kd.zhiyun.space",
   author: {
     name: "Okita",
-    url: "https://Okita1027.github.io",
+    url: "https://zhiyun.space",
     email: "2368932388@qq.com",
   },
   //
@@ -24,6 +24,13 @@ export default hopeTheme({
   // 是否在导航栏内显示仓库链接，默认为 `true`
   repoDisplay: true,
 
+  // 是否在向下滚动时自动隐藏导航栏
+  navbarAutoHide: "mobile",
+
+  // 是否在移动视图下隐藏站点名称
+  hideSiteNameOnMobile: true,
+
+  // 文档在仓库中的目录
   // docsDir: "src",
 
   pageInfo: ["Author", "Date", "Category", "Tag", "ReadingTime", "Word"],
@@ -124,7 +131,7 @@ export default hopeTheme({
 
   // 页脚
   footer: "Vuepress & theme-hope",
-  copyright: "MIT Licensed | Copyright © 2024-present Okita",
+  copyright: "MIT Licensed | Copyright © 2024——present Okita",
   displayFooter: false,
 
   // 如果想要实时查看任何改变，启用它。注: 这对更新性能有很大负面影响
@@ -145,8 +152,12 @@ export default hopeTheme({
     // 启用任务列表
     tasklist: true,
     mermaid: true,
-    highlighter: "prismjs",
-    // highlighter: "shiki",
+    highlighter: {
+      type: "shiki",
+      langAlias: {
+        "xaml": "xml"
+      }
+    },
     revealjs: {
       plugins: ["highlight", "math", "search", "notes", "zoom"],
     },
@@ -154,21 +165,6 @@ export default hopeTheme({
 
   // 在这里配置主题提供的插件
   plugins: {
-    /* docsearch: {
-            appId: "AWSKYW5GBL",
-            apiKey: "bde9b1a8aa183d5a239eb6c030c8c835",
-            indexName: "okita1027io",
-        }, */
-    /* docsearch: {
-            appId: "0251D4S7LW",
-            apiKey: "22fdb1ea25ae8f93a0502c85f5b5ff30",
-            indexName: "kd_zhiyun_space_0251d4s7lw_pages",
-        }, */
-    /*         docsearch: {
-            appId: "0251D4S7LW",
-            apiKey: "9b9b28389ae36cd67cfaf5d486149ab3",
-            indexName: "kd clawer",
-        }, */
 
     copyCode: {
       // 在移动端显示复制按钮

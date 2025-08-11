@@ -1,7 +1,5 @@
 /** @format */
 import { defineUserConfig } from "vuepress";
-import { slimsearchPlugin } from '@vuepress/plugin-slimsearch'
-import { seoPlugin } from '@vuepress/plugin-seo'
 import viteBundler from "@vuepress/bundler-vite";
 import theme from "./theme.js";
 
@@ -26,26 +24,6 @@ export default defineUserConfig({
   theme,
 
   plugins: [
-    // 显式声明插件
-    // slimsearchPlugin({
-    //   // 配置项
-    //   indexContent: false,
-    //   suggestion: true,
-    //   queryHistoryCount: 5,
-    //   resultHistoryCount: 5,
-    //   searchDelay: 200,
-    // }),
-
   ],
-
-  // markdown: {
-  // 	headers: {
-  // 		// 根据需要显示2-6层级
-  // 		level: [2, 3, 4, 5]
-  // 	},
-  // },
-
-  // 和 PWA 一起启用
-  // shouldPrefetch: false,
 
 });
