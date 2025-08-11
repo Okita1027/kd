@@ -1,7 +1,7 @@
 {
   "name": "VuePress",
   "version": "1.0.0",
-  "description": "",
+  "description": "基于VuePress + Hope搭建的知识库",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -20,8 +20,8 @@
     "pushAll": "pnpm push && pnpm pushPage"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Zhiyun Qin",
+  "license": "MIT",
   "dependencies": {
     "@vuepress/bundler-vite": "2.0.0-rc.24",
     "@vuepress/plugin-feed": "2.0.0-rc.3",
