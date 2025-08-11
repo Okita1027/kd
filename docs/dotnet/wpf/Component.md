@@ -1,7 +1,7 @@
 ---
-title: 基础篇
-shortTitle: 基础篇
-description: WPF
+title: 布局与控件
+shortTitle: 组件
+description: 布局与控件
 date: 2025-07-12 17:36:33
 categories: [.NET, WPF]
 tags: [.NET]

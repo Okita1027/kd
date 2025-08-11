@@ -643,9 +643,9 @@ public static readonly RoutedUICommand MyCmd = new RoutedUICommand("Do", "Do", t
 - 支持命令路由（可以由任意元素处理）
 - 更适合 UI 层集中处理（菜单、工具栏、控件库）
 
-### 自定义Command
+## 自定义Command
 
-#### RelayCommand
+### RelayCommand
 
 目的是把委托封装成 `ICommand`，在 ViewModel 中使用，不依赖视图或路由。
 
@@ -706,7 +706,7 @@ XAML:
 >
 > 如果你的 `CanExecute` 条件依赖于后台数据改变，最好在条件改变时显式调用 `RaiseCanExecuteChanged()`（或 CommandManager.InvalidateRequerySuggested）。
 
-#### RelayCommand泛型版本
+### RelayCommand泛型版本
 
 ```CS
 public class RelayCommand<T> : ICommand
@@ -722,7 +722,7 @@ public class RelayCommand<T> : ICommand
 
 
 
-#### 异步命令(IAsyncCommand/AsyncRelayCommand)
+### 异步命令(IAsyncCommand/AsyncRelayCommand)
 
 如果命令需要做异步 I/O（避免阻塞 UI），不要直接把 `async void` 放在 Execute，推荐以下模式：
 
@@ -858,15 +858,271 @@ Application.Current.Resources["Accent"] = new SolidColorBrush(Colors.Red);
 
 ## 访问二进制资源
 
+Pack URI 是 WPF 访问“打包/站点”资源的标准 URI 方案。常见格式如下（都以 `Uri` 字符串形式）：
 
+**同程序集内的资源（最常见，Build Action = Resource）**
+
+- XAML中常用的相对路径
+
+```XAML
+<Image Source="Images/logo.png" />  
+<!-- 相对路径：当资源为 Resource 且与 XAML 在同一程序集时可以这样写 -->
+```
+
+- 绝对pack URI（等价）
+
+```perl
+pack://application:,,,/Images/logo.png
+```
+
+- 指定程序集（当资源在另一个已引用的程序集时）：
+
+```PERL
+pack://application:,,,/OtherAssembly;component/Images/logo.png
+```
+
+- 简短形式：
+
+```XAML
+/OtherAssembly;component/Images/logo.png
+```
+
+示例：
+
+```XAML
+<!-- Images/logo.png: Build Action = Resource -->
+<Image Width="120" Source="Images/logo.png" />
+<!-- 或显式 -->
+<Image Source="pack://application:,,,/Images/logo.png" />
+```
+
+---
+
+**引用另一个程序集的资源（Resource）**
+
+XAML示例：
+
+```XAML
+<Image Source="/ControlsLib;component/Images/icon.png" />
+```
+
+C#示例：
+
+```CS
+var uri = new Uri("pack://application:,,,/ControlsLib;component/Images/icon.png", UriKind.Absolute);
+var bmp = new BitmapImage(uri);
+```
+
+---
+
+**站点来源Content文件（Build Action = Content）**
+
+当你把文件设为 `Content`（Copy to Output），使用 site-of-origin：
+
+~~~perl
+pack://siteoforigin:,,,/External/config.json
+~~~
+
+适合 ClickOnce 或运行目录下外部可替换文件。
+
+---
+
+**读取嵌入资源**
+
+WPF Pack URI 不直接用于 `Embedded Resource`（.NET manifest resource），要用：
+
+```CS
+var asm = Assembly.GetExecutingAssembly();
+using var stream = asm.GetManifestResourceStream("MyNamespace.Files.data.bin");
+```
+
+（`Embedded Resource` 的命名通常是 `DefaultNamespace.SubFolder.Filename`）
 
 # 模板
 
+**模板**就是对控件或数据展示的“外观定义”。它不改变内容本身，只改变“如何呈现”。
 
+| 类型              | 作用                            | 常见绑定目标         |
+| ----------------- | ------------------------------- | -------------------- |
+| `DataTemplate`    | 数据的外衣 → 数据如何展示       | 列表项、内容控件等   |
+| `ControlTemplate` | 控件的外衣 → 控件整体的 UI 结构 | 按钮、文本框、滑块等 |
 
+- `DataTemplate` 让你的**数据看得更舒服**；
+- `ControlTemplate` 让你的**控件穿上新衣裳**；
+- `Style` 让**模板批量应用，行为视觉统一化**。
 
+## DataTemplate
 
+`DataTemplate` 用于定义**数据对象如何呈现**，常用于 `ItemsControl`（如 `ListBox`、`ComboBox`、`DataGrid`）中的每一项。
 
+**示例：**假设有一个类绑定了一个ListBox
+
+```CS
+public class Person
+{
+    public string Name { get; set; }
+    public int Age { get; set; }
+}
+```
+
+```XAML
+<ListBox ItemsSource="{Binding People}">
+    <ListBox.ItemTemplate>
+        <DataTemplate>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Name}" Margin="5"/>
+                <TextBlock Text="{Binding Age}" Margin="5"/>
+            </StackPanel>
+        </DataTemplate>
+    </ListBox.ItemTemplate>
+</ListBox>
+```
+
+**使用方式：**
+
+- 局部：写在控件内 `ItemTemplate` 中
+- 全局：写到资源里，通过 `x:Key` 引用
+- 自动选择：通过 `DataType` + 隐式 DataTemplate
+
+```XAML
+<DataTemplate DataType="{x:Type local:Person}">
+    <StackPanel>...</StackPanel>
+</DataTemplate>
+```
+
+## ControlTemplate
+
+`ControlTemplate` 定义控件的完整视觉结构 —— 你可以完全重写 `Button`、`TextBox` 的样式、结构、视觉反馈等。
+
+- 使用 `TemplateBinding` 绑定控件本身的属性
+- 使用 `Triggers` 定义状态切换（例如鼠标悬停）
+- 必须保留 `PART_*` 元素来支持某些控件的功能
+
+**示例：重绘一个按钮**
+
+```XAML
+<Button Content="Click Me">
+    <Button.Template>
+        <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}">
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+            </Border>
+        </ControlTemplate>
+    </Button.Template>
+</Button>
+```
+
+加入视觉状态的触发器：
+
+```XAML
+<ControlTemplate.Triggers>
+    <Trigger Property="IsMouseOver" Value="True">
+        <Setter TargetName="border" Property="Background" Value="LightBlue"/>
+    </Trigger>
+</ControlTemplate.Triggers>
+```
+
+---
+
+| 对比点               | DataTemplate                | ControlTemplate                     |
+| -------------------- | --------------------------- | ----------------------------------- |
+| 应用对象             | 数据模型 → 显示             | 控件 → 自定义外观与交互             |
+| 是否影响交互性       | 否（仅视觉）                | 是（可完全替换控件行为与结构）      |
+| 常用于               | ListBox、DataGrid、TreeView | Button、TextBox、Slider、TabControl |
+| 是否需要继承控件行为 | 否                          | 是（涉及模板部件、交互逻辑）        |
+
+## Style
+
+Style 是模板的容器，可以为控件批量设置属性、绑定模板、定义触发器等，统一界面风格。
+
+```XAML
+<Style TargetType="Button">
+    <Setter Property="Background" Value="LightGray"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="Button">
+                <Border Background="{TemplateBinding Background}" ... />
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+```
+
+Style 和 Template 密切结合，可实现：
+
+- 控件皮肤更换
+- 状态响应式样式（比如悬浮、点击）
+- 控件视觉一致性控制
+
+**模板重用方式：**
+
+- 使用 `StaticResource` 或 `DynamicResource` 调用模板
+- 使用资源字典集中管理样式与模板
+- 使用 `BasedOn` 继承已有 Style
 
 # 绘画和动画
+
+## WPF绘图
+
+WPF 的绘图是基于 **矢量图形（Vector Graphics）** 和 **DirectX 渲染** 实现的，拥有强大的可组合性和硬件加速能力。
+
+| 类名             | 功能描述                      |
+| ---------------- | ----------------------------- |
+| `Shape`          | 所有图形控件基类              |
+| `Line`           | 线条                          |
+| `Rectangle`      | 矩形                          |
+| `Ellipse`        | 圆形/椭圆                     |
+| `Polygon`        | 多边形                        |
+| `Path`           | 任意矢量路径，可绘制复杂图形  |
+| `Geometry`       | 抽象的几何结构（可用于 Path） |
+| `DrawingContext` | 用于低级绘图（更自由）        |
+
+```XAML title="绘制一个红色圆形"
+<Ellipse Width="100" Height="100" Fill="Red" Stroke="Black" StrokeThickness="2"/>
+```
+
+```XAML title="复杂Path"
+<Path Stroke="Black" StrokeThickness="1" Fill="LightBlue">
+    <Path.Data>
+        <GeometryGroup>
+            <EllipseGeometry Center="50,50" RadiusX="40" RadiusY="20"/>
+            <RectangleGeometry Rect="10,10,30,30"/>
+        </GeometryGroup>
+    </Path.Data>
+</Path>
+```
+
+
+
+## 图形的效果与滤镜
+
+| 滤镜                   | 说明                 |
+| ---------------------- | -------------------- |
+| `DropShadowEffect`     | 阴影                 |
+| `BlurEffect`           | 模糊                 |
+| `BitmapEffect`（过时） | 老旧效果系统，已废弃 |
+
+示例：阴影+模糊
+
+```XAML
+<Rectangle Width="100" Height="100" Fill="Blue">
+    <Rectangle.Effect>
+        <DropShadowEffect Color="Black" Direction="320" ShadowDepth="10" BlurRadius="8"/>
+    </Rectangle.Effect>
+</Rectangle>
+```
+
+
+
+## 图形的变形
+
+
+
+
+
+## 动画
 
