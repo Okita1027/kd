@@ -643,6 +643,71 @@ public static readonly RoutedUICommand MyCmd = new RoutedUICommand("Do", "Do", t
 - 支持命令路由（可以由任意元素处理）
 - 更适合 UI 层集中处理（菜单、工具栏、控件库）
 
+---
+
+**自定义命令**
+
+1. 定义命令
+
+```CS
+public static class MyCommands
+{
+    public static RoutedUICommand SayHello = new RoutedUICommand(
+        "Say Hello", "SayHello", typeof(MyCommands));
+}
+```
+
+2. 绑定命令
+
+```XAML
+<Window.CommandBindings>
+    <CommandBinding Command="{x:Static local:MyCommands.SayHello}"
+                    Executed="SayHello_Executed"
+                    CanExecute="SayHello_CanExecute"/>
+</Window.CommandBindings>
+```
+
+3. 使用命令
+
+```XAML
+<Button Content="打招呼" Command="{x:Static local:MyCommands.SayHello}"/>
+```
+
+后台逻辑：
+
+```CS
+private void SayHello_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+{
+    e.CanExecute = true;
+}
+private void SayHello_Executed(object sender, ExecutedRoutedEventArgs e)
+{
+    MessageBox.Show("Hello, WPF!");
+}
+```
+
+## 内置命令
+
+### ApplicationCommands
+
+包含常见应用程序命令，如Copy、Cut、Paste、Save等。
+
+### NavigationCommands
+
+包含导航相关命令，如BrowseBack、BrowseForward等。
+
+### EditingCommands
+
+包含文本编辑命令，如Delete、Backspace等。
+
+### ComponentCommands
+
+包含组件级命令，如MoveUp、MoveDown等。
+
+### MediaCommands
+
+包含媒体相关命令，如Play、Pause、Stop等。
+
 ## 自定义Command
 
 ### RelayCommand
