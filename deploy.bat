@@ -1,2 +1,2 @@
 git add . && git commit -m "deploy from deploy.bat" && git push origin main
-vuepress-vite build docs && cd docs/.vuepress/dist && git init && git add . && git commit -m "deploy from deploy.bat" && git push -f https://github.com/Okita1027/kd.git main:gh-pages
+pnpm pushPage
