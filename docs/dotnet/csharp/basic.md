@@ -1,7 +1,7 @@
 ---
-title: C#语法
-shortTitle: 语法
-description: C#语法
+title: C#中的特殊语法
+shortTitle: 语法特性
+description: C#中的特殊语法
 date: 2025-07-12 18:56:33
 categories: [.NET, C#]
 tags: [.NET]

@@ -13,11 +13,20 @@ heroFullScreen: false
 actions:
   - text: 基础
     link: /basic/
-    icon: signs-post
-    type: primary
+    icon: /icon/java.png
+    # type: primary
   - text: 数据库
     link: /database/
-    icon: lightbulb
+    icon: /icon/database.svg
+  - text: 框架
+    link: /frame/
+    icon: /icon/frame.png
+  - text: 前端
+    link: /web/
+    icon: /icon/web.png
+  - text: .NET
+    link: /dotnet/
+    # icon: /icon/dotnet.png
 ---
 
 
