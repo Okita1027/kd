@@ -16,7 +16,7 @@ order: 3
 
 诸如`keys`/`flushdb`/`flushall`等危险的命令应该在配置文件中禁用！
 
-```conf
+```
 rename- command keys ""
 rename- command flushdb ""
 rename- command flushall ""
@@ -221,7 +221,7 @@ MEMORY USAGE key [SAMPLES count]
 
 在Redis配置文件中配置LAZY FREEING
 
-```conf
+```
 lazy-free-lazy-server-del yes
 replica-lazy-flush yes
 lazyfree-lazy-user-del yes

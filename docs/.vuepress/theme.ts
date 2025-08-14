@@ -194,6 +194,9 @@ export default hopeTheme({
 
     feed: {
       rss: true,
+      rssOutputFilename: "rss.xml",
+      hostname: "https://kd.zhiyun.space",
+      devHostname: "http://localhost:4000/kd/",
     },
 
     // 如果你需要 PWA。安装 @vuepress/plugin-pwa 并取消下方注释

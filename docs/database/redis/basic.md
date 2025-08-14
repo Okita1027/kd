@@ -1495,7 +1495,7 @@ Pipeline对比事务：
 
    1. 从库修改`redis.conf`
 
-      ```conf
+      ```
       replicaof 主库IP 主库端口
       masterauth 访问主库的校验密码
       ```
@@ -1731,7 +1731,7 @@ flowchart LR
 
 1. 3台机器，在各自的Redis安装目录下新增`cluster`文件夹，新建`redisCluster端口.conf`（2个：主从）
 
-   ```conf
+   ```
    cluster-enabled yes
    cluster-config-file nodes-端口.conf
    cluster-node-timeout 5000
