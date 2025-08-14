@@ -193,9 +193,8 @@ export default hopeTheme({
     },
 
     feed: {
-      rss: true,
+      rss: false,
       rssOutputFilename: "rss.xml",
-      hostname: "https://kd.zhiyun.space",
       devHostname: "http://localhost:4000/kd/",
     },
 
