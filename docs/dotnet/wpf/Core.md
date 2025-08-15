@@ -42,27 +42,106 @@ order: 4
 
 ### 绑定源的方式
 
-1. **DataContext（最常用）**
+#### DataContext
+
+【最常用】
 
 - 在父容器设置 `DataContext = viewModel`，子控件继承，用 `Path` 指定属性。
 - 优点：最简洁、配合 MVVM 最自然。
 
-2. **ElementName**
+#### ElementName
 
 - 绑定到 XAML 中另一个已命名元素的属性。
 - 例：`{Binding Text, ElementName=txtInput}`
 
-3. **RelativeSource**
+#### RelativeSource
 
 - 绑定到相对元素（`Self`、`TemplatedParent`、`FindAncestor`）。
 - 例：`{Binding DataContext.SomeProp, RelativeSource={RelativeSource AncestorType={x:Type Window}}}`
 
-4. **Source**
+##### Self(自身)
+
+最简单的模式，允许你绑定到目标元素自身的属性。虽然这看起来多余，但在某些情况下非常有用，比如当你需要将一个属性绑定到另一个属性时。
+
+**应用场景**：在 `Style` 或 `ControlTemplate` 中，将一个属性的值绑定到另一个属性，以实现一致性。
+
+**示例**：让一个 `Border` 的 `BorderBrush` 颜色和它的 `Background` 颜色保持一致。
+
+```XAML
+<Border Background="SteelBlue"
+        BorderThickness="2"
+        CornerRadius="5"
+        Padding="10"
+        BorderBrush="{Binding RelativeSource={RelativeSource Self}, Path=Background}">
+    <TextBlock Text="边框颜色与背景颜色相同" Foreground="White" />
+</Border>
+```
+
+在这个例子中，`BorderBrush` 的值“依赖”于它自身的 `Background` 属性。
+
+##### TemplatedParent（模板父级）
+
+这是 `ControlTemplate` 中最常用的模式。它允许你绑定到应用了此模板的**父控件**的属性。
+
+**应用场景**：在自定义 `ControlTemplate` 时，将模板内部元素的属性绑定到外部控件的属性上。
+
+**示例**：在自定义 `Button` 模板中，让内部 `TextBlock` 的 `Text` 属性绑定到 `Button` 外部的 `Content` 属性。
+
+```XAML
+<ControlTemplate TargetType="Button">
+    <Border Background="LightGray">
+        <TextBlock Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content}" />
+    </Border>
+</ControlTemplate>
+```
+
+这里的 `TemplatedParent` 就是这个 `ControlTemplate` 所应用的那个 `Button` 实例。
+
+##### FindAncestor(查找祖先)
+
+这个模式允许你向上遍历元素的**逻辑树（Logical Tree）** 或**可视化树（Visual Tree）**，并绑定到找到的第一个指定类型的祖先元素。
+
+**应用场景**：当子元素需要访问其某个不确定的父级容器的属性时，这非常有用。
+
+**示例**：在一个 `TextBlock` 中，绑定到其父级 `Window` 的 `Title` 属性。
+
+```XAML
+<Window x:Name="MyWindow" Title="这是一个窗口">
+    <StackPanel>
+        <TextBlock Text="这是窗口的标题：" />
+        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Title}" />
+    </StackPanel>
+</Window>
+```
+
+- **`AncestorType={x:Type Window}`**：指定要查找的祖先类型是 `Window`。
+- **`Path=Title`**：绑定到找到的 `Window` 的 `Title` 属性。
+
+##### PreviousData(上一个数据)
+
+这个模式主要用于 `ItemsControl` 的 `DataTemplate` 中，允许你绑定到数据源中的**上一个数据项**。
+
+**应用场景**：在列表中创建交替行颜色或比较相邻数据项时非常有用。
+
+**示例**：这通常用于在 `IValueConverter` 中，通过绑定到上一个数据项来判断当前数据项是否需要改变样式。
+
+```XAML
+<DataTemplate>
+    <TextBlock Text="{Binding Name}"
+               FontSize="14"
+               Background="{Binding RelativeSource={RelativeSource PreviousData}, Path=Name,
+                            Converter={StaticResource ItemColorConverter}}"/>
+</DataTemplate>
+```
+
+这里的 `PreviousData` 会指向集合中的上一个 `Book` 对象，然后通过 `Converter` 来处理逻辑。
+
+#### Source
 
 - 显式指定一个对象作为源（常用于静态对象或单例）。
 - 例：`{Binding Path=Title, Source={StaticResource AppInfo}}`
 
-5. **StaticResource / x:Static**
+#### StaticResource / x:Static
 
 - 绑定到静态资源或静态字段（不是真正 Binding，但常混用）。
 
