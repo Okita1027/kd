@@ -82,9 +82,9 @@ export default hopeTheme({
       icon: "/icon/web.png",
     },
     {
-      text: "",
+      text: ".NET",
       link: "/dotnet/",
-      icon: "/icon/dotnet.png",
+      icon: "/icon/donet.png",
     },
     // {
     // text: "相关链接",
