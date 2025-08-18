@@ -61,7 +61,7 @@ order: 4
 
 ##### Self(自身)
 
-最简单的模式，允许你绑定到目标元素自身的属性。虽然这看起来多余，但在某些情况下非常有用，比如当你需要将一个属性绑定到另一个属性时。
+允许你绑定到目标元素自身的属性。虽然这看起来多余，但在某些情况下非常有用，比如当你需要将一个属性绑定到另一个属性时。
 
 **应用场景**：在 `Style` 或 `ControlTemplate` 中，将一个属性的值绑定到另一个属性，以实现一致性。
 
@@ -81,7 +81,7 @@ order: 4
 
 ##### TemplatedParent（模板父级）
 
-这是 `ControlTemplate` 中最常用的模式。它允许你绑定到应用了此模板的**父控件**的属性。
+这是`ControlTemplate`控件模板中最常用的模式。允许你绑定到应用了此模板的**父控件**的属性。
 
 **应用场景**：在自定义 `ControlTemplate` 时，将模板内部元素的属性绑定到外部控件的属性上。
 
@@ -1004,7 +1004,7 @@ Application.Current.Resources["Accent"] = new SolidColorBrush(Colors.Red);
 
 Pack URI 是 WPF 访问“打包/站点”资源的标准 URI 方案。常见格式如下（都以 `Uri` 字符串形式）：
 
-**同程序集内的资源（最常见，Build Action = Resource）**
+#### 同程序集内的资源（最常见，Build Action = Resource）
 
 - XAML中常用的相对路径
 
@@ -1027,7 +1027,7 @@ pack://application:,,,/OtherAssembly;component/Images/logo.png
 
 - 简短形式：
 
-```XAML
+```PERL
 /OtherAssembly;component/Images/logo.png
 ```
 
@@ -1040,9 +1040,7 @@ pack://application:,,,/OtherAssembly;component/Images/logo.png
 <Image Source="pack://application:,,,/Images/logo.png" />
 ```
 
----
-
-**引用另一个程序集的资源（Resource）**
+#### 引用另一个程序集的资源（Resource）
 
 XAML示例：
 
@@ -1057,9 +1055,9 @@ var uri = new Uri("pack://application:,,,/ControlsLib;component/Images/icon.png"
 var bmp = new BitmapImage(uri);
 ```
 
----
+#### 站点来源Content文件（Build Action = Content）
 
-**站点来源Content文件（Build Action = Content）**
+内容文件是随应用程序一起部署但没有嵌入到程序集中的文件。
 
 当你把文件设为 `Content`（Copy to Output），使用 site-of-origin：
 
@@ -1068,19 +1066,6 @@ pack://siteoforigin:,,,/External/config.json
 ~~~
 
 适合 ClickOnce 或运行目录下外部可替换文件。
-
----
-
-**读取嵌入资源**
-
-WPF Pack URI 不直接用于 `Embedded Resource`（.NET manifest resource），要用：
-
-```CS
-var asm = Assembly.GetExecutingAssembly();
-using var stream = asm.GetManifestResourceStream("MyNamespace.Files.data.bin");
-```
-
-（`Embedded Resource` 的命名通常是 `DefaultNamespace.SubFolder.Filename`）
 
 # 模板
 
