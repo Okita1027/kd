@@ -58,6 +58,108 @@ order: 3
 
 ### DockPanel停靠
 
+DockPanel是WPF中的一种布局控件，它允许子元素沿着面板的边缘停靠（停靠布局）。
+
+**基本用法：**
+
+```XAML
+<DockPanel>
+    <Button DockPanel.Dock="Top">顶部按钮</Button>
+    <Button DockPanel.Dock="Bottom">底部按钮</Button>
+    <Button DockPanel.Dock="Left">左侧按钮</Button>
+    <Button DockPanel.Dock="Right">右侧按钮</Button>
+    <Button>中心内容</Button>
+</DockPanel>
+```
+
+```XAML
+<DockPanel>
+    <!-- 第一个元素：停靠到顶部，占据整个顶部区域 -->
+    <Border DockPanel.Dock="Top" Height="50" Background="Red" />
+    
+    <!-- 第二个元素：停靠到底部，占据剩余区域的底部 -->
+    <Border DockPanel.Dock="Bottom" Height="50" Background="Blue" />
+    
+    <!-- 第三个元素：停靠到左侧，占据剩余区域的左侧 -->
+    <Border DockPanel.Dock="Left" Width="100" Background="Green" />
+    
+    <!-- 第四个元素：停靠到右侧，占据剩余区域的右侧 -->
+    <Border DockPanel.Dock="Right" Width="100" Background="Yellow" />
+    
+    <!-- 最后一个元素：填充剩余的中心区域 -->
+    <Border Background="Purple" />
+</DockPanel>
+```
+
+**角落由谁决定**：
+
+结论：谁先声明谁决定
+
+```XAML
+<DockPanel>
+    <Border DockPanel.Dock="Top" Height="50">外层顶部</Border>
+    <Border DockPanel.Dock="Left" Width="100">外层左侧</Border>
+</DockPanel>
+```
+
+```XAML
++---------------------------+
+|        顶部区域           |  ← 第一个声明，停靠到顶部
++-----+---------------------+
+| 左  |                     |
+| 侧  |    剩余内容区域      |
+| 区  |                     |
+| 域  |                     |
++-----+---------------------+
+```
+
+若调换声明的顺序
+
+```XAML
+<DockPanel>
+    <Border DockPanel.Dock="Left" Width="100">外层左侧</Border>
+    <Border DockPanel.Dock="Top" Height="50">外层顶部</Border>
+</DockPanel>
+```
+
+```XAML
++-----+---------------------+
+| 左  |      顶部区域        |  ← 第一个声明，停靠到左侧
+| 侧  +---------------------+
+| 区  |                     |
+| 域  |    剩余内容区域      |
+|     |                     |
++-----+---------------------+
+```
+
+
+
+**相关属性**：
+
+- LastChildFill
+
+```XAML
+<DockPanel LastChildFill="True">
+    <!-- 默认为True，最后一个子元素填充剩余空间 -->
+</DockPanel>
+```
+
+- 嵌套Dock
+
+```XAML
+<DockPanel>
+    <DockPanel DockPanel.Dock="Left" Width="200">
+        <!-- 左侧区域可以有自己的停靠布局 -->
+        <Button DockPanel.Dock="Top" Height="30">左侧顶部</Button>
+        <ListBox>左侧列表</ListBox>
+    </DockPanel>
+    
+    <Button>主内容区域</Button>
+</DockPanel>
+```
+
+
+
 
 
 ### Canvas绝对
