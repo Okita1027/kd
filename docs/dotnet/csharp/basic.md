@@ -1,11 +1,131 @@
 ---
 title: C#中的特殊语法
-shortTitle: 语法特性
+shortTitle: C#语法特性
 description: C#中的特殊语法
 date: 2025-07-12 18:56:33
 categories: [.NET, C#]
 tags: [.NET]
 ---
+
+
+
+## 委托
+
+### 基本用法
+
+```CS
+// 定义委托类型
+public delegate void MyDelegate(string message);
+
+// 使用
+class Program
+{
+    static void Print(string msg) => Console.WriteLine(msg);
+
+    static void Main()
+    {
+        MyDelegate d = Print; // 指向方法
+        d("Hello Delegate!"); // 调用
+    }
+}
+```
+
+
+
+### 匿名方法/Lambda表达式
+
+```CS
+Calculator add = (a, b) => a + b;
+Console.WriteLine(add(3, 5)); // 8
+```
+
+
+
+### 多播委托
+
+一个委托可以指向多个方法，按顺序调用。
+
+```CS
+Action log = () => Console.WriteLine("Step1");
+log += () => Console.WriteLine("Step2");
+log();
+```
+
+> 常用于 **回调链**
+
+## 事件
+
+| 特性     | 委托                          | 事件                        |
+| -------- | ----------------------------- | --------------------------- |
+| 本质     | 函数指针                      | 委托的封装                  |
+| 调用     | 可以被任何人调用              | 只能在类内部触发            |
+| 访问权限 | `+=` `-=` `=` `Invoke()` 都行 | 只能 `+=` `-=`              |
+| 场景     | 回调、策略模式、任务链        | 发布订阅、UI 交互、消息通知 |
+
+### 基本用法
+
+**事件本质上就是对委托的进一步封装**，主要用于 **发布-订阅模型（Pub-Sub）**。防止外部直接调用委托，只能订阅/取消。
+
+```CS
+class Button
+{
+    public event Action? Clicked; // 声明事件
+
+    public void Click()
+    {
+        Console.WriteLine("Button clicked!");
+        Clicked?.Invoke(); // 触发事件
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var btn = new Button();
+        btn.Clicked += () => Console.WriteLine("Handler1");
+        btn.Clicked += () => Console.WriteLine("Handler2");
+
+        btn.Click(); // 触发，执行所有订阅
+    }
+}
+```
+
+> 外部不能 `btn.Clicked()`，只能 `+=` 或 `-=`。
+
+### 标准事件模式
+
+最佳实践：使用 `EventHandler` 或 `EventHandler<T>`，传递 `sender` + `EventArgs`。
+
+```CS
+public class UserEventArgs : EventArgs
+{
+    public string Name { get; set; }
+}
+
+class UserService
+{
+    public event EventHandler<UserEventArgs>? UserCreated;
+
+    public void CreateUser(string name)
+    {
+        Console.WriteLine($"{name} created!");
+        UserCreated?.Invoke(this, new UserEventArgs { Name = name });
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var service = new UserService();
+        service.UserCreated += (s, e) => Console.WriteLine($"Welcome {e.Name}!");
+        service.CreateUser("Qin");
+    }
+}
+```
+
+
 
 ## 索引器
 
