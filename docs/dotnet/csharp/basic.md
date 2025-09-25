@@ -1110,3 +1110,6 @@ public partial class Logger
 - **泛型**：部分方法可以是泛型方法。
 - **委托**：不能直接将部分方法转换为委托，因为它在没有实现时可能被移除。
 - **不能是 `virtual`、`abstract`、`override`、`new`、`extern` 成员。**
+
+
+
