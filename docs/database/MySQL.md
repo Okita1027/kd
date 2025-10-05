@@ -1247,8 +1247,7 @@ RC隔离级别下，在事务中每一次执行快照读时生成ReadView。
 这条记录对应的trx_id为3，也就是将3带入右侧的匹配规则中。①不满足 ②满足 。终止匹配，此次 快照读，返回的数据就是版本链中记录的这条数据。 
 
 ##### Read Repeated 隔离级别
-RR隔离级别下，仅在事务中第一次执行快照读时生成ReadView，后续复用该ReadView。 而RR 是可 
-重复读，在一个事务中，执行两次相同的select语句，查询到的结果是一样的。
+RR隔离级别下，仅在事务中第一次执行快照读时生成ReadView，后续复用该ReadView。 而RR 是可重复读，在一个事务中，执行两次相同的select语句，查询到的结果是一样的。
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/MVCC13.png)
 在RR隔离级别下，只是在事务中第一次快照读时生成ReadView，后续都是复用该 ReadView，那么既然ReadView都一样， ReadView的版本链匹配规则也一样， 那么最终快照读返回的结果也是一样的
 
@@ -1256,11 +1255,13 @@ RR隔离级别下，仅在事务中第一次执行快照读时生成ReadView，�
 
 MVCC的实现原理就是通过 InnoDB表的隐藏字段、UndoLog 版本链、ReadView来实现的。 
 而MVCC + 锁，则实现了事务的隔离性。 而一致性则是由redolog 与 undolog保证。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/MVCC14.png)
 
 ## MySQL管理
 ### 系统数据库
 Mysql数据库安装完成后，自带了一下四个数据库，具体作用如下：
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/manage01.png)
 
 ### 常用工具
