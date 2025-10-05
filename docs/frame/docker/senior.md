@@ -359,7 +359,7 @@ sudo mkdir -p /etc/systemd/system/docker.service.d
 
 2. 为 dockerd 创建 HTTP/HTTPS 网络代理的配置文件，文件路径是 `/etc/systemd/system/docker.service.d/http-proxy.conf` 。并在该文件中添加相关环境变量。
 
-```conf
+```
 [Service]
 Environment="HTTP_PROXY=http://proxy.example.com:8080/"
 Environment="HTTPS_PROXY=http://proxy.example.com:8080/"
@@ -444,7 +444,7 @@ docker-compose -p myproject up
 
 1. 将 `COMPOSE_PROJECT_NAME` 变量添加到 `.env` 文件中：
 
-   ```env
+   ```
    COMPOSE_PROJECT_NAME=myproject
    ```
 
@@ -599,7 +599,7 @@ docker-compose --profile development down
 
 **在配置文件中设置**
 
-```env
+```
 COMPOSE_PROFILES=development
 ```
 
@@ -749,7 +749,7 @@ services:
 
 Docker Compose 支持在项目根目录下的 `.env` 文件中定义环境变量。这些变量会**自动**被 `docker-compose.yml` 文件识别，并可以在 Compose 文件中以 `${VAR_NAME}` 方式引用，便于变量集中管理。
 
-```env
+```
 # .env 文件
 APP_ENV=production
 DEBUG=false
@@ -776,7 +776,7 @@ services:
 
 1. 创建一个 `app.env` 文件：
 
-```env
+```
 # app.env 文件
 APP_ENV=production
 DEBUG=false
@@ -866,7 +866,7 @@ services:
 
    - 在 Compose 文件所在的目录下定义的 `.env` 文件中的变量会自动被加载并可用于 Compose 文件中引用。例如：
 
-   - ```env
+   - ```
      # .env 文件
      APP_ENV=staging
      DEBUG=false
@@ -1082,7 +1082,7 @@ COMPOSE_ENV_FILES=.env.envfile1, .env.envfile2
 
 2. 在`.env`文件中添加
 
-   ```env
+   ```
    COMPOSE_EXPERIMENTAL=enabled
    ```
 
@@ -1128,7 +1128,7 @@ Rebuild 非常适合编译语言，或者作为需要对镜像完整重建的后
 
 #### 示例
 
-```目录结构
+```
 myproject/
 ├── web/
 │   ├── App.jsx

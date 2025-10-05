@@ -1,7 +1,7 @@
 {
   "name": "VuePress",
   "version": "1.0.0",
-  "description": "",
+  "description": "基于VuePress + Hope搭建的知识库",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -16,26 +16,34 @@
     "docs:dev": "vuepress-vite dev docs",
     "docs:update-package": "pnpm dlx vp-update",
     "push": "git add . && git commit -m msg && git push origin main",
-    "pushPage": "vuepress-vite build docs && cd docs/.vuepress/dist && git init && git add . && git commit -m deploy && git push -f https://github.com/Okita1027/kd.git main:gh-pages"
+    "pushPage": "vuepress-vite build docs && cd docs/.vuepress/dist && git init && git add . && git commit -m deploy && git push -f https://github.com/Okita1027/kd.git main:gh-pages",
+    "pushAll": "pnpm push && pnpm pushPage"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Zhiyun Qin",
+  "license": "MIT",
   "dependencies": {
-    "@vuepress/bundler-vite": "2.0.0-rc.11",
-    "@vuepress/theme-default": "2.0.0-rc.30",
-    "katex": "^0.16.10",
-    "mermaid": "^10.9.1",
-    "reveal.js": "^5.2.0",
-    "vue": "^3.4.27",
-    "vuepress": "2.0.0-rc.11"
+    "@vuepress/bundler-vite": "2.0.0-rc.24",
+    "@vuepress/plugin-feed": "2.0.0-rc.3",
+    "@vuepress/plugin-revealjs": "2.0.0-rc.112",
+    "@vuepress/plugin-shiki": "2.0.0-rc.112",
+    "@vuepress/theme-default": "2.0.0-rc.112",
+    "katex": "^0.16.22",
+    "mermaid": "^10.9.3",
+    "reveal.js": "^5.2.1",
+    "shiki": "^3.8.1",
+    "vue": "^3.5.18",
+    "vuepress": "2.0.0-rc.24"
   },
   "devDependencies": {
-    "@vuepress/bundler-vite": "2.0.0-rc.9",
-    "@vuepress/plugin-docsearch": "2.0.0-rc.34",
-    "vue": "^3.4.27",
-    "vuepress": "2.0.0-rc.9",
-    "vuepress-plugin-md-enhance": "2.0.0-rc.43",
-    "vuepress-theme-hope": "2.0.0-rc.43"
+    "@vuepress/bundler-vite": "2.0.0-rc.24",
+    "@vuepress/plugin-docsearch": "2.0.0-rc.112",
+    "@vuepress/plugin-seo": "2.0.0-rc.112",
+    "@vuepress/plugin-slimsearch": "2.0.0-rc.112",
+    "sass-embedded": "^1.89.2",
+    "vue": "^3.5.18",
+    "vuepress": "2.0.0-rc.24",
+    "vuepress-plugin-md-enhance": "2.0.0-rc.94",
+    "vuepress-theme-hope": "2.0.0-rc.94"
   }
 }

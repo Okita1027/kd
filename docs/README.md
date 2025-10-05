@@ -1,8 +1,8 @@
 ---
 home: true
 title: 主页
-heroText: 主页
-tagline: 阅读时最好用魔法，否则图片可能加载不出来
+heroText: 这里是主页
+tagline: 阅读时最好使用魔法，否则图片可能加载不出来
 heroImage: 
 heroImageDark: 
 heroImageStyle: 
@@ -10,4 +10,25 @@ heroAlt:
 bgImage: 
 bgImageStyle: 
 heroFullScreen: false
+actions:
+  - text: 基础
+    link: /basic/
+    icon: /icon/java.png
+    type: primary
+  - text: 数据库
+    link: /database/
+    icon: /icon/database.svg
+  - text: 框架
+    link: /frame/
+    icon: /icon/frame.png
+  - text: 前端
+    link: /web/
+    icon: /icon/web.png
+  - text: .NET
+    link: /dotnet/
+    icon: /icon/donet.png
 ---
+
+
+> [主页配置](https://theme-hope.vuejs.press/zh/guide/layout/home.html)
+

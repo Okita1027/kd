@@ -3,8 +3,8 @@ title: 高阶篇
 shortTitle: 高阶篇
 description: 2023高阶篇
 date: 2024-09-19 17:26:07
-categories: [数据库]
-tags: [Redis]
+categories: [数据库, Redis]
+tags: [NoSQL]
 order: 3
 ---
 
@@ -16,7 +16,7 @@ order: 3
 
 诸如`keys`/`flushdb`/`flushall`等危险的命令应该在配置文件中禁用！
 
-```conf
+```
 rename- command keys ""
 rename- command flushdb ""
 rename- command flushall ""
@@ -221,7 +221,7 @@ MEMORY USAGE key [SAMPLES count]
 
 在Redis配置文件中配置LAZY FREEING
 
-```conf
+```
 lazy-free-lazy-server-del yes
 replica-lazy-flush yes
 lazyfree-lazy-user-del yes

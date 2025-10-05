@@ -3,8 +3,8 @@ title: 实战篇
 shortTitle: 实战篇
 description: 实战篇
 date: 2024-05-29 17:26:07
-categories: [数据库]
-tags: [Redis]
+categories: [数据库, Redis]
+tags: [NoSQL]
 order: 2
 ---
 ![](https://cdn.nlark.com/yuque/0/2023/png/32600948/1682753290618-15c35fc0-c15c-4a6f-ae3b-6778589e3059.png#averageHue=%23f8f3f2&clientId=u15b12849-720d-4&from=paste&height=559&id=u405a8d9d&originHeight=559&originWidth=1050&originalType=binary&ratio=1&rotation=0&showTitle=false&size=180384&status=done&style=none&taskId=ub9a56d6f-76b5-4018-8c3a-e807f494c51)

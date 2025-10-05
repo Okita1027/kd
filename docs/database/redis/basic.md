@@ -3,8 +3,8 @@ title: 基础篇
 shortTitle: 基础篇
 description: 基础篇
 date: 2024-05-29 17:26:07
-categories: [数据库]
-tags: [Redis]
+categories: [数据库, Redis]
+tags: [NoS]
 order: 1
 ---
 ## 环境搭建
@@ -1495,7 +1495,7 @@ Pipeline对比事务：
 
    1. 从库修改`redis.conf`
 
-      ```conf
+      ```
       replicaof 主库IP 主库端口
       masterauth 访问主库的校验密码
       ```
@@ -1731,7 +1731,7 @@ flowchart LR
 
 1. 3台机器，在各自的Redis安装目录下新增`cluster`文件夹，新建`redisCluster端口.conf`（2个：主从）
 
-   ```conf
+   ```
    cluster-enabled yes
    cluster-config-file nodes-端口.conf
    cluster-node-timeout 5000
@@ -1974,7 +1974,7 @@ keys -->|"CRC16(key)&16383"| RedisCluster
 
 开发中最重要的是可用性，所以需要把如下配置修改成no，即有slot不能使用时，redis集群还是可以对外提供服务
 
-```redis.conf
+```ini
 cluster-require-full-coverage no
 ```
 

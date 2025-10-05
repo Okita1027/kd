@@ -12,4 +12,7 @@ docs/.vuepress/.cache/
 docs/.vuepress/.temp/
 docs/.vuepress/dist/
 
+# 忽略所有的本地历史文件
+.history/
+
 Desktop.ini
