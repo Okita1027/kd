@@ -426,19 +426,150 @@ someApiCallObservable
            Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}" />
 ```
 
-
-
-
-
 #### 调用命令
 
 
 
 #### 在可观察管道中调用命令
 
+ReactiveCommand 不仅是 ICommand，也是一个 **可观察的流 (IObservable)**。
 
+因此：
+
+- UI 可以调用命令
+- 代码可以调用命令（Execute）
+- **Observable 流也能触发命令（InvokeCommand）**
+
+也就是说，可以把命令当作一个“流的消费者（sink）”。
+
+ReactiveUI 提供了一个专用操作符：`InvokeCommand()`，这是用一条语句就能将 Observable “绑定” 到命令的工具。
+
+**基本示例：**
+
+假设你有一个文本框，当文本变化时，自动触发搜索命令：
+
+```CS
+this.WhenAnyValue(x => x.SearchText)
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .Where(text => !string.IsNullOrEmpty(text))
+    .InvokeCommand(SearchCommand);
+```
+
+调用逻辑：
+
+```CS
+文字变化 → Throttle → Where → InvokeCommand(SearchCommand) → 执行命令
+```
+
+---
+
+**工作机制：**
+
+`InvokeCommand` 会：
+
+1. **监听 Observable 上的值**
+2. **将值作为参数传给命令**
+3. 如果命令不能执行（CanExecute=false），它会自动忽略
+4. 自动订阅执行结果流（不需要你自己 Subscribe）
+
+因此，它非常适合 MVVM 响应式链式调用。
+
+---
+
+**两种调用方式：**
+
+1. `InvokeCommand(命令)`
+
+适用于命令需要参数的情况：
+
+```CS
+IObservable<string> searchTextChanged;
+
+searchTextChanged
+    .InvokeCommand(ViewModel, vm => vm.SearchCommand);
+```
+
+`SearchCommand`的格式：
+
+```CS
+public ReactiveCommand<string, SearchResult> SearchCommand { get; }
+```
+
+2. `InvokeCommand(ViewModel,命令表达式)`
+
+适合直接在View绑定：
+
+```CS
+this.WhenAnyValue(v => v.SearchTextBox.Text)
+    .InvokeCommand(ViewModel, vm => vm.SearchCommand);
+```
 
 #### 组合命令
+
+**组合命令**指通过某种方式把 **多个 ReactiveCommand** 聚合在一起，使它们成为一个整体，通常出现在以下场景：
+
+1. **一组独立命令的输出需要作为一个整体对外发布**
+2. **某些 UI 行为应该触发多个命令一起执行**
+3. **需要把多个命令的执行状态(IsExecuting) 合并用于 UI 控制**
+4. **多个命令的 CanExecute 需要组合成一个逻辑 CanExecute**
+
+ReactiveUI 为此提供了：
+
+- **CreateCombined**（ReactiveCommand 的静态方法）
+- **通过 Rx 组合多个命令的 `IsExecuting`、`ThrownExceptions`、`CanExecute`**
+
+---
+
+##### ReactiveCommand.CreateCombined
+
+```CS
+public ReactiveCommand<Unit, Unit> SaveCommand { get; }
+public ReactiveCommand<Unit, Unit> LogCommand { get; }
+public ReactiveCommand<Unit, Unit> CombinedCommand { get; }
+
+CombinedCommand = ReactiveCommand.CreateCombined(
+    new[] { SaveCommand, LogCommand }
+);
+```
+
+这个 CombinedCommand 会在触发时：
+
+1. 先触发 SaveCommand
+2. 再触发 LogCommand
+3. 若其中任意命令抛出异常，会聚合到 CombinedCommand 的 ThrownExceptions 中
+4. IsExecuting 为所有子命令的 OR
+5. CanExecute 为所有子命令的 AND（全部可执行时才可执行）
+
+---
+
+##### 手动组合多个命令
+
+如果不用 `CreateCombined`，也可以通过 Rx 手动组合。
+
+- 多个命令的执行状态合并
+
+~~~CS
+var isBusy = SaveCommand.IsExecuting
+    .Merge(LogCommand.IsExecuting)
+    .StartWith(false)
+    .ToProperty(this, x => x.IsBusy);
+~~~
+
+- 多个命令的`CanExecute`合并
+
+```CS
+var canExecute = SaveCommand.CanExecute
+    .CombineLatest(LogCommand.CanExecute, (a, b) => a && b);
+
+CombinedCommand = ReactiveCommand.CreateFromTask(
+    async () =>
+    {
+        await SaveCommand.Execute();
+        await LogCommand.Execute();
+    },
+    canExecute
+);
+```
 
 
 
@@ -451,8 +582,6 @@ someApiCallObservable
 
 
 #### 单元测试
-
-
 
 
 
