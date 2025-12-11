@@ -55,12 +55,12 @@ log();
 
 ## 事件
 
-| 特性     | 委托                          | 事件                        |
-| -------- | ----------------------------- | --------------------------- |
-| 本质     | 函数指针                      | 委托的封装                  |
-| 调用     | 可以被任何人调用              | 只能在类内部触发            |
-| 访问权限 | `+=` `-=` `=` `Invoke()` 都行 | 只能 `+=` `-=`              |
-| 场景     | 回调、策略模式、任务链        | 发布订阅、UI 交互、消息通知 |
+| 特性     | 委托                     | 事件                       |
+| -------- | ------------------------ | -------------------------- |
+| 本质     | 函数指针                 | 委托的封装                 |
+| 调用     | 可以被任何人调用         | 只能在类内部触发           |
+| 访问权限 | `+=` `-=` `=` `Invoke()` | `+=` `-=`                  |
+| 场景     | 回调、策略模式、任务链   | 发布订阅、UI交互、消息通知 |
 
 ### 基本用法
 
@@ -97,32 +97,70 @@ class Program
 
 最佳实践：使用 `EventHandler` 或 `EventHandler<T>`，传递 `sender` + `EventArgs`。
 
+`EventHandler` 是 C# 中一个常用的事件委托类型，它包含两个参数：
+
+- `object sender`：事件源对象。
+- `EventArgs e`：事件参数。
+
 ```CS
-public class UserEventArgs : EventArgs
-{
-    public string Name { get; set; }
-}
+using System;
 
-class UserService
+// 定义一个按钮类，按钮有一个点击事件
+public class Button
 {
-    public event EventHandler<UserEventArgs>? UserCreated;
+    // 声明事件 - 使用 EventHandler 类型的委托
+    public event EventHandler? Clicked;
 
-    public void CreateUser(string name)
+    // 模拟按钮点击的方法
+    public void Click()
     {
-        Console.WriteLine($"{name} created!");
-        UserCreated?.Invoke(this, new UserEventArgs { Name = name });
+        Console.WriteLine("Button clicked!");
+        // 触发事件，通知所有订阅者
+        OnClicked(EventArgs.Empty);
+    }
+
+    // 触发事件的标准做法
+    protected virtual void OnClicked(EventArgs e)
+    {
+        // 判断是否有订阅者，如果有则触发事件
+        Clicked?.Invoke(this, e);
     }
 }
 
-class Program
+public class Program
 {
-    static void Main()
+    public static void Main()
     {
-        var service = new UserService();
-        service.UserCreated += (s, e) => Console.WriteLine($"Welcome {e.Name}!");
-        service.CreateUser("Qin");
+        // 创建一个按钮实例
+        var button = new Button();
+
+        // 订阅事件（标准事件模式：事件 += 事件处理方法）
+        button.Clicked += Button_Clicked1; // 订阅处理程序 1
+        button.Clicked += Button_Clicked2; // 订阅处理程序 2
+
+        // 调用按钮的 Click 方法，模拟按钮点击
+        button.Click();
+
+        // 取消订阅其中一个事件处理程序
+        button.Clicked -= Button_Clicked1;
+
+        // 调用按钮的 Click 方法，触发事件时只会调用剩下的处理程序
+        button.Click();
+    }
+
+    // 事件处理程序 1
+    private static void Button_Clicked1(object sender, EventArgs e)
+    {
+        Console.WriteLine("Handler 1 executed!");
+    }
+
+    // 事件处理程序 2
+    private static void Button_Clicked2(object sender, EventArgs e)
+    {
+        Console.WriteLine("Handler 2 executed!");
     }
 }
+
 ```
 
 

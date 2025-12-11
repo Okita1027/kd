@@ -26,3 +26,49 @@ tags: [.NET]
 |           | using 别名增强     | 仅类/命名空间                                                | `using MyList = List<int>;`                                 |
 |           | Lambda 默认参数    | `x=> $"Hi {x}"`，不能有默认值                                | `(string name="world") => $"Hi {name}"`                     |
 |           | 内联数组           | 只能用 `fixed` 或 Span                                       | `csharp<br>[InlineArray(3)]<br>struct Buffer<T>{T e0;}<br>` |
+
+
+
+## C#12
+
+### 主要构造函数
+
+
+
+### 集合表达式
+
+
+
+### 内联数组
+
+
+
+### Lambda表达式中的可选参数
+
+
+
+### ref readonly参数
+
+
+
+### 任何类型的别名
+
+
+
+### 实验属性
+
+
+
+### 拦截器
+
+
+
+## C#13
+
+
+
+
+
+
+
+## C#14
