@@ -99,21 +99,375 @@ hot.Subscribe(x => Console.WriteLine($"B: {x}"));
 // B: 42
 ```
 
-
-
-
-
 ## Single
+
+> [!TIP]
+>
+> **“当你知道操作只会成功一次或失败一次时，就该用 `Single`。”**
+
+`Single` 是一个非常严格的操作符，它用于强制执行 **“有且仅有一个”** 的逻辑。
+
+因此，不同于Observable需要三个方法onNext, onError, onCompleted，订阅Single只需要两个方法：
+
+- onSuccess - Single发射单个的值到这个方法
+- onError - 如果无法发射需要的值，Single发射一个Throwable对象到这个方法
+
+Single只会调用这两个方法中的一个，而且只会调用一次，调用了任何一个方法之后，订阅关系终止。
+
+
+
+`Single` 会订阅源 Observable，并等待其完成 (`OnCompleted`)。它根据收到的数据项数量表现出不同的行为：
+
+| **源流的行为**               | **Single() 的结果**                | **抛出的异常类型**                                           |
+| ---------------------------- | ---------------------------------- | ------------------------------------------------------------ |
+| **发射 1 个元素 + 完成**     | ✅ **成功**：发射该元素，然后完成。 | (无)                                                         |
+| **发射 0 个元素 (直接完成)** | ❌ **失败**：发送 `OnError`。       | `InvalidOperationException`: Sequence contains no elements.  |
+| **发射 >1 个元素**           | ❌ **失败**：发送 `OnError`。       | `InvalidOperationException`: Sequence contains more than one element. |
+
+```CS
+using System;
+using System.Reactive.Linq;
+
+// 场景 A: 成功 (恰好一个元素)
+Observable.Return("Success") 
+    .Single()
+    .Subscribe(
+        x => Console.WriteLine($"[A] 收到: {x}"),
+        ex => Console.WriteLine($"[A] 错误: {ex.Message}")
+    );
+// 输出: [A] 收到: Success
+
+// ---------------------------------------------------------
+
+// 场景 B: 失败 (序列为空)
+Observable.Empty<string>()
+    .Single()
+    .Subscribe(
+        x => Console.WriteLine($"[B] 收到: {x}"),
+        ex => Console.WriteLine($"[B] 错误: {ex.Message}")
+    );
+// 输出: [B] 错误: Sequence contains no elements.
+
+// ---------------------------------------------------------
+
+// 场景 C: 失败 (序列包含多个元素)
+Observable.Range(1, 3) // 发射 1, 2, 3
+    .Single()
+    .Subscribe(
+        x => Console.WriteLine($"[C] 收到: {x}"),
+        ex => Console.WriteLine($"[C] 错误: {ex.Message}")
+    );
+// 输出: [C] 错误: Sequence contains more than one element.
+```
+
+### Single与First
+
+**`First()`**: “我只关心第一个人是谁，后面还有没有其他人我不在乎。”
+
+- 一旦收到第一个元素，立即发射并结束。
+- **效率高**，不需要等待源流结束。
+
+**`Single()`**: “我必须确认只有一个人，如果出现了第二个，那就是事故。”
+
+- 必须**等待源流发送 `OnCompleted`** 才能确认没有第二个元素。
+- **效率较低**（对于长序列），因为它必须验证整个流的完整性。
+
+### SingleOrDefault
+
+如果你允许“没有结果”（比如根据 ID 查用户，可能查不到），你应该使用 `SingleOrDefault`。
+
+- **1 个元素**：发射该元素。
+- **0 个元素**：发射默认值（`null` 或 `0`），而不是抛出异常。
+- **>1 个元素**：依然抛出异常（因为这通常代表数据不一致或逻辑错误）。
+
+```CS
+// 序列为空，SingleOrDefault 返回默认值
+Observable.Empty<int>()
+    .SingleOrDefault() 
+    .Subscribe(x => Console.WriteLine($"结果: {x}")); 
+// 输出: 结果: 0
+```
 
 
 
 ## Subject
 
+**`Subject`** 是一个**同时充当 `Observable`（可被订阅）和 `Observer`（可发射数据）的特殊类型**。它是响应式编程中实现**多播（Multicast）**、**事件总线**、**状态共享** 和 **手动控制流** 的核心工具。
 
+Subject 同时实现了两个接口：
+
+1. **`IObservable<T>`**：它可以被订阅（像任何数据流一样）。
+2. **`IObserver<T>`**：它可以接收数据（你可以手动调用它的 `OnNext()`、`OnError()`、`OnCompleted()`）。
+
+**比喻：**
+
+- **普通 Observable** 像是一部**电影**（只能看）。
+- **Observer** 像是**观众**（在看）。
+- **Subject** 像是一个**管子**或**麦克风**。你从一端对着它说话（作为 Observer 输入数据），它会把声音广播给所有连接在另一端的听众（作为 Observable 输出数据）。
+
+| 类型              | 是否需要初始值 | 缓存策略             | 新订阅者收到什么             | 典型场景               |
+| ----------------- | -------------- | -------------------- | ---------------------------- | ---------------------- |
+| `Subject`         | ❌              | 无缓存               | **仅未来值**                 | 事件总线、手动触发     |
+| `ReplaySubject`   | ❌              | 全部/数量/时间       | **所有缓存 + 未来值**        | 日志重放、状态同步     |
+| `BehaviorSubject` | ✅              | 最近1个              | **最近值（含初始）+ 未来值** | 当前状态（登录、配置） |
+| `AsyncSubject`    | ❌              | 仅最后一个（完成时） | **完成后的最终值**           | 异步结果聚合           |
+
+### Subject
+
+**行为：** **直通车**。它只将订阅**之后**发生的数据发射给订阅者。订阅者会错过订阅之前的所有数据。
+
+**比喻：** **现场直播**。如果你迟到了，你就错过了前面的内容。
+
+**适用场景：** 实时事件，如鼠标点击、错误通知。
+
+```CS
+var subject = new Subject<int>();
+
+// 1. 发送数据 (此时没有订阅者，数据丢失)
+subject.OnNext(1);
+
+// 2. 订阅者 A 加入
+subject.Subscribe(x => Console.WriteLine($"Sub A: {x}"));
+
+// 3. 发送数据
+subject.OnNext(2); // Sub A 收到 2
+
+// 4. 订阅者 B 加入
+subject.Subscribe(x => Console.WriteLine($"Sub B: {x}"));
+
+// 5. 发送数据
+subject.OnNext(3); // Sub A 收到 3, Sub B 收到 3
+```
+
+### RelaySubject
+
+**行为：** **缓存回放**。它会缓存所有（或指定数量/时间窗口）历史数据。当新订阅者加入时，它会先**重放**缓存中的数据， catch up 到最新状态，再继续接收新数据。
+
+**比喻：** **录像机/回看功能**。即使你来晚了，也可以从头开始看（或者看最近 5 分钟）。
+
+**适用场景：** 需要确保订阅者不丢失任何历史数据的场景（如日志流、股票走势图）。
+
+```CS
+// 缓存最近的 2 个值
+var subject = new ReplaySubject<int>(2); 
+
+subject.OnNext(1);
+subject.OnNext(2);
+subject.OnNext(3);
+
+// Sub A 会收到缓存的 2, 3，然后等待新数据
+subject.Subscribe(x => Console.WriteLine($"Sub A: {x}"));
+```
+
+### BehaviorSubject
+
+**行为：** **有状态**。它总是保存着**最新**的一个值。当有新订阅者加入时，它会**立即**向其发送最新的那个值（或初始值），然后继续发送后续的新值。
+
+**要求：** 创建时必须提供一个**初始值**。
+
+**特点：** 它是 MVVM 开发中最常用的 Subject，因为它代表了“当前状态”（如 `CurrentProperties`）。它还有一个 `Value` 属性可以同步获取当前值。
+
+**比喻：** **公告板**。无论你什么时候看，上面总贴着最新的那张通知。
+
+```CS
+// 初始值为 0
+var subject = new BehaviorSubject<int>(0); 
+
+subject.OnNext(1);
+
+// Sub A 立即收到最新的值 1，然后收到后续的 2
+subject.Subscribe(x => Console.WriteLine($"Sub A: {x}")); 
+
+subject.OnNext(2);
+
+// Sub B 立即收到最新的值 2
+subject.Subscribe(x => Console.WriteLine($"Sub B: {x}"));
+```
+
+### AsyncSubject
+
+**行为：** **等待结果**。无论你向它发送多少数据，它**只有在调用 `OnCompleted()` 之后**，才会发射**最后一个**数据项，并结束。如果中间出错，则只发射错误。
+
+**比喻：** **任务返回值**（Task）。只有任务做完了，你才能拿到最终结果。
+
+**适用场景：** 在现代 C# 中很少使用，因为 `Task<T>` 通常能更好地处理这种情况。
+
+```CS
+var asyncSub = new AsyncSubject<int>();
+
+asyncSub.Subscribe(x => Console.WriteLine($"Result: {x}"));
+
+asyncSub.OnNext(1);
+asyncSub.OnNext(2);
+asyncSub.OnNext(3);
+asyncSub.OnCompleted(); // ← 此时才输出: Result: 3
+```
+
+### 注意事项
+
+#### Subject是热流
+
+```CS
+// ❌ 危险：每次订阅都重新执行！
+var cold = Observable.FromAsync(() => GetData());
+var subject = new Subject<int>();
+cold.Subscribe(subject); // 副作用执行一次
+
+// 但如果你直接用 Subject 手动推送，则无此问题
+```
+
+- 用于**手动控制**或**桥接非 Rx 代码**
+- 不要用它包装冷流来“变热”——改用 `Publish().RefCount()`
+
+#### 避免暴露原始Subject给外部
+
+```CS
+// ❌ 危险：外部可随意调用 OnNext/OnError
+public class DataService
+{
+    // 危险：外部可以直接调用 service.MyDataStream.OnNext(...) 篡改数据
+    public Subject<string> MyDataStream { get; } = new Subject<string>();
+}
+
+// ✅ 安全：只暴露 Observable 接口
+public class DataService
+{
+    // 1. 私有的 Subject，用于内部控制发送数据
+    private readonly Subject<string> _myDataSubject = new Subject<string>();
+
+    // 2. 公开的 Observable，外部只能订阅，不能发送
+    public IObservable<string> MyDataStream => _myDataSubject.AsObservable();
+
+    public void DoWork()
+    {
+        // 内部逻辑决定何时发送数据
+        _myDataSubject.OnNext("Work Started");
+    }
+}
+```
+
+使用 `.AsObservable()` 隐藏 `OnNext` 等方法，防止外部污染流。
+
+#### 错误会终止Subject
+
+```CS
+subject.OnError(new Exception("Boom!"));
+subject.OnNext(42); // ❌ 无效！Subject 已终止
+```
+
+解决方案：
+
+- 在 `OnError` 前做防御性处理
+- 或使用 `Catch` 操作符恢复
+
+### Subject对比ConnectableObserable
+
+| 特性         | `Subject`              | `Publish().RefCount()` |
+| ------------ | ---------------------- | ---------------------- |
+| **控制权**   | 手动调用 `OnNext`      | 自动从源流转发         |
+| **适用源**   | 任意（包括非 Rx 代码） | 必须是 `Observable`    |
+| **灵活性**   | 高（可合并多个源）     | 低（绑定单一源）       |
+| **典型用途** | 事件、状态、桥接       | 共享 API 调用等冷流    |
+
+> ✅ **原则**：
+>
+> - 用 `Publish().RefCount()` 共享**已有 Observable**
+> - 用 `Subject` 创建**新的事件源**或**桥接命令式代码**
 
 ## Scheduler
 
+> **Observable 默认是单线程、惰性求值的；Scheduler 赋予它多线程与异步能力。**
 
+**调度器（Scheduler）** 是控制 **“何时”** 和 **“在哪个线程/上下文”** 执行 Observable 操作的核心机制。它解决了响应式流中的**并发、线程切换、定时任务和资源调度**问题。
+
+所有 Scheduler 实现 `IScheduler` 接口，关键方法：
+
+```CS
+public interface IScheduler
+{
+    DateTimeOffset Now { get; }
+    IDisposable Schedule(Action action);                     // 立即执行
+    IDisposable Schedule(TimeSpan dueTime, Action action);   // 延迟执行
+}
+```
+
+> 类似于 .NET 的 `TaskScheduler` 或 Java 的 `Executor`。
+
+### SubscriebOn(scheduler)/ObserverOn(scheduler)
+
+| **操作符**        | **作用**                                                | **影响范围**                                             | **经典比喻**               |
+| ----------------- | ------------------------------------------------------- | -------------------------------------------------------- | -------------------------- |
+| **`SubscribeOn`** | 决定数据源`Observable`的生成逻辑和订阅动作在哪里执行。  | 影响整个流的起始位置（通常只调用一次）。                 | **在哪家工厂生产产品**     |
+| **`ObserveOn`**   | 决定**下游的操作符**和最终的`Subscribe`回调在哪里执行。 | 只影响该操作符**之后**的代码（可以调用多次以多次切换）。 | **在哪个门店把货交给客户** |
+
+```CS
+Observable.Create<string>(observer => 
+{
+    // --- 这里的代码受 SubscribeOn 控制 ---
+    Console.WriteLine($"生产数据线程: {Thread.CurrentThread.ManagedThreadId}");
+    observer.OnNext("数据");
+    return Disposable.Empty;
+})
+.SubscribeOn(ThreadPoolScheduler.Instance) // 1. 指定源头在后台线程池运行
+.Map(x => x + " 处理过")                   //    Map 也在后台运行
+.ObserveOn(DispatcherScheduler.Current)    // 2. 切换回 UI 线程 (WPF)
+.Subscribe(x => 
+{
+    // --- 这里的代码受 ObserveOn 控制 ---
+    Console.WriteLine($"接收数据线程: {Thread.CurrentThread.ManagedThreadId}");
+    this.MyTextBox.Text = x; // 安全地更新 UI
+});
+```
+
+### 常见内置Scheduler
+
+| Scheduler                                                    | 描述                         | 典型用途                               |
+| ------------------------------------------------------------ | ---------------------------- | -------------------------------------- |
+| **`CurrentThreadScheduler`**                                 | 在当前线程排队执行（默认）   | 同步流、测试                           |
+| **`ImmediateScheduler`**                                     | 立即在当前线程执行（无排队） | 极少使用                               |
+| **`NewThreadScheduler`**                                     | 为每个任务创建新线程         | 独立后台任务（慎用，开销大）           |
+| **`TaskPoolScheduler` / `ThreadPoolScheduler`**              | 使用线程池                   | **CPU 密集型任务**（如计算、文件 I/O） |
+| **`DispatcherScheduler` (WPF) / `ControlScheduler` (WinForms) / `MainThreadScheduler` (Avalonia/Xamarin)** | **UI 线程**                  | **更新 UI 控件**                       |
+| **`EventLoopScheduler`**                                     | 单独专用线程（带消息循环）   | 长期运行的流（如日志监听）             |
+
+### ReactiveUI专用调度器
+
+`RxApp.MainThreadScheduler`
+
+- **对应：** 平台的 UI 线程（WPF 的 `Dispatcher`, Avalonia 的 `AvaloniaScheduler` 等）。
+- **用途：** 所有涉及 UI 更新的操作（`Bind`, `ToProperty`）都必须在这里运行。
+- **配合：** 通常在 `ObserveOn` 中使用。
+
+`RxApp.TaskpoolScheduler`
+
+- **对应：** `TaskPoolScheduler.Instance`。
+- **用途：** 执行耗时的后台任务（数据库、API、计算）。
+- **配合：** 通常在 `SubscribeOn` 或 `SelectMany` 内部使用。
+
+### 虚拟时间调度器`TestScheduler`
+
+在单元测试中，你不想真的等待 `Observable.Timer(TimeSpan.FromSeconds(10))` 运行 10 秒钟。
+
+使用 `TestScheduler`，你可以“快进”时间：
+
+```CS
+// 创建一个虚拟时间调度器
+var scheduler = new TestScheduler();
+
+// 创建一个原本需要 10 秒的任务，但指定使用我们的测试调度器
+var source = Observable.Return(1).Delay(TimeSpan.FromSeconds(10), scheduler);
+
+bool received = false;
+source.Subscribe(_ => received = true);
+
+// 此时 received 为 false，因为时间还没到
+
+// "快进" 时间 10 秒
+scheduler.AdvanceBy(TimeSpan.FromSeconds(10).Ticks);
+
+// 此时 received 立即变为 true，测试无需实际等待
+Assert.True(received);
+```
 
 ## Operators Categories
 
@@ -1098,8 +1452,6 @@ timedClicks.Subscribe(ti =>
     Console.WriteLine($"{ti.Value} after {ti.Interval.TotalSeconds}s"));
 ```
 
-
-
 #### Using
 
 **作用：** 创建一个需要在 Observable 流的生命周期内使用的资源，并在流终止（无论是通过 `OnCompleted`、`OnError` 还是取消订阅）时自动释放该资源。
@@ -1114,25 +1466,271 @@ Observable.Using(
 .Subscribe(...); // 无论流发生什么，DatabaseConnection 都会被 Dispose
 ```
 
-
-
 ### Conditional条件和布尔
 
+> [!NOTE]
+>
+> **“条件操作符不是过滤数据，而是定义流的生命周期和决策边界。”**
 
+| 操作符           | 行为             | 是否完成流        | 典型用途     |
+| ---------------- | ---------------- | ----------------- | ------------ |
+| `All`            | 所有项满足谓词？ | ✅                 | 全局验证     |
+| `Contains`       | 包含某值？       | ✅                 | 成员检查     |
+| `Amb`            | 谁先发射用谁     | ✅                 | 竞态选择     |
+| `DefaultIfEmpty` | 空流给默认值     | ❌（转为非空）     | 防空处理     |
+| `SequenceEqual`  | 两流序列相等？   | ✅                 | 测试/校验    |
+| `SkipWhile`      | 跳过前缀满足项   | ❌                 | 前导过滤     |
+| `SkipUntil`      | 直到信号才开始   | ❌                 | 延迟启动     |
+| `TakeWhile`      | 取前缀满足项     | ✅（遇到不满足时） | 前导截取     |
+| `TakeUntil`      | 直到信号才停止   | ✅（信号触发时）   | 生命周期绑定 |
 
+#### All/Contains/Amb
 
+##### All(布尔判断)
 
+**作用：** 检查源 Observable 发射的所有数据项是否都满足指定的条件。
 
+**原理：** 类似于 LINQ 中的 `All` 方法。它必须等待源 Observable 完成 (`OnCompleted`) 才能发射结果。如果序列为空，它会发射 `true`。如果在完成之前有一个元素不满足条件，它会立即发射 `false` 并终止流。
+
+**输出：** 返回一个 `IObservable<bool>`，只发射一个布尔值，然后完成。
+
+```CS
+Observable.Range(2, 4) // 序列: 2, 3, 4, 5
+    .All(x => x > 1) 
+    .Subscribe(result => Console.WriteLine($"所有元素都大于 1: {result}")); // 输出: True
+```
+
+##### Contains(布尔判断)
+
+**作用：** 检查源 Observable 发射的数据项中是否包含指定的值。
+
+**原理：** 类似于 LINQ 中的 `Contains` 方法。一旦找到指定的值，它会立即发射 `true` 并终止流。如果流在找到之前完成，则发射 `false`。
+
+**输出：** 返回一个 `IObservable<bool>`，只发射一个布尔值，然后完成。
+
+```CS
+var stream = Observable.From(new [] { "A", "B", "C" });
+stream.Contains("B")
+    .Subscribe(result => Console.WriteLine($"包含 'B': {result}")); // 输出: True (立即终止)
+```
+
+##### Amb（选择竞争流）
+
+全称：Ambiguous
+
+**作用：** 订阅多个 Observable 流，并只发射**最先**发射数据项的那个流的数据。一旦有一个流发射了数据，其他所有的流都会被取消订阅并丢弃。
+
+**原理：** 处理**竞态条件（Race Condition）**。常用于处理来自多个潜在数据源（如多个服务器，或者本地缓存和网络）的数据，只取最快的那个。
+
+**特点：** 流的终止和错误信号都只来自于最终选定的那个流。
+
+```CS
+var fast = Observable.Timer(TimeSpan.FromSeconds(0.1)).Select(_ => "FAST");
+var slow = Observable.Timer(TimeSpan.FromSeconds(1.0)).Select(_ => "SLOW");
+
+// 只有 fast 流的数据会被发射
+Observable.Amb(fast, slow) 
+    .Subscribe(x => Console.WriteLine($"Winner: {x}")); // 输出: Winner: FAST
+```
+
+```CS
+// Amb 的“完成也算信号”
+// 即使没有 OnNext，完成信号也会触发 Amb 选择
+var empty1 = Observable.Empty<int>();
+var empty2 = Observable.Empty<int>().Delay(TimeSpan.FromSeconds(1));
+
+empty1.Amb(empty2).Subscribe(...); // 立即完成（因为 empty1 先完成）
+```
+
+#### DefaultIfEmpty（空值判断）
+
+**作用：** 如果源 Observable 正常完成 (`OnCompleted`) 但没有发射任何数据项，则发射一个默认值。
+
+**原理：** 只有当流为空时才会介入。如果流发射了任何数据项，或者以错误 (`OnError`) 终止，`DefaultIfEmpty` 不会做任何事。
+
+**特点：** 适用于为可能为空的结果提供备用值。
+
+```CS
+Observable.Empty<int>() // 空流
+    .DefaultIfEmpty(99)
+    .Subscribe(x => Console.WriteLine($"结果: {x}")); // 输出: 结果: 99
+```
+
+> [!note]
+>
+> - 如果流抛出异常 → `DefaultIfEmpty` 不生效
+> - 如需错误也转默认值，用 `Catch` + `Return`
+
+#### SequenceEqual（序列比较）
+
+**作用：** 比较两个 Observable 流发射的数据序列是否完全相同（包括元素的数量、值和顺序）。
+
+**原理：** 类似于 LINQ 中的 `SequenceEqual` 方法。它必须等待两个流都完成才能比较整个序列并发射结果。
+
+**输出：** 返回一个 `IObservable<bool>`，只发射一个布尔值，然后完成。
+
+```CS
+var streamA = Observable.Range(1, 3); // 1, 2, 3
+var streamB = Observable.From(new [] { 1, 2, 3 });
+
+Observable.SequenceEqual(streamA, streamB)
+    .Subscribe(result => Console.WriteLine($"序列相等: {result}")); // 输出: True
+```
+
+> [!note]
+>
+> 对待异步流需谨慎：如果两流速度差异大 → 快的流会缓存所有值等慢的 → **内存风险**
+
+#### SkipUntil/SkipWhile（跳过）
+
+| **操作符**      | **机制**                                         | **描述**                                                     |
+| --------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| **`SkipWhile`** | **持续跳过**，直到条件**首次不满足**为止。       | 只要条件函数返回 `true`，就跳过元素。一旦条件返回 `false`，则不再跳过后续任何元素。 |
+| **`SkipUntil`** | **持续跳过**，直到另一个**通知流发射数据**为止。 | 忽略源 Observable 的所有元素，直到另一个“触发流”发射了它的第一个数据项。一旦触发流发射，则允许源流的所有后续数据通过。 |
+
+```CS
+var data = Observable.Interval(TimeSpan.FromSeconds(0.1));
+var starter = Observable.Timer(TimeSpan.FromSeconds(1)); // 1秒后触发
+
+// 数据流在 1 秒前的数据全部被跳过
+data.SkipUntil(starter) 
+    .Take(5)
+    .Subscribe(x => Console.WriteLine($"接收数据: {x}"));
+```
+
+#### TakeUntil/TakeWhile（获取）
+
+| **操作符**      | **机制**                                         | **描述**                                                     |
+| --------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| **`TakeWhile`** | **持续接收**，直到条件**首次不满足**为止。       | 只要条件函数返回 `true`，就接收元素。一旦条件返回 `false`，则终止流 (`OnCompleted`)。 |
+| **`TakeUntil`** | **持续接收**，直到另一个**通知流发射数据**为止。 | 接收源 Observable 的所有元素，直到另一个“触发流”发射了它的第一个数据项。触发流发射后，源流立即终止 (`OnCompleted`)。 |
+
+```CS
+Observable.Range(1, 10)
+    .TakeWhile(x => x <= 5) // 一旦 x > 5，流终止
+    .Subscribe(x => Console.WriteLine($"接收数据: {x}")); // 输出: 1, 2, 3, 4, 5, 完成
+```
 
 ### Mathermatical算术和聚合
 
+> [!note]
+>
+> **所有聚合操作符都必须等待上游流 `OnCompleted` 才能发射结果！**
 
+| 操作符               | 输入     | 输出     | 空流行为       | 是否需流结束 |
+| -------------------- | -------- | -------- | -------------- | ------------ |
+| `Sum`                | 数值流   | 单个数值 | `0`            | ✅            |
+| `Average`            | 数值流   | `double` | 异常           | ✅            |
+| `Min`/`Max`          | 可比较流 | 单个值   | 异常           | ✅            |
+| `Count`              | 任意流   | `int`    | `0`            | ✅            |
+| `Reduce`/`Aggregate` | 任意流   | 单个值   | 异常（无种子） | ✅            |
 
+#### Sum
 
+**计算所有数值项的总和**
 
+- **支持类型**：`int`, `long`, `float`, `double`, `decimal`
+- **空流行为**：返回 `0`
 
+```CS
+var numbers = Observable.Range(1, 5); // 1 → 2 → 3 → 4 → 5
+numbers.Sum().Subscribe(total => Console.WriteLine(total)); // 输出: 15
+```
 
+#### Average
 
+**计算所有数值项的平均值**
+
+- **返回类型**：`double`（即使输入是 `int`）
+- **空流行为**：抛出 `InvalidOperationException`（除零错误）
+
+```CS
+var scores = Observable.Return(85).Concat(Observable.Return(90)).Concat(Observable.Return(95));
+scores.Average().Subscribe(avg => Console.WriteLine($"Avg: {avg:F1}")); // Avg: 90.0
+```
+
+安全写法（处理空流）：
+
+```CS
+source.DefaultIfEmpty(0).Average()
+      .Subscribe(...);
+```
+
+#### Min/Max
+
+**找出流中的最小值或最大值**
+
+- **空流行为**：抛出异常
+- **支持任意可比较类型**（实现 `IComparable<T>`）
+
+```CS
+var temps = Observable.Return(22.5).Concat(Observable.Return(18.0)).Concat(Observable.Return(25.3));
+temps.Min().Subscribe(min => Console.WriteLine($"Min: {min}°C")); // Min: 18°C
+temps.Max().Subscribe(max => Console.WriteLine($"Max: {max}°C")); // Max: 25.3°C
+```
+
+#### Count
+
+**统计流中发射的项数**
+
+- **空流行为**：返回 `0`
+- **注意**：必须等流**完全结束**才能得到结果
+
+```CS
+Observable.Range(1, 100).Count()
+          .Subscribe(n => Console.WriteLine($"Total: {n}")); // Total: 100
+
+// 过滤后计数
+clicks.Where(_ => DateTime.Now.Hour < 12)
+      .TakeUntil(endOfDaySignal)
+      .Count()
+      .Subscribe(morningClicks => ...);
+```
+
+对无限流危险：
+
+```CS
+// ❌ 永不结束！
+Observable.Interval(TimeSpan.FromSeconds(1)).Count();
+```
+
+#### Reduce
+
+**累积归约,只输出最终结果**
+
+- **别名**：`Aggregate`（在 LINQ 和 Rx.NET 中常用）
+- **需要初始值？** → 使用 `Aggregate(seed, func)`
+
+```CS
+// 无种子版本（首项作初始值）：
+var numbers = Observable.Return(1).Concat(Observable.Return(2)).Concat(Observable.Return(3));
+numbers.Reduce((acc, x) => acc + x)
+       .Subscribe(sum => Console.WriteLine(sum)); // 6
+
+// 有种子版本（推荐）：
+numbers.Aggregate(10, (acc, x) => acc + x) // 初始值=10
+       .Subscribe(result => Console.WriteLine(result)); // 16
+```
+
+#### Concat
+
+**作用：** 将多个 Observable 序列连接起来，**按顺序**发射它们的数据。
+
+**原理：** `Concat` 会订阅第一个 Observable，并将其所有数据发射出去。**只有**在第一个 Observable 完成 (`OnCompleted`) 之后，`Concat` 才会订阅第二个 Observable，并重复这个过程。
+
+**特点：** 用于保证流的严格顺序。
+
+```CS
+var streamA = Observable.Return("A").Delay(TimeSpan.FromMilliseconds(500));
+var streamB = Observable.Return("B");
+
+// streamA 完成后 streamB 才开始
+Observable.Concat(streamA, streamB)
+    .Subscribe(x => Console.WriteLine($"数据: {x}")); 
+// 输出:
+// (0.5s 后) 数据: A
+// 数据: B
+```
 
 ### Async异步
 
@@ -1142,27 +1740,298 @@ Observable.Using(
 
 ### Connect连接
 
+**连接操作符（Connectable Operators）** 用于将**冷 Observable 转换为热 Observable**，从而实现**多订阅者共享同一数据源、避免重复执行副作用**（如多次 HTTP 请求）等关键场景。
 
+- **冷 Observable**：每次订阅都**重新执行**源头逻辑（如 `FromAsync`、`Create`）
+- **热 Observable**：**共享执行结果**，新订阅者只能收到**未来的值**
 
+| 操作符                | 是否自动 Connect    | 是否缓存历史 | 返回类型                    | 典型用途                |
+| --------------------- | ------------------- | ------------ | --------------------------- | ----------------------- |
+| `Publish()`           | ❌（需手动 Connect） | ❌            | `IConnectableObservable<T>` | 精确控制执行时机        |
+| `RefCount()`          | ✅（引用计数）       | ❌            | `IObservable<T>`            | 共享单次执行（无历史）  |
+| `Replay()`            | ❌（需 Connect）     | ✅            | `IConnectableObservable<T>` | 共享 + 重放历史         |
+| `Replay().RefCount()` | ✅                   | ✅            | `IObservable<T>`            | **最常用：共享 + 历史** |
 
+#### Publish
 
+**作用：** 将任何 Observable 转换为一个 **可连接的 Observable(热流)**。它使用一个简单的底层主体（Subject）将数据广播给所有订阅者。
 
+**原理：** `Publish` 使得源流只执行一次，所有订阅者共享同一个执行结果。
+
+**特点：** 这是最基本和最常用的转换操作，它实现了**多播（Multicasting）**。新的订阅者只能接收到 `Connect()` 调用之后发射的数据。
+
+```CS
+var cold = Observable.Create<int>(observer =>
+{
+    Console.WriteLine("Executing source!");
+    observer.OnNext(42);
+    observer.OnCompleted();
+    return Disposable.Empty;
+});
+
+// 转为可连接流
+var connectable = cold.Publish();
+
+// 订阅者1
+connectable.Subscribe(x => Console.WriteLine($"Sub1: {x}"));
+// 订阅者2
+connectable.Subscribe(x => Console.WriteLine($"Sub2: {x}"));
+
+// 此时无输出！因为未 Connect
+
+var connection = connectable.Connect(); // ← 激活源头
+// 输出:
+// Executing source!
+// Sub1: 42
+// Sub2: 42
+```
+
+> [!NOTE]
+>
+> - 必须手动管理 `connection.Dispose()` 来取消
+> - 如果在 `Connect()` 前无人订阅 → 数据会丢失！
+
+#### Connect
+
+- 是 `IConnectableObservable` 的方法，**不是操作符**。
+- 返回 `IDisposable`，用于**取消连接**
+
+**作用：** 这是**启动**可连接 Observable 数据发射的动作,用于激活 ConnectableObservable 的执行。。
+
+**原理：** 只有当您对一个 `IConnectableObservable` 调用 `Connect()` 时，它才会订阅底层的源 Observable，并开始生成和广播数据。
+
+**特点：** `Connect()` 返回一个 `IDisposable`。调用 `Dispose()` 可以停止底层源 Observable 的执行，断开连接。
+
+```CS
+var connectable = source.Publish(); // 步骤 1: 创建可连接对象
+connectable.Subscribe(x => Console.WriteLine($"Observer 1: {x}")); 
+
+// 订阅者注册完毕后，调用 Connect 启动流
+var connection = connectable.Connect(); // 步骤 2: 启动流
+// ...
+connection.Dispose(); // 停止流
+```
+
+#### RefCount
+
+**作用：** 自动管理可连接 Observable 的连接和断开,有订阅者时自动 Connect，无订阅者时自动 Dispose。
+
+**原理：** 它可以将一个 `IConnectableObservable` 转换回一个普通的 `IObservable`。
+
+- 当**第一个订阅者**订阅时，它会调用底层的 `Connect()`。
+- 当**所有订阅者**都取消订阅时，它会自动调用底层 `Connect()` 返回的 `IDisposable` 的 `Dispose()`，从而停止源流的执行。
+
+**特点：** 消除了手动调用 `Connect()` 和 `Dispose()` 的需要，实现了**自动连接**和**自动断开**
+
+```CS
+// source.Publish().RefCount() 是常用的组合，实现共享和自动管理
+var shared = source.Publish().RefCount(); 
+
+var subA = shared.Subscribe(...); // 引用计数 = 1，流启动 (Connect 被调用)
+var subB = shared.Subscribe(...); // 引用计数 = 2
+
+subA.Dispose(); // 引用计数 = 1
+subB.Dispose(); // 引用计数 = 0，流停止 (Dispose 被调用)
+```
+
+最常用模式：
+
+```CS
+var sharedApiCall = Observable.FromAsync(() => api.GetDataAsync())
+                              .Publish()
+                              .RefCount();
+```
+
+💡 **效果**：
+
+- 第一个订阅者触发 API 调用
+- 后续订阅者直接收到结果（如果已完成）或等待
+- 所有订阅者取消后，资源释放
+
+#### Replay
+
+**作用：** 类似于 `Publish`，但它具有**缓存和重放**的能力。
+
+**原理：** `Replay` 使用一个特殊的底层主体（`ReplaySubject`）来缓存源流发射的数据。当新的订阅者加入时，它会向新订阅者发送缓存中的历史数据，然后再发送实时数据。
+
+**特点：**
+
+- **缓存数量：** 可以指定缓存数据的数量 (`Replay(bufferSize)`)。
+- **缓存时间：** 可以指定缓存数据的时间窗口 (`Replay(window)`)。
+- **新订阅者可以“追上”历史数据。**
+
+**常见重载：**
+
+| 方法                      | 行为                   |
+| ------------------------- | ---------------------- |
+| `Replay()`                | 缓存所有历史值         |
+| `Replay(int bufferSize)`  | 最多缓存 N 个值        |
+| `Replay(TimeSpan window)` | 缓存指定时间窗口内的值 |
+| `Replay(IScheduler)`      | 指定调度器             |
+
+~~~CS
+using System;
+using System.Reactive.Linq;
+
+class Program
+{
+    public static void Main()
+    {
+        var observable = Observable.Interval(TimeSpan.FromSeconds(1)) // 每秒发出一个数字
+            .Take(5)
+            .Replay();  // 缓存所有的数据项
+
+        // 延迟 2 秒后订阅第一个订阅者
+        System.Threading.Thread.Sleep(2000);
+        observable.Subscribe(x => Console.WriteLine($"Subscriber 1: {x}"));
+        
+        // 延迟 3 秒后订阅第二个订阅者
+        System.Threading.Thread.Sleep(3000);
+        observable.Subscribe(x => Console.WriteLine($"Subscriber 2: {x}"));
+        
+        // 手动连接
+        observable.Connect();
+        
+        // 等待观察结果
+        System.Threading.Thread.Sleep(5000);  // 确保输出
+    }
+}
+~~~
+
+```CS
+// 执行结果
+Subscriber 1: 0
+Subscriber 1: 1
+Subscriber 1: 2
+Subscriber 1: 3
+Subscriber 1: 4
+Subscriber 2: 0
+Subscriber 2: 1
+Subscriber 2: 2
+Subscriber 2: 3
+Subscriber 2: 4
+```
 
 ### Convert转换
 
+> **`To` 是出口，不是管道。**
 
+- `To` 系列用于**退出响应式世界**，进入同步或任务式编程
+- 它们适合**一次性获取完整结果**的场景
+- **绝不用于实时流处理或 UI 更新**
 
+在绝大多数响应式应用中，你应优先使用：
 
+- `Subscribe`（处理每个值）
+- `Select`/`Where`（转换/过滤）
+- `ObserveOn`（调度到 UI）
+
+只有在需要**桥接非响应式代码**或**测试验证**时，才考虑 `To` 方法。
+
+#### ToArray
+
+**作用：** 将 Observable 流中发射的所有数据项收集到一个数组（`T[]`）中。
+
+**原理：** 订阅流，缓存所有 `OnNext` 通知，直到收到 `OnCompleted` 通知，然后发射包含所有元素的数组。
+
+**输出：** 返回 `IObservable<T[]>`。
+
+```CS
+Observable.Range(1, 3) // 序列: 1, 2, 3
+    .ToArray()
+    .Subscribe(array => 
+        Console.WriteLine($"数组长度: {array.Length}, 元素: {string.Join(", ", array)}")
+    ); // 输出: 数组长度: 3, 元素: 1, 2, 3
+```
+
+#### ToList
+
+**作用：** 将 Observable 流中发射的所有数据项收集到一个列表（`IList<T>` 或 `List<T>`）中。
+
+**原理：** 与 `ToArray()` 类似，但返回的是列表类型。
+
+**输出：** 返回 `IObservable<IList<T>>`。
+
+```CS
+Observable.Range(1, 3).ToList()
+    .Subscribe(list => 
+        Console.WriteLine($"列表类型: {list.GetType().Name}")
+    ); // 输出: 列表类型: List`1
+```
+
+#### ToDictionary
+
+**作用：** 将 Observable 流中发射的所有数据项转换为一个字典（`IDictionary<TKey, TValue>`）。
+
+**原理：** 必须为每个元素指定一个 **键选择器（Key Selector）** 函数。可以可选地指定一个 **值选择器（Value Selector）**。
+
+**特点：** 如果序列包含重复的键，则会抛出异常。
+
+**输出：** 返回 `IObservable<IDictionary<TKey, TValue>>`。
+
+```CS
+var users = Observable.From(new[] 
+    { 
+        new { Id = 1, Name = "Alice" }, 
+        new { Id = 2, Name = "Bob" } 
+    });
+
+users.ToDictionary(u => u.Id, u => u.Name) // Key: Id, Value: Name
+    .Subscribe(dict => 
+        Console.WriteLine($"字典包含键 1: {dict.ContainsKey(1)}")
+    ); // 输出: 字典包含键 1: True
+```
+
+#### ToLookup
+
+**作用：** 将 Observable 流中发射的所有数据项转换为一个查找表（`ILookup<TKey, TElement>`）。
+
+**原理：** 类似于 `ToDictionary()`，但用于处理**重复的键**。一个键可以对应多个值。
+
+**特点：** 适用于将流中的元素按类别分组。
+
+**输出：** 返回 `IObservable<ILookup<TKey, TElement>>`。
+
+```CS
+var scores = Observable.From(new[] 
+    { 
+        new { Name = "A", Score = 10 }, 
+        new { Name = "B", Score = 20 }, 
+        new { Name = "A", Score = 30 } 
+    });
+
+scores.ToLookup(s => s.Name) // 按 Name 分组
+    .Subscribe(lookup => 
+        Console.WriteLine($"A 的分数数量: {lookup["A"].Count()}")
+    ); // 输出: A 的分数数量: 2
+```
 
 ### Blocking阻塞
 
+要将普通的`Observable` 转换为 `BlockingObservable`，可以使用 [`Observable.toBlocking( )`](http://reactivex.io/RxJava/javadoc/rx/Observable.html#toBlocking()) 方法或者[`BlockingObservable.from( )`](http://reactivex.io/RxJava/javadoc/rx/observables/BlockingObservable.html#from(rx.Observable)) 方法。
 
-
-
+- [**`forEach( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Subscribe.html) — 对Observable发射的每一项数据调用一个方法，会阻塞直到Observable完成
+- [**`first( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/First.html) — 阻塞直到Observable发射了一个数据，然后返回第一项数据
+- [**`firstOrDefault( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/First.html) — 阻塞直到Observable发射了一个数据或者终止，返回第一项数据，或者返回默认值
+- [**`last( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Last.html) — 阻塞直到Observable终止，然后返回最后一项数据
+- [**`lastOrDefault( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Last.html) — 阻塞直到Observable终止，然后返回最后一项的数据，或者返回默认值
+- [**`mostRecent( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/First.html) — 返回一个总是返回Observable最近发射的数据的iterable
+- [**`next( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/TakeLast.html) — 返回一个Iterable，会阻塞直到Observable发射了另一个值，然后返回那个值
+- [**`latest( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/First.html) — 返回一个iterable，会阻塞直到或者除非Observable发射了一个iterable没有返回的值，然后返回这个值
+- [**`single( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/First.html) — 如果Observable终止时只发射了一个值，返回那个值，否则抛出异常
+- [**`singleOrDefault( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/First.html) — 如果Observable终止时只发射了一个值，返回那个值，否则否好默认值
+- [**`toFuture( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/To.html) — 将Observable转换为一个Future
+- [**`toIterable( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/To.html) — 将一个发射数据序列的Observable转换为一个Iterable
+- [**`getIterator( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/To.html) — 将一个发射数据序列的Observable转换为一个Iterator
 
 ### String字符串
 
+`StringObservable` 类包含一些用于处理字符串序列和流的特殊操作符，如下：
 
-
-
-
+- [**`byLine( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Map.html) — 将一个字符串的Observable转换为一个行序列的Observable，这个Observable将原来的序列当做流处理，然后按换行符分割
+- [**`decode( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/From.html) — 将一个多字节的字符流转换为一个Observable，它按字符边界发射字节数组
+- [**`encode( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Map.html) — 对一个发射字符串的Observable执行变换操作，变换后的Observable发射一个在原始字符串中表示多字节字符边界的字节数组
+- [**`from( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/From.html) — 将一个字符流或者Reader转换为一个发射字节数组或者字符串的Observable
+- [**`join( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Sum.md) — 将一个发射字符串序列的Observable转换为一个发射单个字符串的Observable，后者用一个指定的字符串连接所有的字符串
+- [**`split( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/FlatMap.html) — 将一个发射字符串的Observable转换为另一个发射字符串的Observable，后者使用一个指定的正则表达式边界分割前者发射的所有字符串
+- [**`stringConcat( )`**](https://mcxiaoke.gitbooks.io/rxdocs/content/operators/Sum.md) — 将一个发射字符串序列的Observable转换为一个发射单个字符串的Observable，后者连接前者发射的所有字符串
