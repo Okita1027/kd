@@ -1340,12 +1340,6 @@ public class MyView : ReactiveUserControl<MyViewModel>
 - `BindTo` 用于将 `ViewModel.Name` 和 `TextBox`、`TextBlock` 的 `Text` 属性绑定在一起，确保当 `Name` 发生变化时，UI 会自动更新。
 - `Subscribe` 订阅 `Name` 属性的变化并执行 `Console.WriteLine`，这是用于响应式操作的方式。
 
-## 数据持久性
-
-
-
-
-
 ## 默认异常处理程序
 
  如果一个异常在 `IObservable` 序列中被抛出，并且没有在流的末端（例如 `Subscribe` 的 `onError` 回调或 `ReactiveCommand.ThrownExceptions`）被捕获，这个异常通常会导致应用程序崩溃（取决于运行时环境）。
@@ -2617,19 +2611,408 @@ public partial class App : Application
 3. 如果快速输入新词（如 “ui”），旧请求自动取消
 4. 输入为空 → 不触发搜索
 
-
-
 ## 路由
 
+**Routing（路由）**是实现 **导航（Navigation）** 的核心机制，用于在不同页面（View/ViewModel）之间切换，同时保持 **MVVM 架构的纯净性** —— 即 **View 不直接引用其他 View，ViewModel 不依赖 UI 框架**。
+
+> 💡 核心思想：
+>  **“通过 ViewModel 驱动导航，View 只负责呈现当前 ViewModel。”**
+
+| 组件                                    | 作用                                                         |
+| --------------------------------------- | ------------------------------------------------------------ |
+| **`IScreen`**                           | 应用的“根”容器，持有当前路由状态。通常是`MainViewModel`。    |
+| **`IRoutableViewModel`**                | 可被路由的 ViewModel（每个页面对应一个）。任何想要被导航到的子 ViewModel 必须实现此接口。它知道自己属于哪个 `IScreen`。 |
+| **`RoutingState`**                      | 管理导航栈（前进/后退）、当前页面等。                        |
+| **`RoutedViewHost` / `NavigationView`** | 这是一个 UI 控件（在 XAML 中使用）。它监听 `Router` 的状态，当 ViewModel 发生变化时，它自动查找并渲染对应的 View。 |
+
+### 使用方法
+
+#### 创建宿主(`IScreen`)
+
+通常你的 `MainViewModel` 会实现 `IScreen` 接口。它负责持有路由状态（即导航堆栈）。
+
+```CS
+using ReactiveUI;
+
+public class MainViewModel : ReactiveObject, IScreen
+{
+    // 1. 实现 IScreen 接口要求的 Router 属性
+    // RoutingState 是核心，它管理导航堆栈 (BackStack)
+    public RoutingState Router { get; } = new RoutingState();
+
+    public MainViewModel()
+    {
+        // 可以在这里设置初始页面
+        // Router.Navigate.Execute(new HomeViewModel(this));
+    }
+}
+```
+
+#### 创建子页面(`IRoutableViewModel`)
+
+每个子页面 ViewModel 都必须实现 `IRoutableViewModel`。
+
+```CS
+public class HomeViewModel : ReactiveObject, IRoutableViewModel
+{
+    // 1. 必须指明 UrlPathSegment (用于 URL 序列化/Deep Linking，即使不用也要写个名字)
+    public string UrlPathSegment => "home";
+
+    // 2. 必须持有 HostScreen 的引用 (以便调用 HostScreen.Router 进行跳转)
+    public IScreen HostScreen { get; }
+
+    public HomeViewModel(IScreen screen)
+    {
+        HostScreen = screen;
+    }
+}
+```
+
+#### 在XAML中放置显示器(`RoutedViewHost`)
+
+在 `MainWindow.xaml` (View) 中，需要放置 `RoutedViewHost` 控件，并将其绑定到 ViewModel 的 `Router`。
+
+```xaml
+<Window x:Class="MyApp.MainWindow"
+        xmlns:rxui="http://reactiveui.net" 
+        ...>
+    
+    <rxui:RoutedViewHost Router="{Binding Router}">
+        
+        <rxui:RoutedViewHost.DefaultContent>
+            <TextBlock Text="正在加载..." />
+        </rxui:RoutedViewHost.DefaultContent>
+        
+        <rxui:RoutedViewHost.PageTransition>
+            <rxui:FadeTransition Duration="0:0:0.5" />
+        </rxui:RoutedViewHost.PageTransition>
+        
+    </rxui:RoutedViewHost>
+</Window>
+```
+
+#### 注册View和ViewModel的映射（View Location）
+
+`RoutedViewHost` 如何知道 `HomeViewModel` 应该显示 `HomeView`？是通过 **Splat** 依赖注入注册的。
+
+在你的 `App.xaml.cs` 或启动引导代码中：
+
+```cs
+using Splat;
+
+public void ConfigureServices()
+{
+    // 告诉 Splat: "当路由系统遇到 HomeViewModel 时，请实例化 HomeView"
+    Locator.CurrentMutable.Register(() => new HomeView(), typeof(IViewFor<HomeViewModel>));
+    Locator.CurrentMutable.Register(() => new LoginView(), typeof(IViewFor<LoginViewModel>));
+}
+```
+
+### 导航
+
+一旦设置好结构，导航就变成了对 `Router` 对象的操作。`RoutingState` 提供了三个核心命令：
+
+#### 跳转（`Maps`）
+
+将一个新的 ViewModel 推入堆栈。
+
+```cs
+// 在 MainViewModel 或任何持有 Router 引用的地方
+// HomeViewModel 需要传入宿主 (this)
+Router.Navigate.Execute(new DetailsViewModel(this));
+```
+
+#### 返回（`MapsBack`）
+
+弹出堆栈顶部的 ViewModel，返回上一个。
+
+```cs
+// 只有当堆栈中有历史记录时才能执行
+Router.NavigateBack.Execute();
+```
+
+#### 重置并跳转（`MapsAndReset`）
+
+清空整个堆栈，并跳转到新页面（通常用于“注销”或“回到首页”场景，防止用户点后退键回到登录页）。
+
+```cs
+Router.NavigateAndReset.Execute(new LoginViewModel(this));
+```
+
+
+
+## 单元测试
 
 
 
 
 
+## 用户输入验证
+
+**`ReactiveUI.Validation`** 是官方推荐的 **响应式输入验证库**，它将验证逻辑与 ViewModel 无缝集成，支持：
+
+- ✅ 实时验证（随用户输入自动触发）
+- ✅ 多规则组合（Required、Email、Custom 等）
+- ✅ 错误信息绑定到 View（自动显示/隐藏）
+- ✅ 命令启用状态联动（如“提交”按钮仅在有效时可用）
+- ✅ 完全响应式（基于 `Observable` 流）
+
+### 使用步骤
+
+#### ViewModel 继承 `ReactiveValidationObject`
+
+#### 定义普通 Reactive 属性
+
+#### 通过 `ValidationRule` 添加规则
+
+#### 使用 `ValidationContext` / `IsValid`
+
+#### 绑定到 UI 或 Command
+
+### 示例：单字段验证
 
 
 
+```CS
+using ReactiveUI;
+using ReactiveUI.Validation.Extensions;
+using ReactiveUI.Validation.Helpers;
 
+public class LoginViewModel : ReactiveValidationObject
+{
+    private string _userName;
 
+    public string UserName
+    {
+        get => _userName;
+        set => this.RaiseAndSetIfChanged(ref _userName, value);
+    }
 
+    public LoginViewModel()
+    {
+        // 用户名不能为空
+        this.ValidationRule(
+            vm => vm.UserName,
+            name => !string.IsNullOrWhiteSpace(name),
+            "用户名不能为空"
+        );
+    }
+}
+```
+
+- `ValidationRule` 把 **属性 → 验证逻辑 → 错误信息** 连接起来
+- 验证结果自动进入 `ValidationContext`
+
+**验证的结果在哪儿？**
+
+ReactiveUI.Validation 自动给你：
+
+~~~CS
+this.ValidationContext.IsValid
+this.ValidationContext.Text
+~~~
+
+### 示例：将验证与Command绑定
+
+验证通过 -> 才能点击按钮：
+
+```CS
+public ReactiveCommand<Unit, Unit> LoginCommand { get; }
+
+public LoginViewModel()
+{
+    this.ValidationRule(
+        vm => vm.UserName,
+        name => !string.IsNullOrWhiteSpace(name),
+        "用户名不能为空"
+    );
+
+    LoginCommand = ReactiveCommand.Create(
+        Login,
+        this.ValidationContext.Valid
+    );
+}
+```
+
+### 示例：多字段验证
+
+- 用户名不能为空
+- 密码 ≥ 6 位
+- 两次密码必须一致
+
+```CS
+public class RegisterViewModel : ReactiveValidationObject
+{
+    private string _userName;
+    private string _password;
+    private string _confirmPassword;
+
+    public string UserName
+    {
+        get => _userName;
+        set => this.RaiseAndSetIfChanged(ref _userName, value);
+    }
+
+    public string Password
+    {
+        get => _password;
+        set => this.RaiseAndSetIfChanged(ref _password, value);
+    }
+
+    public string ConfirmPassword
+    {
+        get => _confirmPassword;
+        set => this.RaiseAndSetIfChanged(ref _confirmPassword, value);
+    }
+
+    public ReactiveCommand<Unit, Unit> RegisterCommand { get; }
+
+    public RegisterViewModel()
+    {
+        // 用户名
+        this.ValidationRule(
+            vm => vm.UserName,
+            name => !string.IsNullOrWhiteSpace(name),
+            "用户名不能为空"
+        );
+
+        // 密码长度
+        this.ValidationRule(
+            vm => vm.Password,
+            pwd => !string.IsNullOrEmpty(pwd) && pwd.Length >= 6,
+            "密码至少 6 位"
+        );
+
+        // 跨字段校验
+        this.ValidationRule(
+            vm => vm.ConfirmPassword,
+            vm => vm.Password == vm.ConfirmPassword,
+            "两次密码不一致"
+        );
+
+        RegisterCommand = ReactiveCommand.Create(
+            Register,
+            this.ValidationContext.Valid
+        );
+    }
+
+    private void Register()
+    {
+        // 提交逻辑
+    }
+}
+```
+
+### 在UI中显示错误信息
+
+#### 全部显示
+
+```XAML
+<TextBlock Text="{Binding ValidationContext.Text}" />
+```
+
+#### 单字段显示
+
+```XAML
+<TextBox Text="{Binding UserName}" />
+<TextBlock Text="{Binding ValidationContext[UserName].Text}" />
+```
+
+### 示例：只在“用户输入”后才验证
+
+避免页面一打开就报错
+
+```CS
+this.ValidationRule(
+    vm => vm.UserName,
+    this.WhenAnyValue(x => x.UserName)
+        .Skip(1)
+        .Select(name => !string.IsNullOrWhiteSpace(name)),
+    "用户名不能为空"
+);
+```
+
+### 高级用法
+
+#### 自定义验证规则（异步）
+
+```CS
+// 检查用户名是否已存在（异步 API）
+this.ValidationRule(
+    viewModel => viewModel.Username,
+    async (username, ct) =>
+    {
+        if (string.IsNullOrWhiteSpace(username)) return true;
+        var exists = await UserService.CheckExistsAsync(username, ct);
+        return !exists;
+    },
+    "用户名已存在");
+```
+
+> [!NOTE]
+>
+> 异步验证会**自动防抖**（避免频繁请求），并**在后台线程执行**。
+
+#### 跨属性验证(如"确认密码")
+
+```CS
+private string _confirmPassword = "";
+public string ConfirmPassword
+{
+    get => _confirmPassword;
+    set => this.RaiseAndSetIfChanged(ref _confirmPassword, value);
+}
+
+// 验证 ConfirmPassword 必须等于 Password
+this.ValidationRule(
+    viewModel => viewModel.ConfirmPassword,
+    viewModel => viewModel.ConfirmPassword == viewModel.Password,
+    "两次密码不一致");
+```
+
+> ✅ 规则函数可访问整个 ViewModel。
+
+#### 动态启用/禁用验证
+
+```CS
+// 临时跳过验证（如加载旧数据）
+_emailContext.SuspendValidation();
+
+Email = loadedUser.Email; // 不会触发验证
+
+_emailContext.ResumeValidation(); // 恢复
+```
+
+#### 自定义错误显示（非TextBlock）
+
+```CS
+// 绑定到 ToolTip
+this.BindValidation(ViewModel, vm => vm.Email, v => v.EmailBox.ToolTip);
+
+// 绑定到 Border 的 Visibility（红色边框）
+this.OneWayBind(ViewModel, 
+                vm => vm.Validation.GetErrors(vm => vm.Email).Any(),
+                v => v.EmailBorder.BorderBrush,
+                hasError => hasError ? Brushes.Red : Brushes.Transparent);
+```
+
+> 使用 `Validation.GetErrors(property)` 获取原始错误列表。
+
+#### 全局验证状态（用于Loading/Success）
+
+```CS
+// 在 ViewModel 中
+public ObservableAsPropertyHelper<bool> HasErrors { get; }
+
+HasErrors = Validation
+    .IsValid
+    .Select(isValid => !isValid)
+    .ToProperty(this, vm => vm.HasErrors);
+```
+
+```XAML
+<!-- 显示全局错误 -->
+<TextBlock Text="请修正以下错误" 
+           Visibility="{Binding HasErrors, Converter={StaticResource BoolToVis}}" />
+```
 
