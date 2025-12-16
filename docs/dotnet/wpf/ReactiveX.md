@@ -101,6 +101,8 @@ hot.Subscribe(x => Console.WriteLine($"B: {x}"));
 
 ## Single
 
+### Single
+
 > [!TIP]
 >
 > **“当你知道操作只会成功一次或失败一次时，就该用 `Single`。”**

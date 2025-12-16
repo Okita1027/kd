@@ -1,7 +1,7 @@
 ---
-title: C#中的特殊语法
-shortTitle: C#语法特性
-description: C#中的特殊语法
+title: C#版本新特性
+shortTitle: 版本特性
+description: C#版本新特性
 date: 2025-09-07 14:41:33
 categories: [.NET, C#]
 tags: [.NET]
