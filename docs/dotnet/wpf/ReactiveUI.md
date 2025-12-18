@@ -928,7 +928,7 @@ this.OneWayBind(ViewModel, vm => vm.Items, v => v.ListView.ItemsSource);
 
 ReactiveUI 的 Binding 是：
 
-- 基于 **Rx 观察者模型（IObservable<T>）**
+- 基于 **Rx 观察者模型（`IObservable<T>`）**
 - 用代码显式声明
 - 带有生命周期（IDisposable）
 - 强类型（编译期安全）
