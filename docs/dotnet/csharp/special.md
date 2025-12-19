@@ -9,6 +9,151 @@ tags: [.NET]
 
 
 
+## Record
+
+C# 的 **记录类型（`record`）** 是从 C# 9.0 引入的一种特殊引用类型，专为**不可变数据建模**和**值语义比较**而设计。它极大简化了 DTO、消息、配置等“数据载体”类的编写。
+
+### 核心特性
+
+| 特性                                   | 说明                                            |
+| -------------------------------------- | ----------------------------------------------- |
+| ✅ **值相等性（Value-based equality）** | 默认按属性值比较（而非引用地址）                |
+| ✅ **不可变性（Immutability）**         | 主构造函数参数默认生成 `init` 属性              |
+| ✅ **简洁语法**                         | 一行声明完整数据类型                            |
+| ✅ **`with` 表达式**                    | 非破坏性修改（创建新实例）                      |
+| ✅ **解构（Deconstruction）**           | 支持 `(var x, var y) = myRecord;`               |
+| ✅ **继承与密封**                       | 可继承其他 `record`，但不能被非 `record` 类继承 |
+
+### 基本使用
+
+#### Record声明
+
+可以用一行代码定义一个包含属性、构造函数和解构器的完整模型，这行代码自动生成了：
+
+- 公有的 **Init-only** 属性（即对象创建后不能修改）。
+- 一个构造函数。
+- 一个解构器（Deconstructor）。
+
+```CS
+// Record
+public record Person(string FirstName, string LastName);
+
+// 等价于：
+public record Person
+{
+    public string FirstName { get; init; }
+    public string LastName { get; init; }
+
+    public Person(string firstName, string lastName)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+    }
+
+    // 编译器自动生成 Equals/GetHashCode/ToString/Deconstruct
+}
+```
+
+#### 值相等性
+
+- **Class**：比较的是**引用**（两个对象是否指向内存中的同一个地址）。
+- **Record**：比较的是**内容**（如果两个 record 的所有属性值都相同，它们就被认为是相等的）。
+
+```CS
+public record User(string Name, int Age);
+
+var user1 = new User("Alice", 25);
+var user2 = new User("Alice", 25);
+
+Console.WriteLine(user1 == user2); // 输出：True
+Console.WriteLine(ReferenceEquals(user1, user2)); // 输出：False
+```
+
+#### `With`表达式
+
+~~~CS
+var person = new Person("John", "Doe");
+var updatedPerson = person with { FirstName = "Jane" }; 
+// updatedPerson 是一个新实例，LastName 仍为 "Doe"
+~~~
+
+#### 解构
+
+```CS
+var (first, last) = p1;
+Console.WriteLine($"{first} {last}"); // Alice Smith
+```
+
+### 进阶用法
+
+#### 可变记录
+
+```CS
+public record MutablePerson
+{
+    public string Name { get; set; } // 用 set 而非 init
+}
+```
+
+
+
+#### 继承
+
+```CS
+public record Employee(string FirstName, string LastName, int Id) : Person(FirstName, LastName);
+
+var emp = new Employee("Bob", "Lee", 1001);
+Console.WriteLine(emp); // Employee { FirstName = Bob, LastName = Lee, Id = 1001 }
+```
+
+
+
+#### 自定义成员
+
+```CS
+public record Point(int X, int Y)
+{
+    // 添加自定义方法
+    public double DistanceToOrigin() => Math.Sqrt(X * X + Y * Y);
+
+    // 重写 ToString
+    public override string ToString() => $"({X}, {Y})";
+}
+```
+
+
+
+#### Record Struct
+
+在 C# 10 中，引入了 `record struct`。
+
+- `record` 默认是引用类型（等同于 `record class`）。
+- `record struct` 是值类型，适用于高性能场景，且其属性默认是**可变的（Read-Write）**，除非你加上 `readonly`。
+
+```CS
+// 引用类型，默认不可变
+public record Point(double X, double Y); 
+
+// 值类型(栈上分配)，默认可变
+public record struct PointStruct(double X, double Y);
+```
+
+> [!note]
+>
+> - 同样支持 `with`、解构、值相等
+
+### 综合对比
+
+| 特性         | `class`    | `struct`         | `record`                            | `record struct` |
+| ------------ | ---------- | ---------------- | ----------------------------------- | --------------- |
+| 默认相等逻辑 | 引用相等   | 值相等（逐字段） | **值相等**                          | 值相等          |
+| 不可变性     | 需手动实现 | 可变             | **默认不可变**                      | 默认不可变      |
+| `with` 支持  | ❌          | ❌                | ✅                                   | ✅               |
+| 解构支持     | 需手动写   | 需手动写         | ✅                                   | ✅               |
+| 继承         | ✅          | ❌                | ✅（仅支持继承Record）               | ❌               |
+| 内存分配     | 堆         | 栈               | 堆                                  | 栈              |
+| 适用场景     | 通用对象   | 小型值类型       | **数据传输对象（DTO）、消息、配置** | 高性能小型数据  |
+
 ## 委托
 
 ### 基本用法

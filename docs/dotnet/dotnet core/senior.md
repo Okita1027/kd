@@ -8,5 +8,7 @@ tags: [.NET]
 order: 9
 ---
 
+> [.NET 10高级篇 官方文档](https://learn.microsoft.com/zh-cn/aspnet/core/mvc/models/model-binding?view=aspnetcore-10.0)
+
 ## 模型绑定
 
