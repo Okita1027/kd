@@ -7,7 +7,453 @@ categories: [.NET, C#]
 tags: [.NET]
 ---
 
+## 关键字
 
+### ref
+
+`ref` 关键字告诉编译器：“我要传递的不是变量的值，而是变量本身的引用（内存地址）”。
+
+**特点：**
+
+- **必须初始化**：在传递给方法之前，变量**必须**被赋值。
+- **双向传递**：方法可以读取和修改该变量的值。
+- **可选修改**：方法内部可以选择性地修改或不修改该变量。
+
+```CS
+public void Swap(ref int a, ref int b)
+{
+    int temp = a;
+    a = b;
+    b = temp;
+}
+
+// 调用
+int x = 10;
+int y = 20;
+Console.WriteLine($"Before: x={x}, y={y}"); // Before: x=10, y=20
+
+Swap(ref x, ref y); // 必须使用 ref 关键字
+
+Console.WriteLine($"After: x={x}, y={y}"); // After: x=20, y=10
+
+// 错误示例：
+// int uninit;
+// Swap(ref uninit, ref y); // 编译错误：使用了未赋值的局部变量 'uninit'
+```
+
+### out
+
+`out` 关键字专门用于从方法中**返回多个值**。
+
+**核心特点：**
+
+- **无需初始化**：在传递给方法之前，变量**可以不被赋值**。
+- **强制赋值**：方法在返回之前，**必须**为该 `out` 参数赋一个值。
+- **单向传递（概念上）**：主要用于输出，方法内部不应该依赖传入的初始值（编译器会警告）。
+
+```CS
+// 一个经典的 TryParse 模式
+public bool TryParseInt(string s, out int result)
+{
+    try
+    {
+        result = int.Parse(s);
+        return true;
+    }
+    catch
+    {
+        result = 0; // 必须赋值
+        return false;
+    }
+}
+
+// 调用
+string numberStr = "123";
+if (TryParseInt(numberStr, out int number)) // C# 7.0+ 支持内联声明
+{
+    Console.WriteLine($"转换成功: {number}");
+}
+else
+{
+    Console.WriteLine("转换失败");
+}
+```
+
+
+
+### unsafe
+
+`unsafe` 关键字允许你在 C# 中编写**不安全代码**，即可以直接操作内存指针。这打破了 C# 的类型安全和内存安全保证。
+
+`unsafe` 可以修饰**方法、类型、代码块**。编译时需要启用 `/unsafe` 选项：
+
+**核心能力：**
+
+- **指针操作**：`*` (解引用), `&` (取地址), `->` (访问成员)。
+- **指针算术**：`p++`, `p--`, `p + offset`。
+- **`fixed` 语句**：固定一个托管变量的位置，以便获取其稳定地址。
+- **`stackalloc`**：在栈上分配内存块，速度快但生命周期短。
+
+~~~CS
+public unsafe class PointerOperations
+{
+    // unsafe 方法
+    public unsafe void Square(int* p)
+    {
+        *p *= *p; // 解引用并修改指针指向的值
+    }
+
+    public unsafe void Demonstrate()
+    {
+        int number = 10;
+        // 使用 fixed 固定变量地址，防止 GC 移动它
+        fixed (int* p = &number)
+        {
+            Square(p);
+        }
+        Console.WriteLine(number); // 输出 100
+    }
+}
+
+// unsafe 代码块
+public void SafeMethod()
+{
+    // ... 安全代码 ...
+
+    unsafe
+    {
+        int a = 10;
+        int* p = &a; // 获取变量 a 的地址
+        Console.WriteLine($"Address of a: {(IntPtr)p}");
+        Console.WriteLine($"Value at address: {*p}");
+    }
+}
+~~~
+
+
+
+### yield
+
+`yield` 用于简化**迭代器**（iterator）的创建。让你能够以一种看似顺序的方式编写代码，而编译器会自动将其转换为复杂的状态机
+
+**工作原理：**当编译器看到 `yield return` 或 `yield break` 时，它会自动生成一个实现了 `IEnumerable<T>` 和 `IEnumerator<T>` 接口的私有类。这个类负责维护迭代的状态。
+
+**优势：**
+
+- **代码简洁**：比手动实现状态机简单得多。
+- **延迟执行**：只在需要时才计算下一个值，节省内存和CPU。
+- **状态管理自动化**：编译器处理所有复杂的局部变量和状态保存。
+
+**使用场景：**
+
+- **LINQ 提供程序**：许多 LINQ 操作符（如 `Where`, `Select`, `Take`）都是用 `yield` 实现的。
+- **自定义集合遍历**：为自定义类实现 `IEnumerable<T>`。
+- **生成无限序列**：如斐波那契数列、素数序列等。
+
+---
+
+`yield return` 逐个返回集合中的元素，而不是一次性返回整个集合。
+
+**示例：**数字生成器
+
+```CS
+public IEnumerable<int> GenerateNumbers(int count)
+{
+    Console.WriteLine("GenerateNumbers 开始执行");
+    for (int i = 0; i < count; i++)
+    {
+        Console.WriteLine($"即将返回 {i}");
+        yield return i; // 在这里，方法的执行被“暂停”
+        Console.WriteLine($"刚刚返回了 {i}，方法继续执行");
+    }
+    Console.WriteLine("GenerateNumbers 执行结束");
+}
+
+// 调用
+var numbers = GenerateNumbers(3); // 注意：此时方法并未执行
+
+foreach (var num in numbers) // 第一次迭代时，方法才开始执行
+{
+    Console.WriteLine($"接收到: {num}");
+}
+```
+
+输出结果：
+
+```CS
+GenerateNumbers 开始执行
+即将返回 0
+接收到: 0
+刚刚返回了 0，方法继续执行
+即将返回 1
+接收到: 1
+刚刚返回了 1，方法继续执行
+即将返回 2
+接收到: 2
+刚刚返回了 2，方法继续执行
+GenerateNumbers 执行结束
+```
+
+---
+
+`yield break` 用于提前终止迭代。
+
+```cs
+public IEnumerable<int> GetUntilNegative(int[] numbers)
+{
+    foreach (int num in numbers)
+    {
+        if (num < 0)
+        {
+            yield break; // 停止迭代
+        }
+        yield return num;
+    }
+}
+
+// 调用
+var result = GetUntilNegative(new int[] { 1, 2, -3, 4, 5 });
+// result 将只包含 1, 2
+```
+
+### ref struct
+
+#### 基本概念
+
+`ref struct` 是一个被编译器强制要求**只能活在栈上**的 `struct`。
+
+**为什么需要它？**
+
+为了解决一个经典问题：**栈上的引用类型**。
+
+在 `ref struct` 出现之前，如果你想在栈上存储一个对其他数据的引用（比如 `Span<T>`），你无法保证这个引用不会因为某种原因（比如被装入一个类）而被“提升”到堆上。一旦被提升到堆上，它引用的栈上数据就可能失效，导致内存安全问题。
+
+`ref struct` 从语言层面彻底杜绝了这种可能性。
+
+#### 特性约束
+
+`ref struct` 带来了一系列严格的编译器规则，这些规则正是其安全性的保证。
+
+##### 不能被装箱
+
+```cs
+ref struct MyRefStruct { public int Value; }
+
+// ...
+MyRefStruct myStruct = new MyRefStruct { Value = 123 };
+
+// 错误！不能将 ref struct 装箱
+// object obj = myStruct; // 编译错误 CS8345
+
+```
+
+##### 不能作为类或普通struct的成员
+
+```cs
+class MyClass
+{
+    // 错误！ref struct 不能是类的字段
+    // public MyRefStruct RefStructField; // 编译错误 CS8345
+}
+
+struct MyNormalStruct
+{
+    // 错误！ref struct 也不能是普通 struct 的字段
+    // public MyRefStruct RefStructField; // 编译错误 CS8345
+}
+```
+
+##### 不能实现接口
+
+```cs
+// 错误！ref struct 不能实现接口
+// public ref struct MyRefStruct : IEquatable<MyRefStruct> { } // 编译错误 CS8345
+```
+
+##### 不能是异步方法的返回类型或参数
+
+```cs
+// 错误！异步方法会创建状态机，可能导致 ref struct 逃逸到堆上
+// public async Task<MyRefStruct> GetRefStructAsync() { } // 编译错误 CS8345
+
+// 错误！同样原因
+// public async Task UseRefStructAsync(MyRefStruct s) { } // 编译错误 CS8345
+```
+
+##### 不能在Lambda表达式或本地函数中使用
+
+```cs
+public void SomeMethod()
+{
+    MyRefStruct localStruct = new MyRefStruct();
+
+    // 错误！Lambda 可能会延长 localStruct 的生命周期
+    // Action a = () => Console.WriteLine(localStruct.Value); // 编译错误 CS8345
+}
+```
+
+##### 不能被捕获
+
+与 Lambda 类似，`ref struct` 不能被 `try-catch` 的 `catch` 块或 `foreach` 循环的变量所捕获。
+
+## 类型
+
+### `Span<T>`与`Memory<T>`
+
+`Span<T>` 和 `Memory<T>` 是 .NET Core 2.1+ 引入的**高性能内存访问类型**，用于安全、高效地操作连续内存区域。它们是现代 C# 高性能编程（如解析器、网络库、游戏引擎）的核心工具。
+
+| 特性                     | `Span<T>`                | `Memory<T>`               |
+| ------------------------ | ------------------------ | ------------------------- |
+| **类型**                 | `ref struct`（仅栈分配） | 普通 `struct`（可堆分配） |
+| **生命周期**             | 必须在当前方法栈帧内     | 可跨方法、异步、线程传递  |
+| **使用场景**             | 同步、短生命周期操作     | 异步、长生命周期操作      |
+| **安全性**               | 编译器强制内存安全       | 运行时管理，需谨慎使用    |
+| **性能**                 | 零分配，极致性能         | 可能有少量分配            |
+| **能否用于 async/await** | ❌ 禁止                   | ✅ 允许                    |
+| **能否作为 class 字段**  | ❌ 禁止                   | ✅ 允许                    |
+
+| 操作     | `Span<T>`  | `Memory<T>` | 传统方式     |
+| -------- | ---------- | ----------- | ------------ |
+| 内存访问 | 直接指针   | 少量间接    | 数组边界检查 |
+| 分配     | 零分配     | 可能有分配  | 可能有分配   |
+| GC 压力  | 无         | 低          | 中高         |
+| 安全性   | 编译时保证 | 运行时管理  | 运行时检查   |
+
+> [!note]
+>
+> - **同步用 `Span<T>`，异步用 `Memory<T>`**
+> - **短命用 `Span<T>`，长命用 `Memory<T>`**
+
+#### `Span<T>`
+
+`Span<T>` 是一个**`ref struct`**，它提供对一个连续内存区域的**类型安全视图**。这个内存区域可以是：
+
+- 一个托管数组 (`T[]`)
+- 一段栈上分配的内存 (`stackalloc`)
+- 一个指向非托管内存的指针
+
+**特征：**
+
+- **零分配**：`Span<T>` 本身只是一个轻量级的视图，包含一个指针和长度。创建 `Span<T>` 不会在堆上分配内存。
+- **高性能**：直接操作内存，避免了复制和额外的间接寻址。
+- **`ref struct`**：这是最重要的特性。它意味着 `Span<T>` **只能存在于栈上**，不能被装箱、不能作为类的字段、不能在异步方法中使用。这保证了它引用的内存区域在其生命周期内始终有效。
+
+```cs
+// 1. 从数组创建（最常见）
+int[] array = { 1, 2, 3, 4, 5 };
+Span<int> span = array.AsSpan();
+
+// 2. 从栈分配内存（高性能场景）
+Span<byte> buffer = stackalloc byte[1024];
+
+// 3. 从字符串创建（只读）
+ReadOnlySpan<char> text = "Hello".AsSpan();
+
+// 4. 切片操作
+Span<int> slice = span.Slice(1, 3); // [2, 3, 4]
+```
+
+```cs
+public void DemonstrateSpan()
+{
+    // 1. 从数组创建 Span
+    int[] numbersArray = { 1, 2, 3, 4, 5 };
+    Span<int> spanFromArray = numbersArray;
+
+    // 2. 使用 stackalloc 在栈上创建内存
+    Span<int> stackSpan = stackalloc int[3] { 10, 20, 30 };
+
+    // 3. 读取和写入
+    Console.WriteLine(spanFromArray[0]); // 输出 1
+    spanFromArray[0] = 100; // 修改会反映到原始数组
+    Console.WriteLine(numbersArray[0]); // 输出 100
+
+    // 4. 切片 - 零成本的切片操作
+    Span<int> slice = spanFromArray.Slice(1, 3); // 包含索引 1, 2, 3
+    Console.WriteLine(string.Join(", ", slice.ToArray())); // 输出 "2, 3, 4"
+}
+```
+
+#### `Memory<T>`
+
+`Memory<T>` 是为了解决 `Span<T>` 的局限性而设计的。它是一个**普通的 `struct`**，可以安全地存储在堆上。
+
+**特征：**
+
+- **堆安全**：可以被装箱、作为类的字段、在异步方法中使用。
+- **`Span<T>` 的工厂**：`Memory<T>` 本身不能直接索引，它需要通过 `.Span` 属性“借用”出一个 `Span<T>` 来进行实际操作。
+- **抽象层**：它在更高层次上表示一段内存，而 `Span<T>` 是具体执行操作的“工作句柄”。
+
+```cs
+// 1. 从数组创建
+int[] array = { 1, 2, 3, 4, 5 };
+Memory<int> memory = array.AsMemory();
+
+// 2. 从池分配（推荐生产环境）
+var rented = ArrayPool<byte>.Shared.Rent(1024);
+Memory<byte> memory = rented.AsMemory(0, 1024);
+
+// 3. 转换为 Span（仅在需要操作时）
+Span<byte> span = memory.Span; // ⚠️ 仅在安全上下文中使用
+```
+
+```cs
+public class DataProcessor
+{
+    // Memory<T> 可以安全地作为字段存储在类中
+    private Memory<int> _data;
+
+    public DataProcessor(int[] data)
+    {
+        _data = data;
+    }
+
+    public void Process()
+    {
+        // 通过 .Span 属性获取一个临时的 Span<T> 来操作
+        Span<int> span = _data.Span;
+        
+        // 在这个作用域内使用 span
+        for (int i = 0; i < span.Length; i++)
+        {
+            span[i] *= 2;
+        }
+    }
+}
+```
+
+#### `ReadOnlySpan<T>`
+
+只读的 `Span<T>`
+
+`string` 在 C# 中是只读的，因此所有与字符串相关的 `Span` API 都使用 `ReadOnlySpan<char>`。
+
+```cs
+public string TrimLeadingZeros(string input)
+{
+    // 字符串可以直接隐式转换为 ReadOnlySpan<char>
+    ReadOnlySpan<char> span = input.AsSpan();
+
+    int firstNonZero = 0;
+    for (int i = 0; i < span.Length; i++)
+    {
+        if (span[i] != '0')
+        {
+            firstNonZero = i;
+            break;
+        }
+    }
+
+    // 使用切片，零分配地创建新字符串
+    return span.Slice(firstNonZero).ToString();
+}
+```
+
+
+
+#### `ReadOnlyMemory<T>`
+
+只读的 `Memory<T>`
 
 ## Record
 
