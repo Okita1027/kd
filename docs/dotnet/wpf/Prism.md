@@ -2823,5 +2823,566 @@ public class IntermediaryPage : IJournalAware
 
 此机制常用于临时屏幕、加载遮罩或特定提示页，这些视图应该 **跳过导航历史**
 
+## 平台
 
+### .NET MAUI
+
+
+
+### Uno Platform
+
+
+
+### WPF
+
+#### 对话服务
+
+Prism 在 WPF 中提供了一个 MVVM 友好的对话框服务（**`IDialogService`**），用于显示**自定义对话窗口**（modal/dialog）并与 ViewModel 进行交互，而无需直接在 View 层操作窗口或弹窗逻辑。
+
+这个服务的核心是：
+
+- 不直接使用 WPF 原生的 `Window.ShowDialog()`；
+- 使用 Prism DI 容器来创建对话框视图与对应 ViewModel；
+- 通过参数传递与结果回调来实现数据交互。
+
+##### 对话框View
+
+对话框首先是一个WPF **UserControl**，你可以按 UI 需要自由设计。唯一要求是它的 DataContext 需要关联一个实现了 **`IDialogAware`** 的 ViewModel。Prism 推荐使用 ViewModelLocator 自动注入 ViewModel。
+
+```XAML
+<UserControl x:Class="HelloWorld.Dialogs.NotificationDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             Width="300" Height="150">
+    <!-- 自定义布局 -->
+</UserControl>
+```
+
+##### 对话框ViewModel
+
+Prism 规定对话框的 ViewModel 必须实现 **`IDialogAware`** 接口，它定义了对话框的生命周期和结果通知机制。
+
+接口包括：
+
+- **`Title`** — 对话框标题；
+- **`CanCloseDialog()`** — 控制是否允许关闭；
+- **`OnDialogOpened(IDialogParameters)`** — 对话框打开时的参数接收；
+- **`OnDialogClosed()`** — 对话框关闭后清理或逻辑；
+- **`RequestClose` 事件** — 通过该事件通知 Prism 关闭对话框。
+
+```CS
+public class NotificationDialogViewModel : BindableBase, IDialogAware
+{
+    public event Action<IDialogResult> RequestClose;
+
+    public bool CanCloseDialog() => true;
+
+    public void OnDialogOpened(IDialogParameters parameters)
+    {
+        Message = parameters.GetValue<string>("message");
+    }
+
+    public void OnDialogClosed() { }
+
+    public string Title { get; set; }
+
+    public DelegateCommand<string> CloseDialogCommand =>
+        new DelegateCommand<string>(p =>
+        {
+            var result = p == "true" ? ButtonResult.OK : ButtonResult.Cancel;
+            RequestClose?.Invoke(new DialogResult(result));
+        });
+
+    private string _message;
+    public string Message
+    {
+        get => _message;
+        set => SetProperty(ref _message, value);
+    }
+}
+```
+
+##### 注册对话框
+
+在 Prism 应用的 `RegisterTypes` 方法中通过容器注册对话框：
+
+```CS
+protected override void RegisterTypes(IContainerRegistry containerRegistry)
+{
+    containerRegistry.RegisterDialog<NotificationDialog, NotificationDialogViewModel>();
+}
+```
+
+- 泛型参数指对话框 View 和 ViewModel；
+- 也可以指定一个 **自定义名称**（字符串）作为对话框标识。
+
+##### 使用Dialog Service
+
+在需要显示对话框的 ViewModel 中注入 `IDialogService`：
+
+```cs
+public MainWindowViewModel(IDialogService dialogService)
+{
+    _dialogService = dialogService;
+}
+```
+
+调用对话框：
+
+```CS
+_dialogService.ShowDialog(
+    "NotificationDialog",
+    new DialogParameters($"message={message}"),
+    r =>
+    {
+        if (r.Result == ButtonResult.OK) { /* 处理 OK */ }
+        else if (r.Result == ButtonResult.Cancel) { /* 处理 Cancel */ }
+    });
+```
+
+- 第一个参数是对话框注册名称；
+- 第二个参数是传递给对话框的参数；
+- 第三个是回调，用于处理对话框返回的结果（`IDialogResult`）。
+
+##### 自定义对话框宿主窗体Window
+
+默认 Prism 会创建标准的 WPF `Window` 承载你的对话框内容。如果你使用第三方控件或需要不同的 Window 类型，可以：
+
+1. 创建一个实现了 `IDialogWindow` 接口的自定义 Window 类型；
+2. 通过容器注册该对话框宿主：
+
+```CS
+containerRegistry.RegisterDialogWindow<MyCustomDialogWindow>();
+```
+
+或者带名称：
+
+```CS
+containerRegistry.RegisterDialogWindow<MyCustomDialogWindow>("notifyWindow");
+```
+
+如果使用了命名 Window，在调用 `ShowDialog` 时要将该 window 名称传入：
+
+```CS
+_dialogService.ShowDialog(
+    "NotificationDialog",
+    parameters,
+    callback,
+    "notifyWindow");
+```
+
+##### 控制对话框Window样式
+
+可以通过 Prism 提供的附加属性在对话框视图上声明对话窗口样式，例如设置启动位置、尺寸模式、是否显示任务栏等：
+
+```XAML
+<prism:Dialog.WindowStyle>
+    <Style TargetType="Window">
+        <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterScreen" />
+        <Setter Property="ResizeMode" Value="NoResize"/>
+        <Setter Property="ShowInTaskbar" Value="False"/>
+        <Setter Property="SizeToContent" Value="WidthAndHeight" />
+    </Style>
+</prism:Dialog.WindowStyle>
+```
+
+这种方式让你可以在 XAML 里直接控制对话框宿主 Window 的属性，而无需硬编码
+
+##### 简化对话框调用API(可选)
+
+Prism 对话服务的原始 API 需要书写调用逻辑，如果应用内有很多类似的对话框，可以通过扩展方法封装常用对话调用模式：
+
+```CS
+public static class DialogServiceExtensions
+{
+    public static void ShowNotification(
+        this IDialogService dialogService,
+        string message,
+        Action<IDialogResult> callback)
+    {
+        dialogService.ShowDialog(
+            "NotificationDialog",
+            new DialogParameters($"message={message}"),
+            callback,
+            "notificationWindow");
+    }
+}
+```
+
+这样可以在 ViewModel 中调用更简洁的对话框 API
+
+#### 快速上手
+
+##### 安装Nuget包：
+
+创建一个新的 WPF 项目后，需要选择一个依赖注入容器并安装对应 Prism 包：
+
+| NuGet 包       | 所用容器    |
+| -------------- | ----------- |
+| `Prism.Unity`  | Unity 容器  |
+| `Prism.DryIoc` | DryIoc 容器 |
+
+> 安装其中一个即可，它会自动带上 Prism 核心库和容器支持包
+
+##### 继承PrismApplication
+
+默认 WPF 应用继承 `Application`，Prism 需要你改成继承 `PrismApplication`，这样 Prism 能在启动时初始化容器并处理依赖注入等机制：
+
+```xaml
+<!-- App.xaml -->
+<prism:PrismApplication
+    x:Class="MyPrismApp.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:prism="http://prismlibrary.com/">
+    <Application.Resources/>
+</prism:PrismApplication>
+```
+
+> 删掉 PrismApplication 中原来的 `StartupUri`，避免运行期创建重复窗口实例
+
+对应后台代码：
+
+```CS
+public partial class App : PrismApplication
+{
+}
+```
+
+##### 实现2个核心抽象方法
+
+PrismApplication 强制你实现以下两个方法：
+
+###### `RegisterTypes`（注册依赖服务）
+
+用于向 Prism 容器注册服务或对象依赖，例如：
+
+```CS
+protected override void RegisterTypes(IContainerRegistry containerRegistry)
+{
+    containerRegistry.Register<Services.ICustomerStore, Services.DbCustomerStore>();
+}
+```
+
+这里注册了一个数据存储接口及其实现，后续 ViewModel 可以通过依赖注入获得。
+
+Prism 的容器支持多种注册方式，比如：
+
+- `Register`：每次解析新实例
+- `RegisterSingleton`：单例
+- `RegisterInstance`：注册现有实例
+   容器也能解析**具体类型**而无需提前注册。
+
+###### `CreateShell`(创建主窗口)
+
+Prism 应用的“入口窗口”由此方法返回：
+
+```CS
+protected override Window CreateShell()
+{
+    return Container.Resolve<MainWindow>();
+}
+```
+
+Prism 会通过 DI 容器实例化 MainWindow 及其依赖，并将其作为应用主窗口显示
+
+##### 构建View和ViewModel
+
+为了演示 MVVM 绑定和 Prism 的支持：
+
+###### UI(MainWindow.xaml)
+
+为主窗口添加一些 UI，例如：
+
+```xaml
+<Grid>
+    <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <ListView ItemsSource="{Binding Customers}" SelectedItem="{Binding SelectedCustomer}" />
+    <Button Grid.Row="1"
+            Command="{Binding CommandLoad}"
+            Content="LOAD" />
+</Grid>
+```
+
+这是典型的数据绑定场景：列表 + 按钮触发命令
+
+###### ViewModel(MainWindowViewModel)
+
+在项目根创建 `ViewModels` 文件夹，并创建同名 ViewModel：
+
+```CS
+public class MainWindowViewModel : BindableBase
+{
+    private readonly ICustomerStore _customerStore;
+
+    public MainWindowViewModel(ICustomerStore customerStore)
+    {
+        _customerStore = customerStore;
+    }
+
+    public ObservableCollection<string> Customers { get; } = new ObservableCollection<string>();
+
+    private string _selectedCustomer;
+    public string SelectedCustomer
+    {
+        get => _selectedCustomer;
+        set => SetProperty(ref _selectedCustomer, value);
+    }
+
+    private DelegateCommand _commandLoad;
+    public DelegateCommand CommandLoad =>
+        _commandLoad ??= new DelegateCommand(ExecuteLoad);
+
+    private void ExecuteLoad()
+    {
+        Customers.Clear();
+        foreach (var customer in _customerStore.GetAll())
+            Customers.Add(customer);
+    }
+}
+```
+
+- ViewModel 继承自 Prism 的 `BindableBase` 提供属性变更通知支持；
+- 使用 Prism 的 `DelegateCommand` 简化 `ICommand` 实现；
+- 通过构造函数依赖注入获得服务。
+
+##### View和ViewModel自动关联
+
+Prism 内置了 ViewModelLocator，默认约定如下命名规则：
+
+```CS
+Views.MainWindow → ViewModels.MainWindowViewModel
+```
+
+只要在 XAML 中启用自动绑定：
+
+```XAML
+Window ...
+    xmlns:prism="http://prismlibrary.com/"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+```
+
+Prism 就会：
+
+- 使用容器解析 ViewModel；
+- 将其设置为 View 的 DataContext。
+
+##### 执行应用与效果
+
+完成以上步骤后：
+
+1. PrismApplication 会初始化 DI 容器；
+2. CreateShell 返回 MainWindow；
+3. ViewModelLocator 自动创建 ViewModel；
+4. 点击按钮触发 `CommandLoad` 填充列表。
+
+#### 视图组合
+
+**视图组合（View Composition）** 是 Prism 在 WPF 上构建大型、模块化应用的一项核心机制。它允许你通过定义 *可插拔的视图位置（regions）* 和不同策略，将多个松耦合视图动态组合成最终的用户界面（UI）。
+
+这种方式适用于：
+
+- 模块化架构中不同模块在运行时向 UI 插入内容；
+- 不同视图来源于不同程序集或功能块；
+- 需要让 UI 在运行时根据状态动态呈现内容。
+
+##### 组成UI的核心元素
+
+###### Shell(外壳)
+
+- Shell 是应用程序的根 UI 容器，在 WPF 中通常是一个 `Window`；
+- 它定义了 UI 的主要结构，例如菜单、工具栏、主内容区等；
+- 对于组合式 UI，Shell 提供 *一个或多个命名区域（regions）*，为视图动态注入提供位置。
+
+###### Views(视图)
+
+视图是 UI 中的 *功能单元*，通常定义为：
+
+- `UserControl`
+- `Page`
+- `DataTemplate`
+- 甚至自定义控件。
+
+每个视图负责一个特定 UI 部分，例如：
+
+- 一个客户列表；
+- 一个订单详情；
+- 一个统计面板。
+
+视图可以静态组合（设计时放在 Shell 内），也可以运行时动态插入。
+
+###### Regions(区域)
+
+**区域** 是 Prism 的核心概念，是 *用于插入视图的位置标记*。一个 Region 通常绑定到 Shell 或某个视图的容器控件，例如：
+
+- `ContentControl`
+- `ItemsControl`
+- `TabControl` 等。
+
+通过在 XAML 中使用附加属性：
+
+```XAML
+<ContentControl prism:RegionManager.RegionName="MainRegion" />
+```
+
+你就定义了一个名为 `MainRegion` 的区域，后续可以向它动态加载视图。
+
+##### 视图加载策略
+
+Prism 提供了两种主要方式将视图加入到 Region 中：
+
+###### View Discovery(视图发现)
+
+这种方式是在应用启动或模块初始化时，通过注册映射关系让 Prism 自动将视图放入指定区域：
+
+```CS
+regionManager.RegisterViewWithRegion("MainRegion", typeof(CustomerListView));
+```
+
+- 自动创建和注入视图；
+- 不需要你在代码中主动调用；
+- 适合静态视图、只需单实例的场景。
+
+在视图发现模式中，Prism 会在 Region 被创建后自动实例化所有关联的视图类型并显示它们
+
+###### View Injection(视图注入)
+
+这种方式需要你手动获取 Region 并向其中添加视图实例。典型用法如下：
+
+```CS
+var region = regionManager.Regions["MainRegion"];
+var view = container.Resolve<OrderDetailView>();
+region.Add(view);
+region.Activate(view);
+```
+
+- 你可以控制 *何时创建视图*；
+- 能添加多个实例（例如多个订单详情视图）；
+- 可按需移除或激活特定实例。
+
+这种方式适用于需要动态、可控的视图注入场景。
+
+---
+
+| 策略                           | 适用场景                                                     |
+| ------------------------------ | ------------------------------------------------------------ |
+| **视图发现（View Discovery）** | 自动加载视图且无需程序控制时；单实例视图或设计时定义界面时   |
+| **视图注入（View Injection）** | 需要控制视图创建/销毁；需要多个视图实例；需要按业务逻辑动态视图插入时 |
+
+##### 与导航（Navigation）的关系
+
+Prism 在视图注入的基础上抽象了导航 API。区域导航本质上是：
+
+- 告诉 Prism “将 *某个 URI 对应的视图* 加入 Region”；
+- Prism 自动解析视图类型；
+- 将视图创建、插入、激活。
+
+这使得导航成为一种通用注入模式，并支持 *导航历史（Journal）*、参数传递等高级功能。
+
+##### RegionManager、RegionAdapter与Behaviors
+
+Prism 内部机制较为灵活：
+
+- **RegionManager** 管理所有 Region，并协调视图与 Region 的关系；
+- **RegionAdapter** 是针对特定 WPF 控件适配 Region 行为（例如 `ContentControlRegionAdapter` 让 `ContentControl` 成为 Region）；
+- **Behaviors**（如 `RegionActiveAwareBehavior`、`RegionMemberLifetimeBehavior`）用于控制 Region 内视图的激活状态和生命周期；
+
+这些机制通常无需手动编写，但是 Prism 支持组合式 UI 的重要内部组件。
+
+#### 交互
+
+##### 将事件绑定到命令
+
+在 WPF 的 MVVM 模式中，很多控件事件本身并不直接支持命令（`ICommand`）属性。Prism 提供了一个辅助触发行为类 **`InvokeCommandAction`**，可以把这些事件直接“桥接”到 ViewModel 中的命令，从而避免写代码后置。
+
+在 MVVM 架构里：
+
+- **ViewModel 定义状态和行为（通过命令）**
+- **View 通过数据绑定把 UI 操作映射到命令上**
+
+对于像按钮这种自带 `Command` 属性的控件，这很自然地支持；但对没有 `Command` 属性的事件（例如 `ListBox.SelectionChanged`、`TextBox.TextChanged` 等），需要一种方式让事件触发命令。Prism 的 `InvokeCommandAction` 就是用于解决这个问题的 XAML 支持。
+
+###### `InvokeCommandAction`使用方式
+
+1. 引入命名空间
+
+   ```XAML
+   xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+   xmlns:prism="http://prismlibrary.com/"
+   ```
+
+   `i` 是 WPF 自带的 **行为/触发器** 命名空间（Interaction Triggers）；
+
+   `prism` 是 Prism 的命名空间，在这里用来引用 `InvokeCommandAction`。
+
+2. 编写事件到命名的绑定
+
+   ```XAML
+   <ListBox ItemsSource="{Binding Items}" SelectionMode="Single">
+     <i:Interaction.Triggers>
+       <i:EventTrigger EventName="SelectionChanged">
+         <prism:InvokeCommandAction
+             Command="{Binding SelectedCommand}"
+             CommandParameter="{Binding SomeParameter}" />
+       </i:EventTrigger>
+     </i:Interaction.Triggers>
+   </ListBox>
+   ```
+
+   当 `SelectionChanged` 事件发生时，Prism 的 `InvokeCommandAction` 会调用 **ViewModel 中绑定的命令** `SelectedCommand`；
+
+   可以通过 `CommandParameter` 显式传递 ViewModel 所需的参数。
+
+###### 常用属性
+
+`Command`——必须属性
+
+指定要执行的命令：
+
+```XAML
+Command="{Binding SomeViewModelCommand}"
+```
+
+如果未设置，行为不会工作。
+
+---
+
+`CommandParameter`——可选参数
+
+用于显式向命令传递固定值或绑定值：
+
+```XAML
+CommandParameter="{Binding MyParameter}"
+```
+
+若同时未设置，并且未设置 `TriggerParameterPath`，该行为会把事件参数（EventArgs）本身作为参数传递给命令（这在某些场景中也有用）。
+
+---
+
+`TriggerParameterPath`——从事件参数提取子属性
+
+WPF 事件通常有复杂的 EventArgs 类型。如果希望只传递 EventArgs 对象的某个属性给命令，可以指定路径。例如在 `SelectionChanged` 事件中，可能只需 `AddedItems`：
+
+```XAML
+<prism:InvokeCommandAction
+    Command="{Binding SelectedCommand}"
+    TriggerParameterPath="AddedItems" />
+```
+
+Prism 会从事件参数的 `AddedItems` 属性读取值并传给命令。此特性让你从事件数据中提取 ViewModel 更关心的部分。
+
+---
+
+`AutoEnable`——根据`CanExecute`自动启用/禁用控件
+
+默认值为 `True`，Prism 会根据命令的 `CanExecute` 返回值自动启用或禁用关联的 UI 元素：
+
+```XAML
+AutoEnable="true"
+```
 
