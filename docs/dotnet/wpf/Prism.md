@@ -3015,7 +3015,7 @@ public static class DialogServiceExtensions
 
 #### 快速上手
 
-##### 安装Nuget包：
+##### 安装Nuget包
 
 创建一个新的 WPF 项目后，需要选择一个依赖注入容器并安装对应 Prism 包：
 
