@@ -1410,7 +1410,7 @@ public class Pennant extends Person {
 - 系统中对象之间存在复杂的引用关系，系统结构混乱且难以理解。 
 - 当想创建一个运行于多个类之间的对象，又不想生成新的子类时。
 
-### 外观（Facade）VS仲裁者（Mediator）
+### 外观（Facade）VS 仲裁者（Mediator）
 
 对比于外观模式Facade，仲裁者需要和组员沟通，是双向的，而外观模式facade角色只是对其他角色进行整合，是单向的。
 
