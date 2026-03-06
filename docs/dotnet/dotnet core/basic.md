@@ -2085,7 +2085,7 @@ Web 主机是 ASP.NET Core 发展早期用于托管 Web 应用的专用宿主。
 
 1. `appsettings.json`
 2. `appsettings.{EnvironmentName}.json` (例如 `appsettings.Development.json`)
-3. 用户秘密 (User Secrets) **（仅在 `Development` 环境中加载）**
+3. 用户秘密 (User Secrets)
 4. 环境变量
 5. 命令行参数
 
