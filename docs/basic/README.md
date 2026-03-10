@@ -58,3 +58,62 @@ title: 基础
 - Client <-> AGV :
   - AgvMsgNotification : 接收 AGV 状态变化的通知类。
   - CatchAgvMessage : 处理 AGV 消息的方法。
+
+
+
+
+
+
+
+
+
+
+
+
+
+总体流程
+
+- 进入放行任务页面时自动上传 CATL MES。
+- 上传成功后，提示“请放行”，并对 PLC/IO 发放行允许信号。
+- 操作员按放行按钮（或物理 IO 触发）→ 保存“放行完成”到服务端 → 驱动 AGV 离站。
+- 上传失败时，发报警（UI显示/暂停生产）、IO蜂鸣器响，需复位或重试上传。
+页面加载：自动上传 MES
+
+- 入口事件： LetGoPage.StationTaskCommonPage_Loaded
+  - 在 Loaded 时异步执行 BuildAndUpMesData() ，仅当非 Debug 且尚未上传。
+- 数据构建与上传：
+  - BuildUpMesCollectData ：从 API 收集“待上传收数数据”，缓存到 App.UpCatlMesData ；若超时（Code=500）弹窗提示并重试。
+  - UpMes ：调用 CallCatlMesCollectDataFucAsync 执行 CatlMesInvoker.dataCollect(...) 。
+    - 成功： HasUpMesOK = true ；提示文本换为“数据上传完成，请放行小车！”且为绿色；关键：置位 _stationPLCContext.LetGo = true ，向 PLC/IO 表示“允许放行”。
+    - 失败： HasUpMesOK = false ；提示为红色“上传出错，请重试！”；同时发布 AlarmSYSNotification: CatlMES错误 ，进入报警流程。
+    放行动作：UI按钮与物理 IO 两条通道
+
+- UI按钮：
+  - LetGoPage.Btn_RunAGV 直接调用 _VM.OnCompleteTask(StationTaskDTO) 触发任务完成。
+- 物理 IO（面板“放行”按钮或 PLC 信号）：
+  - PLC状态触发： IOBoxBusinessProcess.Process → notification.LetGo
+    - 若当前页面是 LetGoPage，则调用 LetGoPage.CatchIOMessage(IOEnum.放行) 。
+    - CatchIOMessage 逻辑：
+      - 若尚未上传（ HasUpMesOK 为 false），先尝试再次上传；仍不成功则直接 return，不允许放行。
+      - 若该放行任务此前“保存成功但放行AGV失败”，则 StationTaskDTO.HasFinish = true ，再次按放行直接调用 Vm.DealRunAGV 去触发 AGV 离站，无需重复保存。
+      - 否则，在有 PackBarCode 的前提下调用 _VM.OnCompleteTask(StationTaskDTO) 走“保存并放行”的标准路径。
+      任务完成：保存与驱动 AGV 离站
+
+- 完成事件总线： TaskViewModelBase.OnCompleteTask 会调用 RealtimePage.RealtimePage_CompleteTask 。
+  - 放行类型任务（LetGo）：调用 SetStationCurTaskRunAGV ，即 APIHelper.SetStationCurTaskRunAGV 记录放行。
+  - 保存成功：
+    - 若所有工步已完成：对于线内人工站，调用 Vm.DealRunAGV 。
+      - DealRunAGV 会向 _stationPLCContext.ReleaseAGVReqs 添加请求项，PLC 中间件识别后发送“AGV离站”动作，随后服务端 AGVController.AGVLeaved 记录并广播离站消息。
+    - 若还有未完成工步：跳到下一个未完成任务（ GoNextUndoTask ）。
+  - 保存失败：发布 AlarmSYSNotification: AGV错误/系统运行错误 。
+  失败路径：报警与蜂鸣器
+
+- 上传 MES 失败或保存失败都会发布 AlarmSYSNotification，由 AlarmNotificationHandler 更新 UI 报警列表，并设置：
+  - App.StationTaskNGPause = true （暂停生产流转）
+  - _stationPLCContext.Alarm = true （硬件报警）
+- IO 侧处理报警： IOBoxBusinessProcess.MakesAlarm 控制蜂鸣器与红灯（现场版本对应 DO 输出），直到复位清除。
+补充：手动重试与手动完成
+
+- 手动重传按钮： LetGoPage.ReUploadMes ：在未上传成功且非 Debug 时重新执行 BuildAndUpMesData() 。
+- 手动完成按钮： LetGoPage.SetComplete ：如果未上传成功仍强制完成，会记录警告日志，并将 HasUpMesOK 置为 true（仅页面内部状态），后续再走保存→放行逻辑。
+整体上，这段放行逻辑把“MES上传结果”和“是否允许放行”强绑定，确保只有在数据已成功上报的前提下，才向 PLC/IO 下发放行信号并允许 AGV 离站；一旦失败，则进入报警与蜂鸣器，等待复位或重试。
