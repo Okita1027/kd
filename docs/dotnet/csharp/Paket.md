@@ -2,11 +2,10 @@
 title: Paket
 shortTitle: Paket
 description: Paket
-date: 2025-2-1 15:51:33
+date: 2026-2-1 15:51:33
 categories: [.NET, C#]
 tags: [.NET]
 ---
-
 Paket 是在 NuGet 之上的一层“包装”。它依然从 NuGet.org 下载包，但它改变了**管理依赖的方式**。
 
 在传统的 NuGet 流程中，每个项目（`.csproj`）独立管理自己的包。而 Paket 采用**集中式管理**：你先在一个全局文件中定义“我需要什么”，然后由 Paket 决定版本，并分发到各个子项目中。
@@ -48,9 +47,7 @@ Newtonsoft.Json (13.0.3)
 NLog (5.2.0)
 ```
 
-类似`packages.lock.json`
-
-
+类似 `packages.lock.json`
 
 ## 使用方法
 
@@ -120,11 +117,8 @@ dotnet paket update
    // 修改后
    nuget Newtonsoft.Json 13.0.3
    ```
-
 2. 刷新锁定文件：手动修改后，必须运行以下命令同步：
 
    ```BASH
    dotnet paket install
    ```
-
-   
