@@ -1,0 +1,166 @@
+{
+  "communities": {
+    "0": [
+      "katex",
+      "mermaid",
+      "package_dependencies",
+      "package_dependencies_katex",
+      "package_dependencies_mermaid",
+      "package_dependencies_reveal_js",
+      "package_dependencies_shiki",
+      "package_dependencies_vuepress_plugin_feed",
+      "package_dependencies_vuepress_plugin_revealjs",
+      "package_dependencies_vuepress_plugin_shiki",
+      "package_dependencies_vuepress_theme_default",
+      "reveal_js",
+      "shiki",
+      "vuepress_plugin_feed",
+      "vuepress_plugin_revealjs",
+      "vuepress_plugin_shiki",
+      "vuepress_theme_default"
+    ],
+    "1": [
+      "package_dependencies_vue",
+      "package_devdependencies",
+      "package_devdependencies_sass_embedded",
+      "package_devdependencies_vue",
+      "package_devdependencies_vuepress_plugin_docsearch",
+      "package_devdependencies_vuepress_plugin_md_enhance",
+      "package_devdependencies_vuepress_plugin_seo",
+      "package_devdependencies_vuepress_plugin_slimsearch",
+      "package_devdependencies_vuepress_theme_hope",
+      "sass_embedded",
+      "vue",
+      "vuepress_plugin_docsearch",
+      "vuepress_plugin_md_enhance",
+      "vuepress_plugin_seo",
+      "vuepress_plugin_slimsearch",
+      "vuepress_theme_hope"
+    ],
+    "2": [
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_build_github",
+      "package_scripts_build_netlify",
+      "package_scripts_dev",
+      "package_scripts_docs_build",
+      "package_scripts_docs_build_github",
+      "package_scripts_docs_build_netlify",
+      "package_scripts_docs_clean_dev",
+      "package_scripts_docs_dev",
+      "package_scripts_docs_update_package",
+      "package_scripts_push",
+      "package_scripts_pushall",
+      "package_scripts_pushpage",
+      "package_scripts_test"
+    ],
+    "3": [
+      "ref_docs_vuepress_ts",
+      "ref_node_modules",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_target",
+      "tsconfig_exclude",
+      "tsconfig_include"
+    ],
+    "4": [
+      "package",
+      "package_author",
+      "package_description",
+      "package_keywords",
+      "package_license",
+      "package_main",
+      "package_name",
+      "package_version"
+    ],
+    "5": [
+      "docs_vuepress_client",
+      "docs_vuepress_client_enhance",
+      "docs_vuepress_client_setup"
+    ],
+    "6": [
+      "package_dependencies_vuepress",
+      "package_devdependencies_vuepress",
+      "vuepress"
+    ],
+    "7": [
+      "package_dependencies_vuepress_bundler_vite",
+      "package_devdependencies_vuepress_bundler_vite",
+      "vuepress_bundler_vite"
+    ],
+    "8": [
+      "docs_vuepress_config",
+      "docs_vuepress_theme"
+    ]
+  },
+  "cohesion": {
+    "0": 0.11764705882352941,
+    "1": 0.125,
+    "2": 0.13333333333333333,
+    "3": 0.2222222222222222,
+    "4": 0.25,
+    "5": 0.6666666666666666,
+    "6": 0.6666666666666666,
+    "7": 0.6666666666666666,
+    "8": 1.0
+  },
+  "gods": [
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "degree": 15
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 4
+    },
+    {
+      "id": "package_dependencies_vuepress_bundler_vite",
+      "label": "@vuepress/bundler-vite",
+      "degree": 2
+    },
+    {
+      "id": "vuepress_bundler_vite",
+      "label": "@vuepress/bundler-vite",
+      "degree": 2
+    },
+    {
+      "id": "package_dependencies_vuepress_plugin_feed",
+      "label": "@vuepress/plugin-feed",
+      "degree": 2
+    },
+    {
+      "id": "package_dependencies_vuepress_plugin_revealjs",
+      "label": "@vuepress/plugin-revealjs",
+      "degree": 2
+    },
+    {
+      "id": "package_dependencies_vuepress_plugin_shiki",
+      "label": "@vuepress/plugin-shiki",
+      "degree": 2
+    },
+    {
+      "id": "package_dependencies_vuepress_theme_default",
+      "label": "@vuepress/theme-default",
+      "degree": 2
+    },
+    {
+      "id": "package_dependencies_katex",
+      "label": "katex",
+      "degree": 2
+    },
+    {
+      "id": "package_dependencies_mermaid",
+      "label": "mermaid",
+      "degree": 2
+    }
+  ],
+  "surprises": [],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
